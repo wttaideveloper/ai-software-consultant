@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --color-canvas: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-surface-elevated: #ffffff;
+  --color-border: #e4e7ec;
+  --color-border-strong: #d0d5dd;
+  --color-muted: #667085;
+  --color-foreground: #101828;
+  --color-foreground-soft: #344054;
+
+  --color-accent: #0f766e;
+  --color-accent-hover: #0d9488;
+  --color-accent-soft: #ccfbf1;
+  --color-accent-foreground: #ffffff;
+
+  --color-danger: #dc2626;
+  --color-warning: #d97706;
+  --color-success: #059669;
+
+  --shadow-soft: 0 1px 2px rgb(16 24 40 / 0.04), 0 1px 3px rgb(16 24 40 / 0.06);
+  --shadow-lift: 0 8px 24px rgb(16 24 40 / 0.08);
+  --radius-ui: 0.75rem;
+}
+
+.dark {
+  --color-canvas: #09090b;
+  --color-surface: #111113;
+  --color-surface-elevated: #18181b;
+  --color-border: #27272a;
+  --color-border-strong: #3f3f46;
+  --color-muted: #a1a1aa;
+  --color-foreground: #fafafa;
+  --color-foreground-soft: #e4e4e7;
+
+  --color-accent: #2dd4bf;
+  --color-accent-hover: #5eead4;
+  --color-accent-soft: #134e4a;
+  --color-accent-foreground: #042f2e;
+
+  --color-danger: #f87171;
+  --color-warning: #fbbf24;
+  --color-success: #34d399;
+
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.35);
+  --shadow-lift: 0 12px 32px rgb(0 0 0 / 0.45);
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    @apply antialiased;
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply m-0 min-h-dvh bg-canvas font-sans text-foreground;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 0% -20%, rgb(15 118 110 / 0.08), transparent),
+      radial-gradient(ellipse 60% 40% at 100% 0%, rgb(15 118 110 / 0.05), transparent);
+  }
+
+  .dark body,
+  html.dark body {
+    background-image:
+      radial-gradient(ellipse 70% 45% at 0% -10%, rgb(45 212 191 / 0.08), transparent),
+      radial-gradient(ellipse 50% 35% at 100% 0%, rgb(45 212 191 / 0.04), transparent);
+  }
+
+  #root {
+    @apply min-h-dvh;
+  }
+
+  ::selection {
+    @apply bg-accent-soft text-foreground;
+  }
+}
