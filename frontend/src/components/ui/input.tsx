@@ -1,5 +1,7 @@
+import { AnimatePresence, motion } from "framer-motion";
 import { forwardRef, type InputHTMLAttributes } from "react";
 import { cn } from "@/utils/cn";
+import { fieldError } from "@/utils/motion";
 
 export type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   label?: string;
@@ -28,7 +30,20 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           )}
           {...props}
         />
-        {error ? <span className="text-xs text-danger">{error}</span> : null}
+        <AnimatePresence initial={false}>
+          {error ? (
+            <motion.span
+              key="error"
+              variants={fieldError}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="overflow-hidden text-xs text-danger"
+            >
+              {error}
+            </motion.span>
+          ) : null}
+        </AnimatePresence>
         {!error && hint ? <span className="text-xs text-muted">{hint}</span> : null}
       </label>
     );

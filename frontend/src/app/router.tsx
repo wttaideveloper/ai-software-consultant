@@ -1,4 +1,8 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import { ProtectedRoute } from "@/app/protected-route";
+import { PublicRoute } from "@/app/public-route";
+import { LoginPage } from "@/features/auth/login-page";
+import { RegisterPage } from "@/features/auth/register-page";
 import { ChatPage } from "@/features/chat/chat-page";
 import { ConsultationsPage } from "@/features/consultations/consultations-page";
 import { DashboardPage } from "@/features/dashboard/dashboard-page";
@@ -14,19 +18,27 @@ import { AppLayout } from "@/layouts/app-layout";
 export function AppRouter() {
   return (
     <Routes>
-      <Route element={<AppLayout />}>
-        <Route index element={<DashboardPage />} />
-        <Route path="consultations" element={<ConsultationsPage />} />
-        <Route path="chat" element={<ChatPage />} />
-        <Route path="requirement-summary" element={<RequirementSummaryPage />} />
-        <Route path="detected-features" element={<DetectedFeaturesPage />} />
-        <Route path="estimations" element={<EstimationPage />} />
-        <Route path="proposals" element={<ProposalPage />} />
-        <Route path="feature-library" element={<FeatureLibraryPage />} />
-        <Route path="users" element={<UsersPage />} />
-        <Route path="settings" element={<SettingsPage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+      <Route element={<PublicRoute />}>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
       </Route>
+
+      <Route element={<ProtectedRoute />}>
+        <Route element={<AppLayout />}>
+          <Route index element={<DashboardPage />} />
+          <Route path="consultations" element={<ConsultationsPage />} />
+          <Route path="chat" element={<ChatPage />} />
+          <Route path="requirement-summary" element={<RequirementSummaryPage />} />
+          <Route path="detected-features" element={<DetectedFeaturesPage />} />
+          <Route path="estimations" element={<EstimationPage />} />
+          <Route path="proposals" element={<ProposalPage />} />
+          <Route path="feature-library" element={<FeatureLibraryPage />} />
+          <Route path="users" element={<UsersPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+        </Route>
+      </Route>
+
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

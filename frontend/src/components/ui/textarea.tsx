@@ -1,5 +1,7 @@
+import { AnimatePresence, motion } from "framer-motion";
 import { forwardRef, type TextareaHTMLAttributes } from "react";
 import { cn } from "@/utils/cn";
+import { fieldError } from "@/utils/motion";
 
 type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   label?: string;
@@ -27,7 +29,20 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           )}
           {...props}
         />
-        {error ? <span className="text-xs text-danger">{error}</span> : null}
+        <AnimatePresence initial={false}>
+          {error ? (
+            <motion.span
+              key="error"
+              variants={fieldError}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="overflow-hidden text-xs text-danger"
+            >
+              {error}
+            </motion.span>
+          ) : null}
+        </AnimatePresence>
       </label>
     );
   },

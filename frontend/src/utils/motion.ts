@@ -59,6 +59,31 @@ export const modalPanel: Variants = {
   },
 };
 
+export const fieldError: Variants = {
+  hidden: { opacity: 0, y: -4, height: 0 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    height: "auto",
+    transition: { duration: 0.18, ease: [0.22, 1, 0.36, 1] },
+  },
+  exit: { opacity: 0, y: -4, height: 0, transition: { duration: 0.12 } },
+};
+
+export const stepTransition: Variants = {
+  enter: (direction: number) => ({ opacity: 0, x: direction > 0 ? 24 : -24 }),
+  center: {
+    opacity: 1,
+    x: 0,
+    transition: { duration: 0.26, ease: [0.22, 1, 0.36, 1] },
+  },
+  exit: (direction: number) => ({
+    opacity: 0,
+    x: direction > 0 ? -24 : 24,
+    transition: { duration: 0.18 },
+  }),
+};
+
 export const drawerPanel: Variants = {
   hidden: { x: "-100%" },
   visible: {

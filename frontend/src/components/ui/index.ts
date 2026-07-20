@@ -7,11 +7,13 @@ export {
   CardHeader,
   CardTitle,
 } from "./card";
+export { Checkbox } from "./checkbox";
 export { ConfirmDialog } from "./confirm-dialog";
 export { Drawer } from "./drawer";
 export { EmptyState } from "./empty-state";
 export { Input } from "./input";
 export { Modal } from "./modal";
+export { PasswordInput } from "./password-input";
 export { Select } from "./select";
 export { Skeleton, SkeletonCard } from "./skeleton";
 export { PageLoader, Spinner } from "./spinner";

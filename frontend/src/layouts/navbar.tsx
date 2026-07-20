@@ -10,9 +10,10 @@ import {
   UserRound,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { useAuthStore } from "@/store/auth-store";
 import { useThemeStore } from "@/store/theme-store";
 import { useUiStore } from "@/store/ui-store";
 import { cn } from "@/utils/cn";
@@ -20,8 +21,18 @@ import { cn } from "@/utils/cn";
 export function Navbar() {
   const { theme, toggleTheme } = useThemeStore();
   const openMobileSidebar = useUiStore((state) => state.openMobileSidebar);
+  const user = useAuthStore((state) => state.user);
+  const organization = useAuthStore((state) => state.organization);
+  const clearSession = useAuthStore((state) => state.clearSession);
+  const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const handleLogout = () => {
+    setProfileOpen(false);
+    clearSession();
+    navigate("/login", { replace: true });
+  };
 
   useEffect(() => {
     const onClick = (event: MouseEvent) => {
@@ -84,10 +95,12 @@ export function Navbar() {
             onClick={() => setProfileOpen((value) => !value)}
             className="flex items-center gap-2 rounded-xl px-1.5 py-1 transition-colors hover:bg-surface-muted"
           >
-            <Avatar name="Alex Morgan" size="sm" />
+            <Avatar name={user?.fullName ?? "Account"} src={user?.avatarUrl} size="sm" />
             <div className="hidden text-left sm:block">
-              <p className="text-sm font-medium leading-none text-foreground">Alex Morgan</p>
-              <p className="mt-0.5 text-[11px] text-muted">Admin</p>
+              <p className="text-sm font-medium leading-none text-foreground">
+                {user?.fullName ?? "—"}
+              </p>
+              <p className="mt-0.5 text-[11px] text-muted">{organization?.name ?? "—"}</p>
             </div>
           </button>
 
@@ -118,6 +131,7 @@ export function Navbar() {
                 </Link>
                 <button
                   type="button"
+                  onClick={handleLogout}
                   className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-danger hover:bg-danger-subtle"
                 >
                   <LogOut className="h-4 w-4" />
