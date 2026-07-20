@@ -11,5 +11,6 @@ export * from "./chat";
 export * from "./consultation";
 export * from "./estimation";
 export * from "./feature";
+export * from "./feature-library";
 export * from "./proposal";
 export * from "./requirement-summary";
