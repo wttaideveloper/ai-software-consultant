@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
-import { ConsultationProgress } from "@/features/dashboard/components/consultation-progress";
-import { ConsultationStatusBadge } from "@/features/dashboard/components/consultation-status-badge";
+import { SectionError } from "@/components/shared/section-error";
+import { ConsultationProgress } from "@/features/consultations/components/consultation-progress";
+import { ConsultationStatusBadge } from "@/features/consultations/components/consultation-status-badge";
 import { useRecentConsultations } from "@/features/dashboard/hooks/use-recent-consultations";
 import { formatDate } from "@/utils/format";
 import { fadeIn } from "@/utils/motion";
-import { SectionError } from "./section-error";
 
 function RecentConsultationsSkeleton() {
   return (

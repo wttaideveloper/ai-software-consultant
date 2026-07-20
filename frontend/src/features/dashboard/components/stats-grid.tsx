@@ -1,8 +1,8 @@
 import { motion } from "framer-motion";
 import { CheckCircle2, FileEdit, FolderKanban, Sparkles } from "lucide-react";
+import { SectionError } from "@/components/shared/section-error";
 import { useDashboardStats } from "@/features/dashboard/hooks/use-dashboard-stats";
 import { staggerContainer } from "@/utils/motion";
-import { SectionError } from "./section-error";
 import { StatCard } from "./stat-card";
 
 export function StatsGrid() {

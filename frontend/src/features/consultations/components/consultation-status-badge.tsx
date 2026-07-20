@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { CONSULTATION_STATUS_META } from "@/features/dashboard/consultation-status";
+import { CONSULTATION_STATUS_META } from "@/features/consultations/consultation-status";
 import type { ConsultationStatus } from "@/types";
 
 type ConsultationStatusBadgeProps = {

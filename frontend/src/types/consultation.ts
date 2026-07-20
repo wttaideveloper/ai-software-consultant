@@ -36,3 +36,20 @@ export type ListConsultationsParams = {
   status?: ConsultationStatus;
   assignedTo?: string;
 };
+
+export type CreateConsultationPayload = {
+  title: string;
+  industry?: string | null;
+  projectType?: string | null;
+  budgetRange?: string | null;
+  timeline?: string | null;
+};
+
+export type UpdateConsultationPayload = {
+  title?: string;
+  industry?: string | null;
+  projectType?: string | null;
+  budgetRange?: string | null;
+  timeline?: string | null;
+  status?: ConsultationStatus;
+};

@@ -15,3 +15,10 @@ export const CONSULTATION_STATUS_META: Record<ConsultationStatus, StatusMeta> = 
   completed: { label: "Completed", badgeVariant: "success", progress: 100 },
   cancelled: { label: "Cancelled", badgeVariant: "danger", progress: 0 },
 };
+
+export const CONSULTATION_STATUS_OPTIONS: Array<{ label: string; value: ConsultationStatus }> = [
+  { label: "Draft", value: "draft" },
+  { label: "In Progress", value: "in_progress" },
+  { label: "Completed", value: "completed" },
+  { label: "Cancelled", value: "cancelled" },
+];
