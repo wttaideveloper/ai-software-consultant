@@ -4,11 +4,14 @@ import { cn } from "@/utils/cn";
 type BadgeVariant = "default" | "accent" | "success" | "warning" | "danger";
 
 const variants: Record<BadgeVariant, string> = {
-  default: "bg-canvas text-foreground-soft border-border",
-  accent: "bg-accent-soft text-accent border-transparent",
-  success: "bg-success/10 text-success border-transparent",
-  warning: "bg-warning/10 text-warning border-transparent",
-  danger: "bg-danger/10 text-danger border-transparent",
+  default: "bg-surface-muted text-foreground-soft border-border",
+  accent: "asc-gradient-subtle text-accent border-transparent",
+  success:
+    "border-transparent bg-gradient-to-br from-success-subtle to-[#d4f0e6] text-success dark:to-[#1a4034]",
+  warning:
+    "border-transparent bg-gradient-to-br from-warning-subtle to-[#f7e4c4] text-warning dark:to-[#423318]",
+  danger:
+    "border-transparent bg-gradient-to-br from-danger-subtle to-[#f8d4d4] text-danger dark:to-[#4a2828]",
 };
 
 type BadgeProps = HTMLAttributes<HTMLSpanElement> & {

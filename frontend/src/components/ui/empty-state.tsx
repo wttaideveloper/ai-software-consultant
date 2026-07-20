@@ -25,11 +25,11 @@ export function EmptyState({
       initial="hidden"
       animate="visible"
       className={cn(
-        "flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-surface/70 px-6 py-16 text-center",
+        "flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-surface px-6 py-16 text-center",
         className,
       )}
     >
-      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent-soft text-accent">
+      <div className="asc-gradient-subtle mb-4 flex h-14 w-14 items-center justify-center rounded-xl text-accent shadow-sm shadow-accent/10">
         <Icon className="h-6 w-6" strokeWidth={1.75} />
       </div>
       <h3 className="text-lg font-semibold tracking-tight">{title}</h3>

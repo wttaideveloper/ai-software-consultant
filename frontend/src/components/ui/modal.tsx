@@ -56,7 +56,7 @@ export function Modal({
             animate="visible"
             exit="exit"
             className={cn(
-              "relative z-10 w-full max-w-lg rounded-2xl border border-border bg-surface-elevated p-5 shadow-lift",
+              "relative z-10 w-full max-w-lg rounded-xl border border-border bg-surface p-5",
               className,
             )}
           >

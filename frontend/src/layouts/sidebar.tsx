@@ -22,7 +22,7 @@ export function Sidebar({
   return (
     <aside
       className={cn(
-        "relative flex h-full flex-col border-r border-border bg-surface/90 backdrop-blur-xl",
+        "relative flex h-full flex-col border-r border-border bg-surface",
         className,
       )}
     >
@@ -33,7 +33,7 @@ export function Sidebar({
             collapsed && "justify-center px-2",
           )}
         >
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground shadow-soft">
+          <div className="asc-gradient-accent flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white shadow-sm shadow-accent/25">
             <Hexagon className="h-[18px] w-[18px]" strokeWidth={2.25} />
           </div>
           <motion.div
@@ -63,22 +63,21 @@ export function Sidebar({
                 cn(
                   "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-accent-soft text-accent"
-                    : "text-muted hover:bg-canvas hover:text-foreground",
+                    ? "asc-gradient-subtle text-accent"
+                    : "text-foreground-soft hover:bg-surface-muted hover:text-foreground",
                   collapsed && "justify-center px-2",
                 )
               }
             >
               {({ isActive }) => (
                 <>
-                  {isActive ? (
-                    <motion.span
-                      layoutId={embedded ? "sidebar-active-mobile" : "sidebar-active"}
-                      className="absolute inset-y-1 left-0 w-0.5 rounded-full bg-accent"
-                      transition={{ type: "spring", stiffness: 400, damping: 34 }}
-                    />
-                  ) : null}
-                  <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={1.85} />
+                  <Icon
+                    className={cn(
+                      "h-[18px] w-[18px] shrink-0",
+                      isActive ? "text-accent" : "text-foreground-soft",
+                    )}
+                    strokeWidth={1.85}
+                  />
                   <motion.span
                     initial={false}
                     animate={{
@@ -102,7 +101,7 @@ export function Sidebar({
             type="button"
             onClick={toggleSidebar}
             className={cn(
-              "flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-muted transition-colors hover:bg-canvas hover:text-foreground",
+              "flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-foreground-soft transition-colors hover:bg-surface-muted hover:text-foreground",
               collapsed && "justify-center",
             )}
           >
@@ -110,7 +109,7 @@ export function Sidebar({
               animate={{ rotate: collapsed ? 180 : 0 }}
               transition={{ duration: 0.2 }}
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-4 w-4 text-foreground-soft" />
             </motion.span>
             {!collapsed ? <span>Collapse</span> : null}
           </button>

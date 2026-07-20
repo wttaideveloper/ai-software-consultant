@@ -40,7 +40,7 @@ export function Avatar({ name, src, size = "md", className }: AvatarProps) {
   return (
     <div
       className={cn(
-        "inline-flex items-center justify-center rounded-full bg-accent-soft font-semibold text-accent ring-1 ring-border",
+        "asc-gradient-accent inline-flex items-center justify-center rounded-full font-semibold text-white ring-1 ring-border",
         sizes[size],
         className,
       )}

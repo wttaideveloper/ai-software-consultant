@@ -74,7 +74,7 @@ export function DashboardPage() {
               <Link to={item.href} className="block h-full">
                 <Card className="h-full">
                   <CardHeader>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-soft text-accent">
+                    <div className="asc-gradient-accent flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-sm shadow-accent/20">
                       <Icon className="h-[18px] w-[18px]" />
                     </div>
                     <Badge variant="accent">Ready</Badge>
@@ -103,7 +103,7 @@ export function DashboardPage() {
             (label) => (
               <div
                 key={label}
-                className="rounded-xl border border-border bg-canvas/70 px-4 py-5"
+                className="rounded-xl border border-border bg-surface-muted px-4 py-5"
               >
                 <p className="text-xs font-medium tracking-wide text-muted uppercase">
                   {label}

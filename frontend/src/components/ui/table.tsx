@@ -7,7 +7,7 @@ export function Table({
   ...props
 }: HTMLAttributes<HTMLTableElement>) {
   return (
-    <div className="w-full overflow-x-auto rounded-2xl border border-border bg-surface shadow-soft">
+    <div className="w-full overflow-x-auto rounded-xl border border-border bg-surface">
       <table className={cn("w-full min-w-[640px] text-left text-sm", className)} {...props}>
         {children}
       </table>
@@ -16,7 +16,7 @@ export function Table({
 }
 
 export function THead({ children }: { children: ReactNode }) {
-  return <thead className="border-b border-border bg-canvas/70">{children}</thead>;
+  return <thead className="border-b border-border bg-surface-muted">{children}</thead>;
 }
 
 export function TBody({ children }: { children: ReactNode }) {
@@ -29,7 +29,7 @@ export function TR({
 }: HTMLAttributes<HTMLTableRowElement>) {
   return (
     <tr
-      className={cn("transition-colors hover:bg-canvas/60", className)}
+      className={cn("transition-colors hover:bg-surface-muted/70", className)}
       {...props}
     />
   );

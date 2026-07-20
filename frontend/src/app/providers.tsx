@@ -34,7 +34,7 @@ export function AppProviders({ children }: AppProvidersProps) {
         toastOptions={{
           classNames: {
             toast:
-              "border border-border bg-surface-elevated text-foreground shadow-lift",
+              "border border-border bg-surface text-foreground",
           },
         }}
       />

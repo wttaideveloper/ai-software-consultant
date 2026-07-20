@@ -17,14 +17,15 @@ type ButtonProps = {
 
 const variants: Record<ButtonVariant, string> = {
   primary:
-    "bg-accent text-accent-foreground shadow-soft hover:bg-accent-hover",
+    "asc-gradient-accent asc-gradient-accent-interactive text-white shadow-sm shadow-accent/20",
   secondary:
-    "bg-surface-elevated text-foreground border border-border hover:bg-canvas",
+    "border border-border bg-transparent text-foreground hover:bg-surface-muted",
   ghost:
-    "bg-transparent text-foreground-soft hover:bg-canvas hover:text-foreground",
-  danger: "bg-danger text-white hover:opacity-90",
+    "bg-transparent text-foreground-soft hover:bg-surface-muted hover:text-foreground",
+  danger:
+    "bg-gradient-to-br from-danger to-[#a83228] text-white hover:opacity-95",
   outline:
-    "border border-border-strong bg-transparent text-foreground hover:bg-canvas",
+    "border border-border bg-transparent text-foreground hover:bg-surface-muted",
 };
 
 const sizes: Record<ButtonSize, string> = {

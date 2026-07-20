@@ -57,7 +57,7 @@ export function Drawer({
             animate="visible"
             exit="exit"
             className={cn(
-              "absolute top-0 flex h-full w-[min(20rem,88vw)] flex-col border-border bg-surface-elevated shadow-lift",
+              "absolute top-0 flex h-full w-[min(20rem,88vw)] flex-col border-border bg-surface",
               side === "left" ? "left-0 border-r" : "right-0 border-l",
               className,
             )}
