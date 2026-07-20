@@ -1,0 +1,358 @@
+# CLAUDE.md
+
+Primary knowledge base for this repository. Read before making changes. Reflects the codebase as it exists today — not aspirational architecture.
+
+---
+
+## Project Overview
+
+### Purpose
+
+Automates the software-consulting discovery pipeline for consulting agencies. A consultant creates a **consultation** for a prospective client; the AI pipeline then progressively generates:
+
+1. Consultation record (title, industry, project type, budget range, timeline)
+2. Chat-based discovery conversation
+3. Requirement summary (AI-generated markdown + structured JSON)
+4. Detected features (AI-extracted from the summary; priority/complexity/confidence)
+5. Feature matching (detected features ↔ a reusable feature-library catalog)
+6. Project estimation (hours/weeks/team size/breakdown/risks)
+7. Proposal (client-ready document)
+
+### Business Domain
+
+B2B SaaS for software consultancies. Multi-tenant: every entity is scoped to an `organization`. Users belong to one organization, have roles, and roles carry permissions (RBAC).
+
+### Tech Stack
+
+| Layer | Choice |
+|---|---|
+| Backend | Node.js, Express 5, TypeScript (NodeNext ESM), `tsx` for dev |
+| Database | PostgreSQL (Neon), `pg` driver, Drizzle ORM + drizzle-kit migrations |
+| Auth | `jsonwebtoken` (dual-secret access/refresh JWTs), `bcrypt` |
+| AI | `openai` SDK, default model `gpt-4o-mini` (configurable via env) |
+| Validation | Zod 4, both apps |
+| Frontend | React 19, Vite 8, React Router 7, TanStack Query 5, Zustand 5, Tailwind CSS 4, framer-motion, react-hook-form, axios, sonner, lucide-react |
+| Lint | `oxlint` (frontend only — no backend linter) |
+| Tests / CI | None configured — see Development Workflow |
+
+### Architecture
+
+Two-app monorepo, not a real workspace (root `package.json` has a single devDependency; `backend/` and `frontend/` are installed and run independently).
+
+- **Backend**: modular monolith. Each domain is a vertical slice — route → controller → service → repository → validation → dto. No microservices, no queue, no job runner.
+- **Frontend**: client-rendered SPA. Routing, layout, and design system are fully built; **API integration is not wired up** — pages render static placeholders (see Common Pitfalls).
+- **AI layer**: provider-agnostic — `AIOrchestrator → PromptService → AIService → AIProvider` — one provider implemented today (OpenAI).
+
+---
+
+## Folder Structure
+
+```
+AI-Software-Consultant/
+├── backend/
+│   ├── drizzle/                     SQL migrations (0000–0008) + meta/ snapshots + _journal.json
+│   ├── src/
+│   │   ├── app.ts                   Composition root: express app, middleware, router mounting, DB ping, listen
+│   │   ├── config/env.ts            process.env → typed EnvConfig (defaults, not validated)
+│   │   ├── db/
+│   │   │   ├── index.ts             pg Pool + Drizzle instance; Database/Transaction/DbExecutor types
+│   │   │   ├── schema/               One file per table, enums.ts, helpers.ts, relations.ts, index.ts barrel
+│   │   │   └── seeds/permissions.seed.ts
+│   │   ├── middleware/               error-handler.ts, not-found.ts (mounted last in app.ts)
+│   │   ├── modules/                  One folder per business domain (see Backend Architecture)
+│   │   │   ├── admin/, consultation/, crm/, dashboard/   Empty .gitkeep scaffolds — not built
+│   │   ├── shared/                   constants/, errors/app-error.ts, logger/, responses/api-response.ts
+│   │   └── utils/async-handler.ts
+│   ├── drizzle.config.ts
+│   └── package.json
+├── frontend/
+│   ├── src/
+│   │   ├── app/                     providers.tsx (QueryClient + Toaster), router.tsx
+│   │   ├── components/
+│   │   │   ├── ui/                  Design-system primitives + index.ts barrel
+│   │   │   └── shared/page-header.tsx
+│   │   ├── features/                One folder per route/page
+│   │   ├── layouts/                 app-layout.tsx, navbar.tsx, sidebar.tsx, nav-config.ts
+│   │   ├── hooks/use-media-query.ts
+│   │   ├── services/api.ts          Axios instance — unwired scaffold (see Common Pitfalls)
+│   │   ├── store/                   theme-store.ts (persisted), ui-store.ts (not persisted)
+│   │   ├── styles/globals.css       Tailwind 4 theme, design tokens, custom gradient utilities
+│   │   ├── types/index.ts
+│   │   ├── utils/                   cn.ts, format.ts, motion.ts
+│   │   ├── App.tsx, main.tsx
+│   ├── public/
+│   ├── dist/                        Build output — committed (see Common Pitfalls)
+│   └── vite.config.ts               React + Tailwind plugins, `@` alias → src/
+├── package.json                     Root — minimal, not a real workspace root
+└── README.md
+```
+
+---
+
+## Coding Standards
+
+### TypeScript
+
+- Backend is pure ESM (`NodeNext`). Relative imports need an explicit `.js` extension even though sources are `.ts` — e.g. `from "../../config/env.js"`. Required for the build to succeed.
+- `strict: true` on both tsconfigs. Do not add `any` or `@ts-ignore` to silence an error — fix the type.
+- Frontend (`tsconfig.app.json`) also enables `noUnusedLocals`, `noUnusedParameters`, `noFallthroughCasesInSwitch`, `verbatimModuleSyntax` — unused imports/vars fail the build.
+- Types are colocated per module: `*.dto.ts` (response shapes), `*.validation.ts` (Zod schemas + `z.infer` types), `*.repository.ts` (`typeof table.$inferSelect` record types).
+- Prefer `type` over `interface`; the one exception (`AIProvider`) is intentionally an interface for structural implementation by provider classes.
+
+### React
+
+- Function components only.
+- Form primitives (`Input`, `Textarea`, `Select`) use `forwardRef` and a shared `{ label?, hint?, error? }` contract.
+- No React Context for app state — Zustand covers global state.
+- Animation always goes through `framer-motion` using shared variants from `utils/motion.ts`, not ad-hoc transitions.
+- `Modal`/`Drawer` render via `createPortal(document.body)` + `AnimatePresence`, with `Escape`-to-close.
+- `oxlint` enforces `react/rules-of-hooks` as an error.
+
+### Naming
+
+- Files: kebab-case (`auth.service.ts`, `chat-page.tsx`).
+- Backend module files always use the suffix set: `.route.ts`, `.controller.ts`, `.service.ts`, `.repository.ts`, `.validation.ts`, `.dto.ts`.
+- Classes: PascalCase, always exported as both the class and a singleton instance — `export const authService = new AuthService();`.
+- Constants: `SCREAMING_SNAKE_CASE` keys inside `as const` objects (`PERMISSIONS.USER_READ`), with a derived union type via `(typeof X)[keyof typeof X]`.
+- React components: PascalCase, matching the file's primary export.
+- `@/` (frontend only) resolves to `frontend/src/`.
+
+### File organization
+
+Backend: strict one-module-per-folder under `src/modules/<name>/` (see Backend Architecture → Modules). A module accesses another domain's tables directly through its own repository rather than importing another module's repository. Frontend: one folder per route under `src/features/<name>/`; shared UI in `components/ui/` (generic) or `components/shared/` (app-specific but cross-feature). Check `components/ui/index.ts` before adding a new primitive — it may already exist.
+
+### Error handling
+
+- Throw `AppError(message, HTTP_STATUS.X)` for any expected failure (validation, not-found, forbidden, conflict). Every controller action is wrapped in `asyncHandler(...)`, so thrown/rejected errors reach the global `errorHandler` automatically — never manually `try/catch` + `res.status().json()` in a controller.
+- `errorHandler` returns the `AppError` message verbatim when `isOperational: true` (the default) and a generic `"Internal server error"` otherwise, logging the real message server-side. Never throw a raw `Error` for a user-facing failure — the message gets swallowed.
+- Controllers validate with `zodSchema.safeParse(input)`; on failure, throw `AppError(parsed.error.issues[0]?.message ?? "Validation failed", HTTP_STATUS.BAD_REQUEST)`.
+- Repository methods that hit an unexpected invariant (e.g. `.returning()` came back empty) throw a plain `Error` — these represent bugs/DB inconsistency, not user-facing conditions.
+- AI-call failures are caught explicitly in services (not left to `asyncHandler`) so a failed `ai_generations` audit row can be written before re-throwing.
+- Frontend: no error-handling pattern exists yet (no wired API calls). When wiring one, use TanStack Query's error state and the already-configured Sonner toasts.
+
+---
+
+## Frontend Architecture
+
+### Components
+
+Three tiers:
+1. `components/ui/` — generic primitives: `Avatar, Badge, Button, Card/CardHeader/CardTitle/CardDescription, ConfirmDialog, Drawer, EmptyState, Input, Modal, Select, Skeleton/SkeletonCard, Spinner/PageLoader, Table/THead/TBody/TR/TH/TD, Tabs, Textarea`. Styled via `cn()` (`clsx` + `tailwind-merge`).
+2. `components/shared/` — `PageHeader` (title/description/actions row).
+3. `features/<name>/` — page-level components composed from the above.
+
+### Layouts
+
+`AppLayout` is the single shell for every route: an animated `Sidebar` (width-collapses on desktop via `sidebarCollapsed`; renders inside a `Drawer` on mobile), a `Navbar`, and a `<main><Outlet /></main>` wrapped in `AnimatePresence`/`pageTransition`. Nav items are centralized in `nav-config.ts` (`APP_NAV_ITEMS`, `SECONDARY_NAV`) — add routes there, not by hardcoding links in `Sidebar`.
+
+### Routing
+
+`react-router-dom` v7, plain `<Routes>/<Route>` (no data router/loaders), declared in `router.tsx`. All routes are children of `AppLayout`; unmatched paths redirect to `/`. No route guards exist — every page is reachable client-side without auth.
+
+### Forms & Validation
+
+`react-hook-form`, `@hookform/resolvers`, and `zod` are installed but unused — no page has a real form yet. When building the first one, follow the existing `Input`/`Select`/`Textarea` `{ label, hint, error }` contract so RHF's `formState.errors` maps directly onto them.
+
+### Styling
+
+Tailwind CSS 4, CSS-first config (no `tailwind.config.js` — theme lives in `globals.css` via `@theme` and CSS custom properties for light/dark tokens). Dark mode is a `.dark` class on `<html>` toggled by `theme-store.ts`, not the media-query strategy. All conditional classes go through `cn()` — never string-concatenate.
+
+**Never use Tailwind's native `bg-gradient-*` utilities for brand surfaces.** Use the custom `asc-gradient-accent` / `asc-gradient-subtle` / `asc-gradient-surface` classes defined in `globals.css` — the `asc-` prefix exists specifically to avoid colliding with Tailwind's own gradient utilities (documented inline in the file).
+
+### Reusable UI patterns
+
+- **Placeholder shell**: every unwired feature page renders `PageHeader` + `EmptyState` (or a `Card` with a "not connected yet" description). This is the established scaffold for pages awaiting backend integration — replicate it for new pages rather than leaving a blank screen.
+- **Card composition**: `<Card><CardHeader>…</CardHeader><CardTitle/><CardDescription/></Card>`, with `hover={false}` for static/dashboard cards.
+- **Confirm-before-destructive-action**: `ConfirmDialog` wraps `Modal` with `tone: "danger" | "primary"` — use it instead of a native `confirm()`.
+- **Portal overlays**: `Modal`/`Drawer` both use `createPortal` + `AnimatePresence` — follow this for new overlay components.
+
+---
+
+## Backend Architecture
+
+### Modules
+
+Every domain under `src/modules/<name>/` follows the same five-file pattern:
+
+```
+<name>.route.ts        authenticate → authorize(PERMISSIONS.X) → controller method, per endpoint
+<name>.controller.ts   asyncHandler-wrapped: parse req (Zod), call service, wrap response in successResponse()
+<name>.service.ts      Business logic; calls repository + aiOrchestrator where relevant; throws AppError
+<name>.repository.ts   Drizzle queries; org-scoped methods take (id, organizationId, executor = db)
+<name>.dto.ts          Response types + a toXDto() mapper (the mapper itself lives in the service file)
+<name>.validation.ts   Zod schemas (params/query/body) + inferred input types
+```
+
+Modules: `auth`, `users`, `consultations`, `conversations`, `chat`, `requirement-summary`, `feature-detection`, `estimation`, `proposal`, `feature-library`, plus non-domain `ai/` (provider abstraction) and `prompts/` (templating). Empty scaffolds (`.gitkeep` only): `admin`, `crm`, `dashboard`.
+
+### Services
+
+Own all business rules: existence checks (404), state-transition checks (e.g. a `completed` consultation can't be edited), cross-entity invariants (e.g. `assignedTo` must be a user in the same organization), and transactions (`repository.runInTransaction(async (tx) => {...})`) for multi-table writes.
+
+The six AI-generating services (`chat`, `feature-detection`, `estimation`, `proposal`, `requirement-summary`, `feature-library`'s matching) share one shape:
+1. Look up prerequisite records (consultation, org, upstream AI artifact); 404/400 if missing.
+2. Call `aiOrchestrator.generateConversationReply({ promptType, organization, consultation, conversationHistory, userMessage })`.
+3. On failure, persist a `status: "failed"` `ai_generations` row and re-throw.
+4. Parse the AI's JSON response (`extractJsonPayload()` + a Zod `ai*PayloadSchema`); on failure, persist a failed row and throw `AppError(500)`.
+5. Persist the result (versioned for summary/estimation/proposal — see Database) and a `status: "success"` row, in one transaction.
+
+`extractJsonPayload` (try `JSON.parse` → strip ```` ```json ```` fences → fall back to first-`{`/last-`}` slicing) is duplicated verbatim in all five services — see Common Pitfalls before changing it.
+
+### Controllers
+
+Thin HTTP adapters: `safeParse` params/query/body → `AppError(400)` on failure → call one service method → `successResponse(message, data)`. Never touch Drizzle directly.
+
+### Middleware
+
+- `authenticate` — extracts the `Bearer` token, verifies it's specifically an **access** token, re-fetches the user from DB on every request, attaches `req.user`, 401s if missing/inactive.
+- `authorize(...permissionCodes)` — runs after `authenticate`; loads the user's permission codes fresh from DB, 403s if any required code is missing.
+- `asyncHandler` — wraps every async route handler.
+- `errorHandler` / `notFound` — mounted last in `app.ts`, global.
+
+### Authentication
+
+JWTs signed with **separate secrets** (`JWT_SECRET` / `JWT_REFRESH_SECRET`) and a `type: "access" | "refresh"` claim checked on verify, so a token can't be used as the wrong kind.
+
+- **Register**: one transaction — create org (slug uniquified), create user (bcrypt, `BCRYPT_SALT_ROUNDS = 12`), bootstrap an "Admin" role with every permission if the org has no roles yet, assign it, seed default org/user settings, issue + store tokens.
+- **Login**: verify email/password/status → update `lastLoginAt` → delete all of the user's existing refresh tokens → store a new one (SHA-256 hash, never the raw token). One valid refresh token per user at a time.
+- `GET /auth/me` returns the current user + organization.
+- No `/auth/refresh` or `/auth/logout` endpoint exists, despite refresh-token infrastructure being fully built (see Common Pitfalls).
+
+### Authorization
+
+RBAC: `users —(user_roles)— roles —(role_permissions)— permissions`. `authorizationService.assertHasPermissions(userId, required)` loads the user's roles, resolves distinct permission codes, and checks all required codes are present. Codes are cataloged in `permissions.constants.ts` (`PERMISSIONS`, `SYSTEM_PERMISSION_DEFINITIONS`), seeded via `db:seed:permissions`.
+
+### API structure
+
+Base prefix: **`/api`** (`API_PREFIX` in `shared/constants/app.ts` — no `/v1`). Mounted in `app.ts`:
+
+```
+GET  /api/health                                          no auth
+POST /api/auth/register
+POST /api/auth/login
+GET  /api/auth/me                                          authenticate
+
+GET|POST    /api/users, /api/users/:id                     authorize(USER_*)
+GET|POST    /api/consultations, /api/consultations/:id     authorize(CONSULTATION_*)
+
+# Nested under a consultation (mergeParams routers):
+GET|POST    /api/consultations/:consultationId/messages
+POST        /api/consultations/:consultationId/chat
+GET|POST    /api/consultations/:consultationId/requirement-summary
+GET|POST    /api/consultations/:consultationId/features
+GET|POST    /api/consultations/:consultationId/estimate
+GET|POST    /api/consultations/:consultationId/proposal
+
+PATCH|DELETE /api/messages/:id
+GET|POST     /api/feature-library, /api/feature-library/:id
+POST         /api/features/match
+```
+
+Every response: `{ success, message, data | errors, timestamp }` (`successResponse`/`errorResponse`). Every list endpoint: `{ items, meta: { page, pageSize, total, totalPages } }` — see Project Conventions for the shared query-schema shape.
+
+---
+
+## State Management
+
+### Global
+
+Zustand, two stores: `theme-store.ts` (`persist` to `localStorage` key `asc-theme`; `initializeTheme()` runs once in `main.tsx` before render to avoid a theme flash, falling back to `prefers-color-scheme`) and `ui-store.ts` (sidebar/drawer flags, not persisted). No auth store exists — the frontend has nowhere to keep a logged-in user or token.
+
+### Local
+
+Plain `useState`/`useEffect`/`useRef` for component-local concerns (e.g. `Navbar`'s profile-menu outside-click handling).
+
+### Data fetching & caching
+
+TanStack Query is configured in `providers.tsx` (`retry: 1`, `refetchOnWindowFocus: false`, `staleTime: 30_000`), but **no query or mutation hooks exist anywhere**. `services/api.ts` is an unconfigured axios instance — its own comment says "no endpoints wired yet." There's no existing `hooks/api`/`queries/` convention; the first integration should establish one.
+
+---
+
+## Database
+
+### ORM
+
+Drizzle ORM (`drizzle-orm/node-postgres`) over a `pg.Pool`. `db/index.ts` exports `db`, `pool`, and `Database`/`Transaction`/`DbExecutor` (`Database | Transaction`) types. Every repository method's last parameter is `executor: DbExecutor = db`, so the same method runs standalone or inside `db.transaction()`.
+
+### Schema organization
+
+One file per table under `db/schema/`, re-exported via `schema/index.ts`: `enums.ts` (all `pgEnum`s), `helpers.ts` (shared `createdAt`/`updatedAt`/`deletedAt` column builders), `relations.ts` (all `relations()` definitions, not colocated with tables), and one file per table (`organizations, users, roles, permissions, role-permissions, user-roles, refresh-tokens, verification-tokens, organization-settings, user-settings, audit-logs, consultations, conversation-messages, ai-generations, requirement-summaries, detected-features, project-estimations, project-proposals, feature-library`).
+
+### Relationships
+
+`organizations` is the tenant root. `users` belong to one organization. RBAC: `users —(user_roles)— roles —(role_permissions)— permissions` (`roles.organizationId` is nullable, though every role created today is org-scoped). `consultations` belong to an organization and reference `createdBy`/`assignedTo` users. Everything downstream of a consultation cascades on both `organizationId` and `consultationId` (`onDelete: "cascade"`). `requirement_summaries`, `project_estimations`, and `project_proposals` each have a **unique index on `consultationId`** — one row per consultation, updated in place with an incrementing `version` and `generatedBy: "AI" | "USER"` rather than inserting a new row per regeneration. `feature_library` is org-scoped but consultation-independent.
+
+Soft delete (`deletedAt`) applies to `organizations, users, consultations, conversation_messages, requirement_summaries, detected_features, project_estimations, project_proposals, feature_library` — every read on these filters `isNull(deletedAt)`.
+
+### Migrations
+
+drizzle-kit (`drizzle.config.ts`: schema glob `./src/db/schema/*`, output `./drizzle`, `dialect: "postgresql"`). Numbered SQL files under `backend/drizzle/` (`0000_foundation.sql` … `0008_feature_library.sql`) with matching snapshots in `drizzle/meta/` and `_journal.json`. `backend/package.json` has **no `db:migrate`/`db:generate` script** — run the `drizzle-kit` CLI directly (`npx drizzle-kit generate`, `npx drizzle-kit migrate`).
+
+---
+
+## Development Workflow
+
+### Backend (`backend/`)
+
+```
+npm run dev                  tsx watch src/app.ts       dev server, hot reload, PORT env (default 5000)
+npm run build                tsc                        type-check + emit to dist/
+npm run start                node dist/app.js
+npm run db:seed:permissions  tsx src/db/seeds/permissions.seed.ts
+```
+
+### Frontend (`frontend/`)
+
+```
+npm run dev        vite                    dev server on :5173
+npm run build       tsc -b && vite build    project-reference type check, then build
+npm run lint        oxlint
+npm run preview     vite preview
+```
+
+### Lint / type check / tests
+
+- Lint: frontend only, `oxlint` (`.oxlintrc.json`: `react/rules-of-hooks` = error, `react/only-export-components` = warn). Backend has no linter — rely on `tsc`.
+- Type check: there is no standalone `tsc --noEmit` script on either side — `npm run build` **is** the type-check gate for both apps. Run it after non-trivial changes.
+- Tests: **no test framework is installed anywhere** (no vitest/jest/playwright, no `*.test.*`/`*.spec.*` files, no test script in either `package.json`). No CI (no `.github/workflows`) and no git hooks (no husky). Don't assume test coverage exists; adding a framework is a decision to raise with the user, not something to introduce as a side effect.
+
+---
+
+## Project Conventions
+
+- **Singleton exports**: every class-based module exports both the class and an instance — `export const authService = new AuthService();`. Callers import the instance; only the AI layer is constructor-injected (`new AIService(openAIProvider)`).
+- **Pagination contract**: every list query schema is `{ page: z.coerce.number().int().min(1).default(1), pageSize: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE), search?: ... }` (constants from `shared/constants/app.ts`); response is always `{ items, meta: { page, pageSize, total, totalPages } }`.
+- **Partial-update schemas require ≥1 field**: every `update*Schema` ends with `.refine(v => Object.keys(v).length > 0, "At least one field must be provided")`.
+- **AI generations are always audited**: every AI call site inserts an `ai_generations` row on both success and failure — never skipped. `estimatedCost` is currently always persisted as `"0"` (token counts are captured, cost is never computed from them).
+- **Prompt templates** are centralized in `prompt.builder.ts` as `{{variable}}`-interpolated strings keyed by `PROMPT_TYPES`. Non-conversational AI calls instruct the model to return "ONLY valid JSON (no markdown fences)" in a documented exact shape — follow this pattern for new AI features.
+
+---
+
+## Common Pitfalls
+
+1. **Backend imports need explicit `.js` extensions** (NodeNext ESM) — omitting it breaks the build even though the source is `.ts`.
+2. **`API_PREFIX` is `/api`** — there is no `/v1` segment; don't assume API versioning.
+3. **`backend/.env` is committed to git** with real-looking secrets (`DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `OPENAI_API_KEY`), and there's no `.gitignore` for `backend/`. Never add further secrets to tracked files.
+4. **`node_modules/` (both apps) and `frontend/dist/` are committed.** A broad `git add -A`/`git add .` will re-stage huge trees — always stage specific files.
+5. **JWT secrets aren't validated at boot.** `config/env.ts` defaults `JWT_SECRET`/`JWT_REFRESH_SECRET`/`DATABASE_URL` to `""` instead of throwing — a blank `.env` value won't be caught, it'll silently sign tokens with an empty key.
+6. **The five `extractJsonPayload` implementations are duplicated verbatim** across `feature-detection`, `estimation`, `proposal`, `requirement-summary`, `feature-library` services. A bugfix in one likely needs applying to all five.
+7. **The frontend has no auth flow, no wired API calls, and no route guards.** Every feature page renders static placeholder content — no UI interaction currently reaches the backend.
+8. **Backend `typescript@^7.0.2` vs. frontend `~6.0.2`** — don't assume identical behavior when touching build/tooling config across the two apps.
+
+---
+
+## AI Development Instructions
+
+- Read this file before making changes. If something here conflicts with the code, trust the code and update this file.
+- Follow the architecture and conventions documented above rather than introducing a new pattern for a single feature.
+- Search `shared/`, `modules/*/`, `components/ui/index.ts`, and `utils/` for an existing utility or component before writing a new one.
+- Never duplicate a utility or business-logic pattern. If something already exists in two places due to known duplication (e.g. `extractJsonPayload`, Common Pitfalls #6), consolidating is preferred over adding a third copy — but confirm before refactoring code outside the task's scope.
+- Prefer extending existing modules (auth, org scoping, AI orchestration) over building a parallel implementation.
+- For anything touching more than one module, a schema change, or a new dependency: explain the plan before writing code.
+- Keep changes minimal and scoped to what was asked — no unrelated refactors, even to fix a known issue from Common Pitfalls (flag it instead).
+- Preserve TypeScript strictness — no `any`, no `@ts-ignore`, no loosening `tsconfig` options.
+- Preserve responsive behavior — check both the mobile drawer and desktop sidebar layouts for any layout change.
+- Maintain backward compatibility (API shapes, DTO fields, route paths) unless a breaking change is explicitly requested.
+- Run `npm run build` in the relevant app after non-trivial changes — it's the only type-check gate that exists.
+- Run `npm run lint` (`oxlint`) in `frontend/` for frontend changes and fix anything you introduce; there's no backend lint command.
+- Update this file when the architecture or workflow changes — new modules, resolved pitfalls (e.g. a `/auth/refresh` endpoint ships, or the frontend gets wired to the API), so it keeps matching reality.
