@@ -1,119 +1,62 @@
 import { motion } from "framer-motion";
-import {
-  ArrowUpRight,
-  Calculator,
-  FileText,
-  FolderKanban,
-  Sparkles,
-} from "lucide-react";
-import { Link } from "react-router-dom";
-import { PageHeader } from "@/components/shared/page-header";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { staggerContainer, staggerItem } from "@/utils/motion";
+import type { ReactNode } from "react";
+import { ActivitySection } from "@/features/dashboard/components/activity-section";
+import { DashboardHero } from "@/features/dashboard/components/dashboard-hero";
+import { QuickActions } from "@/features/dashboard/components/quick-actions";
+import { RecentConsultationsTable } from "@/features/dashboard/components/recent-consultations-table";
+import { StatsGrid } from "@/features/dashboard/components/stats-grid";
 
-const highlights = [
-  {
-    title: "Consultations",
-    description: "Start discovery conversations and capture client intent.",
-    href: "/consultations",
-    icon: FolderKanban,
-  },
-  {
-    title: "Requirement Summary",
-    description: "Turn chat history into structured product requirements.",
-    href: "/requirement-summary",
-    icon: FileText,
-  },
-  {
-    title: "Detected Features",
-    description: "Extract prioritized feature sets from summaries.",
-    href: "/detected-features",
-    icon: Sparkles,
-  },
-  {
-    title: "Estimations",
-    description: "Generate effort models grounded in feature complexity.",
-    href: "/estimations",
-    icon: Calculator,
-  },
-];
+const SECTION_TRANSITION = { duration: 0.3, ease: [0.22, 1, 0.36, 1] as const };
+
+type DashboardSectionProps = {
+  title?: string;
+  description?: string;
+  delay: number;
+  children: ReactNode;
+};
+
+function DashboardSection({ title, description, delay, children }: DashboardSectionProps) {
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ ...SECTION_TRANSITION, delay }}
+    >
+      {title ? (
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold tracking-tight text-foreground">{title}</h2>
+          {description ? <p className="text-sm text-muted">{description}</p> : null}
+        </div>
+      ) : null}
+      {children}
+    </motion.section>
+  );
+}
 
 export function DashboardPage() {
   return (
-    <div>
-      <PageHeader
-        title="Dashboard"
-        description="Your AI consulting workspace. Orchestrate discovery, scope, estimation, and proposals from one calm surface."
-        actions={
-          <Link to="/consultations">
-            <Button>
-              New consultation
-              <ArrowUpRight className="h-4 w-4" />
-            </Button>
-          </Link>
-        }
-      />
+    <div className="flex flex-col gap-8">
+      <DashboardHero />
 
-      <motion.div
-        variants={staggerContainer}
-        initial="hidden"
-        animate="visible"
-        className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
+      <DashboardSection delay={0.1}>
+        <StatsGrid />
+      </DashboardSection>
+
+      <DashboardSection
+        title="Recent Consultations"
+        description="Your latest discovery pipelines."
+        delay={0.18}
       >
-        {highlights.map((item) => {
-          const Icon = item.icon;
-          return (
-            <motion.div key={item.href} variants={staggerItem}>
-              <Link to={item.href} className="block h-full">
-                <Card className="h-full">
-                  <CardHeader>
-                    <div className="asc-gradient-accent flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-sm shadow-accent/20">
-                      <Icon className="h-[18px] w-[18px]" />
-                    </div>
-                    <Badge variant="accent">Ready</Badge>
-                  </CardHeader>
-                  <CardTitle>{item.title}</CardTitle>
-                  <CardDescription>{item.description}</CardDescription>
-                </Card>
-              </Link>
-            </motion.div>
-          );
-        })}
-      </motion.div>
+        <RecentConsultationsTable />
+      </DashboardSection>
 
-      <Card className="mt-6" hover={false}>
-        <CardHeader>
-          <div>
-            <CardTitle>Pipeline overview</CardTitle>
-            <CardDescription>
-              Live metrics and consultation activity will appear here once APIs
-              are connected.
-            </CardDescription>
-          </div>
-        </CardHeader>
-        <div className="grid gap-3 sm:grid-cols-3">
-          {["Active consultations", "Features detected", "Proposals drafted"].map(
-            (label) => (
-              <div
-                key={label}
-                className="rounded-xl border border-border bg-surface-muted px-4 py-5"
-              >
-                <p className="text-xs font-medium tracking-wide text-muted uppercase">
-                  {label}
-                </p>
-                <p className="mt-2 text-3xl font-semibold tracking-tight">—</p>
-              </div>
-            ),
-          )}
-        </div>
-      </Card>
+      <DashboardSection title="Quick Actions" delay={0.26}>
+        <QuickActions />
+      </DashboardSection>
+
+      <DashboardSection title="Activity" delay={0.34}>
+        <ActivitySection />
+      </DashboardSection>
     </div>
   );
 }

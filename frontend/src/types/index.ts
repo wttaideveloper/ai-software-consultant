@@ -7,3 +7,4 @@ export type NavItem = {
 export type ThemeMode = "light" | "dark";
 
 export * from "./auth";
+export * from "./consultation";
