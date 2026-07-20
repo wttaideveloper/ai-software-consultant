@@ -5,11 +5,12 @@ import { fieldError } from "@/utils/motion";
 
 type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   label?: string;
+  hint?: string;
   error?: string;
 };
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className, label, error, id, ...props }, ref) => {
+  ({ className, label, hint, error, id, ...props }, ref) => {
     const textareaId = id ?? props.name;
 
     return (
@@ -43,6 +44,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             </motion.span>
           ) : null}
         </AnimatePresence>
+        {!error && hint ? <span className="text-xs text-muted">{hint}</span> : null}
       </label>
     );
   },
