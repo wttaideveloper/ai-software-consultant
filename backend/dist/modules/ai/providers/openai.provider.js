@@ -100,17 +100,32 @@ function mapOpenAIError(error) {
 }
 class OpenAIProvider {
     name = ai_constants_js_1.AI_PROVIDERS.OPENAI;
-    client;
+    injectedClient;
+    lazyClient;
     constructor(client) {
         if (!env_js_1.config.OPENAI_API_KEY) {
             logger_js_1.logger.warn("OPENAI_API_KEY is not configured");
         }
-        this.client =
-            client ??
-                new openai_1.default({
-                    apiKey: env_js_1.config.OPENAI_API_KEY,
-                    timeout: env_js_1.config.OPENAI_TIMEOUT,
-                });
+        this.injectedClient = client;
+    }
+    /**
+     * Constructing `OpenAI` throws synchronously if no API key is set. Doing
+     * that eagerly in the constructor would crash the whole process at import
+     * time (openAIProvider is a module-level singleton). Deferring it here
+     * means it only ever runs once generateResponse() has already confirmed
+     * config.OPENAI_API_KEY is set.
+     */
+    getClient() {
+        if (this.injectedClient) {
+            return this.injectedClient;
+        }
+        if (!this.lazyClient) {
+            this.lazyClient = new openai_1.default({
+                apiKey: env_js_1.config.OPENAI_API_KEY,
+                timeout: env_js_1.config.OPENAI_TIMEOUT,
+            });
+        }
+        return this.lazyClient;
     }
     async generateResponse(request) {
         if (!env_js_1.config.OPENAI_API_KEY) {
@@ -119,7 +134,7 @@ class OpenAIProvider {
         const startedAt = Date.now();
         try {
             const payload = mapRequestToOpenAI(request);
-            const completion = await this.client.chat.completions.create(payload);
+            const completion = await this.getClient().chat.completions.create(payload);
             const latencyMs = Date.now() - startedAt;
             const choice = completion.choices[0];
             const content = choice?.message?.content;

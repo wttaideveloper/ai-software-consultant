@@ -116,19 +116,37 @@ function mapOpenAIError(error: unknown): AppError {
 export class OpenAIProvider implements AIProvider {
   readonly name = AI_PROVIDERS.OPENAI;
 
-  private readonly client: OpenAI;
+  private readonly injectedClient: OpenAI | undefined;
+  private lazyClient: OpenAI | undefined;
 
   constructor(client?: OpenAI) {
     if (!config.OPENAI_API_KEY) {
       logger.warn("OPENAI_API_KEY is not configured");
     }
 
-    this.client =
-      client ??
-      new OpenAI({
+    this.injectedClient = client;
+  }
+
+  /**
+   * Constructing `OpenAI` throws synchronously if no API key is set. Doing
+   * that eagerly in the constructor would crash the whole process at import
+   * time (openAIProvider is a module-level singleton). Deferring it here
+   * means it only ever runs once generateResponse() has already confirmed
+   * config.OPENAI_API_KEY is set.
+   */
+  private getClient(): OpenAI {
+    if (this.injectedClient) {
+      return this.injectedClient;
+    }
+
+    if (!this.lazyClient) {
+      this.lazyClient = new OpenAI({
         apiKey: config.OPENAI_API_KEY,
         timeout: config.OPENAI_TIMEOUT,
       });
+    }
+
+    return this.lazyClient;
   }
 
   async generateResponse(request: AIRequest): Promise<AIResponse> {
@@ -143,7 +161,7 @@ export class OpenAIProvider implements AIProvider {
 
     try {
       const payload = mapRequestToOpenAI(request);
-      const completion = await this.client.chat.completions.create(payload);
+      const completion = await this.getClient().chat.completions.create(payload);
       const latencyMs = Date.now() - startedAt;
 
       const choice = completion.choices[0];
