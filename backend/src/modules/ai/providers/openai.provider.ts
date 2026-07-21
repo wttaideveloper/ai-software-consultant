@@ -14,6 +14,7 @@ import type {
   AIRequest,
   AIResponse,
 } from "../ai.types.js";
+import { PROMPT_TYPES } from "../../prompts/prompt.constants.js";
 
 function mapMessagesToOpenAI(
   request: AIRequest,
@@ -52,18 +53,97 @@ function mapMessagesToOpenAI(
   return mappedMessages;
 }
 
+const DISCOVERY_TOPIC_STATUS_ENUM = [
+  "complete",
+  "missing",
+  "not_applicable",
+] as const;
+const DISCOVERY_TOPIC_KEYS = [
+  // Group A
+  "projectOverview",
+  "businessGoals",
+  "targetUsers",
+  "applications",
+  "coreModules",
+  // Group B
+  "payment",
+  "notifications",
+  "authentication",
+  "adminPanel",
+  "integrations",
+  "reporting",
+  "search",
+  "fileUploads",
+  "locationMaps",
+  "thirdPartyApis",
+  // Group C
+  "timeline",
+  "budget",
+  "deployment",
+  "security",
+  "scalability",
+  "futureEnhancements",
+] as const;
+
+/**
+ * Mirrors chat.validation.ts's aiDiscoveryPayloadSchema (Zod) — keep both in
+ * sync. Structured Outputs (json_schema + strict) guarantees the model's
+ * response is not just valid JSON but matches this exact shape, which plain
+ * json_object mode does not guarantee. Deliberately has no discoveryComplete
+ * field — that decision is a coverage computation made in chat.service.ts,
+ * never the model's own self-assessment.
+ */
+const DISCOVERY_RESPONSE_JSON_SCHEMA = {
+  name: "discovery_response",
+  strict: true,
+  schema: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      reply: { type: "string" },
+      topics: {
+        type: "object",
+        additionalProperties: false,
+        properties: Object.fromEntries(
+          DISCOVERY_TOPIC_KEYS.map((key) => [
+            key,
+            { type: "string", enum: DISCOVERY_TOPIC_STATUS_ENUM },
+          ]),
+        ),
+        required: [...DISCOVERY_TOPIC_KEYS],
+      },
+      assumptions: { type: "array", items: { type: "string" } },
+    },
+    required: ["reply", "topics", "assumptions"],
+  },
+};
+
 function mapRequestToOpenAI(
   request: AIRequest,
 ): ChatCompletionCreateParamsNonStreaming {
   const modelName = request.model.name || config.OPENAI_DEFAULT_MODEL;
   const maxTokens = request.maxTokens ?? request.model.maxTokens;
   const temperature = request.temperature ?? request.model.temperature;
+  // Discovery-conversation replies are a structured JSON envelope; Structured
+  // Outputs guarantees the model's output matches that exact shape. Scoped
+  // to CONSULTATION only so every other prompt type's request payload is
+  // byte-identical to before this change.
+  const isDiscoveryConversation =
+    request.metadata?.["promptType"] === PROMPT_TYPES.CONSULTATION;
 
   return {
     model: modelName,
     messages: mapMessagesToOpenAI(request),
     ...(maxTokens !== undefined ? { max_tokens: maxTokens } : {}),
     ...(temperature !== undefined ? { temperature } : {}),
+    ...(isDiscoveryConversation
+      ? {
+          response_format: {
+            type: "json_schema" as const,
+            json_schema: DISCOVERY_RESPONSE_JSON_SCHEMA,
+          },
+        }
+      : {}),
   };
 }
 

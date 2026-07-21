@@ -9,6 +9,7 @@ import type {
   ConsultationPromptContext,
   ConversationPromptMessage,
   OrganizationPromptContext,
+  TemplateVariables,
 } from "../prompts/prompt.types.js";
 import { AI_PROVIDERS } from "./ai.constants.js";
 import { AIService } from "./ai.service.js";
@@ -25,6 +26,7 @@ export type GenerateConversationReplyInput = {
   maxTokens?: number;
   temperature?: number;
   metadata?: Record<string, unknown>;
+  variables?: TemplateVariables;
 };
 
 export class AIOrchestrator {
@@ -65,6 +67,7 @@ export class AIOrchestrator {
       conversationHistory: input.conversationHistory,
       maxTokens: input.maxTokens,
       temperature: input.temperature,
+      variables: input.variables,
       metadata: {
         consultationId: input.consultation.id,
         organizationId: input.organization.id,
