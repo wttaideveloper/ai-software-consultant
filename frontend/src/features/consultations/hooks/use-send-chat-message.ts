@@ -54,8 +54,11 @@ export function useSendChatMessage(consultationId: string) {
         return { optimisticId: retryMessageId };
       }
 
+      const optimisticId =
+        globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
       const optimisticMessage: OptimisticMessage = {
-        id: `optimistic-${crypto.randomUUID()}`,
+        id: `optimistic-${optimisticId}`,
         consultationId,
         organizationId,
         senderType: "user",
