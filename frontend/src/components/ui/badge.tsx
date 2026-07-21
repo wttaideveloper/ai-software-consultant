@@ -7,11 +7,11 @@ const variants: Record<BadgeVariant, string> = {
   default: "bg-surface-muted text-foreground-soft border-border",
   accent: "asc-gradient-subtle text-accent border-transparent",
   success:
-    "border-transparent bg-gradient-to-br from-success-subtle to-[#d4f0e6] text-success dark:to-[#1a4034]",
+    "border-transparent bg-gradient-to-br from-success-subtle to-[#cfefdd] text-success dark:to-[#123322]",
   warning:
-    "border-transparent bg-gradient-to-br from-warning-subtle to-[#f7e4c4] text-warning dark:to-[#423318]",
+    "border-transparent bg-gradient-to-br from-warning-subtle to-[#fce7c3] text-warning dark:to-[#3d2b0e]",
   danger:
-    "border-transparent bg-gradient-to-br from-danger-subtle to-[#f8d4d4] text-danger dark:to-[#4a2828]",
+    "border-transparent bg-gradient-to-br from-danger-subtle to-[#fbd5d5] text-danger dark:to-[#3d1414]",
 };
 
 type BadgeProps = HTMLAttributes<HTMLSpanElement> & {

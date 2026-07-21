@@ -17,12 +17,12 @@ export function Card({
 }: CardProps) {
   return (
     <motion.div
-      whileHover={hover ? { y: -2 } : undefined}
-      transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+      whileHover={hover ? { y: -3 } : undefined}
+      transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
       onClick={onClick}
       className={cn(
-        "asc-gradient-surface rounded-xl border border-border p-5",
-        hover && "transition-colors hover:border-accent/25",
+        "asc-gradient-surface rounded-2xl border border-border p-5 shadow-sm",
+        hover && "transition-all duration-200 hover:border-accent/30 hover:shadow-lg hover:shadow-accent/10",
         className,
       )}
     >

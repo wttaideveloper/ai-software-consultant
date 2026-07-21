@@ -2,71 +2,71 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Design tokens — light */
+/* Design tokens — light (on-brand, orange accent) */
 :root {
-  --bg-page: #f7f8fa;
+  --bg-page: #faf8fc;
   --bg-surface: #ffffff;
-  --bg-surface-muted: #f1f2f4;
-  --text-primary: #1a1d23;
-  --text-secondary: #5f6470;
-  --text-muted: #9599a3;
-  --border: #e4e6ea;
-  --border-strong: #d0d3d9;
+  --bg-surface-muted: #f2eaf9;
+  --text-primary: #1a0b2e;
+  --text-secondary: #4b3b63;
+  --text-muted: #8b7a9e;
+  --border: #e7def2;
+  --border-strong: #d6c7ea;
 
-  --accent: #2f6fe4;
-  --accent-hover: #2558b8;
-  --accent-subtle: #eaf1fd;
-  --accent-mid: #4f8ef0;
+  --accent: #ff5a3c;
+  --accent-hover: #e64526;
+  --accent-subtle: #ffede7;
+  --accent-mid: #ff3d68;
 
-  --success: #1d9e75;
-  --success-subtle: #e1f5ee;
-  --warning: #ba7517;
-  --warning-subtle: #faeeda;
-  --danger: #c0392b;
-  --danger-subtle: #fcebeb;
+  --success: #16a34a;
+  --success-subtle: #e8f9ee;
+  --warning: #d97706;
+  --warning-subtle: #fdf3e3;
+  --danger: #dc2626;
+  --danger-subtle: #fdecec;
 
-  /* Gradients — indigo / sky, modern SaaS */
-  --gradient-accent: linear-gradient(135deg, #2f6fe4 0%, #5b8ef5 50%, #3b9ae8 100%);
-  --gradient-accent-hover: linear-gradient(135deg, #2558b8 0%, #2f6fe4 50%, #2f86d4 100%);
-  --gradient-subtle: linear-gradient(135deg, #eaf1fd 0%, #e8f4fc 100%);
-  --gradient-surface: linear-gradient(180deg, #ffffff 0%, #f7f8fa 100%);
+  /* Gradients — Wisdom Tooth orange/pink brand accent */
+  --gradient-accent: linear-gradient(90deg, #ff6a3d 0%, #ff3d68 100%);
+  --gradient-accent-hover: linear-gradient(90deg, #e6512e 0%, #e6335a 100%);
+  --gradient-subtle: linear-gradient(135deg, #ffede7 0%, #fff0f4 100%);
+  --gradient-surface: linear-gradient(180deg, #ffffff 0%, #faf8fc 100%);
   --gradient-page:
-    radial-gradient(ellipse 80% 50% at 0% -20%, rgb(47 111 228 / 0.1), transparent),
-    radial-gradient(ellipse 60% 40% at 100% 0%, rgb(59 154 232 / 0.08), transparent),
-    radial-gradient(ellipse 50% 30% at 50% 100%, rgb(47 111 228 / 0.04), transparent);
+    radial-gradient(ellipse 80% 50% at 0% -20%, rgb(255 90 60 / 0.08), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 0%, rgb(255 61 104 / 0.06), transparent),
+    radial-gradient(ellipse 50% 30% at 50% 100%, rgb(255 90 60 / 0.03), transparent);
 }
 
-/* Design tokens — dark */
+/* Design tokens — dark (Wisdom Tooth Technologies brand) */
 .dark {
-  --bg-page: #14161a;
-  --bg-surface: #1c1f24;
-  --bg-surface-muted: #24272d;
-  --text-primary: #f1f2f4;
-  --text-secondary: #a3a7b0;
-  --text-muted: #7a7f8a;
-  --border: #2c2f36;
-  --border-strong: #3a3e47;
+  --bg-page: #16052d;
+  --bg-surface: #24133f;
+  --bg-surface-muted: #36215b;
+  --text-primary: #ffffff;
+  --text-secondary: #d6d6d6;
+  --text-muted: #9ca3af;
+  --border: rgb(255 255 255 / 0.08);
+  --border-strong: rgb(255 255 255 / 0.16);
 
-  --accent: #5b93f0;
-  --accent-hover: #7aa8f5;
-  --accent-subtle: #1e2f4d;
-  --accent-mid: #7aa8f5;
+  --accent: #ff5a3c;
+  --accent-hover: #ff3d68;
+  --accent-subtle: rgb(255 90 60 / 0.14);
+  --accent-mid: #ff6a3d;
 
-  --success: #2bb88a;
-  --success-subtle: #16352c;
-  --warning: #d4973a;
-  --warning-subtle: #3a2e16;
-  --danger: #e05548;
-  --danger-subtle: #3a1f1f;
+  --success: #22c55e;
+  --success-subtle: rgb(34 197 94 / 0.14);
+  --warning: #f5a623;
+  --warning-subtle: rgb(245 166 35 / 0.14);
+  --danger: #ef4444;
+  --danger-subtle: rgb(239 68 68 / 0.14);
 
-  --gradient-accent: linear-gradient(135deg, #3d7ae8 0%, #5b93f0 50%, #4aa3e8 100%);
-  --gradient-accent-hover: linear-gradient(135deg, #5b93f0 0%, #7aa8f5 50%, #6bb4f0 100%);
-  --gradient-subtle: linear-gradient(135deg, #1e2f4d 0%, #1a3348 100%);
-  --gradient-surface: linear-gradient(180deg, #1c1f24 0%, #181b20 100%);
+  --gradient-accent: linear-gradient(90deg, #ff6a3d 0%, #ff3d68 100%);
+  --gradient-accent-hover: linear-gradient(90deg, #ff7d52 0%, #ff5580 100%);
+  --gradient-subtle: linear-gradient(135deg, rgb(255 106 61 / 0.16) 0%, rgb(255 61 104 / 0.12) 100%);
+  --gradient-surface: linear-gradient(180deg, #2d184e 0%, #24133f 100%);
   --gradient-page:
-    radial-gradient(ellipse 70% 45% at 0% -10%, rgb(91 147 240 / 0.14), transparent),
-    radial-gradient(ellipse 50% 35% at 100% 0%, rgb(74 163 232 / 0.1), transparent),
-    radial-gradient(ellipse 40% 25% at 50% 100%, rgb(91 147 240 / 0.06), transparent);
+    radial-gradient(ellipse 70% 45% at 0% -10%, rgb(255 90 60 / 0.14), transparent),
+    radial-gradient(ellipse 50% 35% at 100% 0%, rgb(255 61 104 / 0.1), transparent),
+    radial-gradient(ellipse 60% 40% at 50% 100%, rgb(45 24 78 / 0.6), transparent);
 }
 
 @theme {
@@ -96,7 +96,7 @@
   --color-success: var(--success);
   --color-success-subtle: var(--success-subtle);
 
-  --radius-ui: 0.75rem;
+  --radius-ui: 1rem;
 }
 
 @layer base {
