@@ -1,0 +1,14 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.featuresRouter = exports.consultationFeaturesRouter = void 0;
+const express_1 = require("express");
+const auth_middleware_js_1 = require("../auth/auth.middleware.js");
+const authorization_middleware_js_1 = require("../auth/authorization.middleware.js");
+const permissions_constants_js_1 = require("../auth/permissions.constants.js");
+const feature_detection_controller_js_1 = require("./feature-detection.controller.js");
+exports.consultationFeaturesRouter = (0, express_1.Router)({ mergeParams: true });
+exports.featuresRouter = (0, express_1.Router)();
+exports.consultationFeaturesRouter.post("/detect", auth_middleware_js_1.authenticate, (0, authorization_middleware_js_1.authorize)(permissions_constants_js_1.PERMISSIONS.CONSULTATION_UPDATE), feature_detection_controller_js_1.featureDetectionController.detect);
+exports.consultationFeaturesRouter.get("/", auth_middleware_js_1.authenticate, (0, authorization_middleware_js_1.authorize)(permissions_constants_js_1.PERMISSIONS.CONSULTATION_READ), feature_detection_controller_js_1.featureDetectionController.list);
+exports.featuresRouter.patch("/:featureId", auth_middleware_js_1.authenticate, (0, authorization_middleware_js_1.authorize)(permissions_constants_js_1.PERMISSIONS.CONSULTATION_UPDATE), feature_detection_controller_js_1.featureDetectionController.update);
+exports.featuresRouter.delete("/:featureId", auth_middleware_js_1.authenticate, (0, authorization_middleware_js_1.authorize)(permissions_constants_js_1.PERMISSIONS.CONSULTATION_UPDATE), feature_detection_controller_js_1.featureDetectionController.remove);

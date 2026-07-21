@@ -1,0 +1,15 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.featureLibraryRouter = void 0;
+const express_1 = require("express");
+const auth_middleware_js_1 = require("../auth/auth.middleware.js");
+const authorization_middleware_js_1 = require("../auth/authorization.middleware.js");
+const permissions_constants_js_1 = require("../auth/permissions.constants.js");
+const feature_library_controller_js_1 = require("./feature-library.controller.js");
+exports.featureLibraryRouter = (0, express_1.Router)();
+exports.featureLibraryRouter.get("/", auth_middleware_js_1.authenticate, (0, authorization_middleware_js_1.authorize)(permissions_constants_js_1.PERMISSIONS.FEATURE_LIBRARY_READ), feature_library_controller_js_1.featureLibraryController.list);
+exports.featureLibraryRouter.post("/match", auth_middleware_js_1.authenticate, (0, authorization_middleware_js_1.authorize)(permissions_constants_js_1.PERMISSIONS.FEATURE_LIBRARY_READ), feature_library_controller_js_1.featureLibraryController.match);
+exports.featureLibraryRouter.get("/:id", auth_middleware_js_1.authenticate, (0, authorization_middleware_js_1.authorize)(permissions_constants_js_1.PERMISSIONS.FEATURE_LIBRARY_READ), feature_library_controller_js_1.featureLibraryController.getById);
+exports.featureLibraryRouter.post("/", auth_middleware_js_1.authenticate, (0, authorization_middleware_js_1.authorize)(permissions_constants_js_1.PERMISSIONS.FEATURE_LIBRARY_MANAGE), feature_library_controller_js_1.featureLibraryController.create);
+exports.featureLibraryRouter.patch("/:id", auth_middleware_js_1.authenticate, (0, authorization_middleware_js_1.authorize)(permissions_constants_js_1.PERMISSIONS.FEATURE_LIBRARY_MANAGE), feature_library_controller_js_1.featureLibraryController.update);
+exports.featureLibraryRouter.delete("/:id", auth_middleware_js_1.authenticate, (0, authorization_middleware_js_1.authorize)(permissions_constants_js_1.PERMISSIONS.FEATURE_LIBRARY_MANAGE), feature_library_controller_js_1.featureLibraryController.remove);

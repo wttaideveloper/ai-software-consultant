@@ -1,73 +1,59 @@
+import { motion } from "framer-motion";
 import { PageHeader } from "@/components/shared/page-header";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Tabs } from "@/components/ui/tabs";
-import { useThemeStore } from "@/store/theme-store";
+import { SectionError } from "@/components/shared/section-error";
+import { OrganizationSettingsSection } from "@/features/settings/components/organization-settings-section";
+import { SettingsSkeleton } from "@/features/settings/components/settings-skeleton";
+import { UserSettingsSection } from "@/features/settings/components/user-settings-section";
+import { useOrganizationSettings } from "@/features/settings/hooks/use-organization-settings";
+import { useUserSettings } from "@/features/settings/hooks/use-user-settings";
+import { staggerContainer } from "@/utils/motion";
 
 export function SettingsPage() {
-  const { theme, setTheme } = useThemeStore();
+  const {
+    data: organizationSettings,
+    isLoading: isLoadingOrg,
+    isError: isErrorOrg,
+    refetch: refetchOrg,
+  } = useOrganizationSettings();
+
+  const {
+    data: userSettings,
+    isLoading: isLoadingUser,
+    isError: isErrorUser,
+    refetch: refetchUser,
+  } = useUserSettings();
+
+  const isLoading = isLoadingOrg || isLoadingUser;
 
   return (
     <div>
       <PageHeader
         title="Settings"
-        description="Workspace preferences for appearance and consulting defaults. Profile and org APIs are not connected yet."
+        description="Manage your organization defaults and personal preferences."
       />
 
-      <Tabs
-        items={[
-          {
-            id: "appearance",
-            label: "Appearance",
-            content: (
-              <Card hover={false}>
-                <CardHeader>
-                  <div>
-                    <CardTitle>Theme</CardTitle>
-                    <CardDescription>
-                      Preference is stored locally and applied across the app.
-                    </CardDescription>
-                  </div>
-                  <Badge variant="accent">{theme}</Badge>
-                </CardHeader>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant={theme === "light" ? "primary" : "secondary"}
-                    onClick={() => setTheme("light")}
-                  >
-                    Light
-                  </Button>
-                  <Button
-                    variant={theme === "dark" ? "primary" : "secondary"}
-                    onClick={() => setTheme("dark")}
-                  >
-                    Dark
-                  </Button>
-                </div>
-              </Card>
-            ),
-          },
-          {
-            id: "workspace",
-            label: "Workspace",
-            content: (
-              <Card hover={false}>
-                <CardTitle>Workspace defaults</CardTitle>
-                <CardDescription className="mt-2">
-                  Organization branding, estimation defaults, and proposal
-                  templates will be configured here.
-                </CardDescription>
-              </Card>
-            ),
-          },
-        ]}
-      />
+      {isLoading ? (
+        <SettingsSkeleton />
+      ) : (
+        <motion.div
+          variants={staggerContainer}
+          initial="hidden"
+          animate="visible"
+          className="flex flex-col gap-6"
+        >
+          {isErrorOrg || !organizationSettings ? (
+            <SectionError message="Couldn't load organization settings." onRetry={refetchOrg} />
+          ) : (
+            <OrganizationSettingsSection settings={organizationSettings} />
+          )}
+
+          {isErrorUser || !userSettings ? (
+            <SectionError message="Couldn't load your settings." onRetry={refetchUser} />
+          ) : (
+            <UserSettingsSection settings={userSettings} />
+          )}
+        </motion.div>
+      )}
     </div>
   );
 }

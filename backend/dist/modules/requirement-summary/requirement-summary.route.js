@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.requirementSummaryRouter = void 0;
+const express_1 = require("express");
+const auth_middleware_js_1 = require("../auth/auth.middleware.js");
+const authorization_middleware_js_1 = require("../auth/authorization.middleware.js");
+const permissions_constants_js_1 = require("../auth/permissions.constants.js");
+const requirement_summary_controller_js_1 = require("./requirement-summary.controller.js");
+exports.requirementSummaryRouter = (0, express_1.Router)({ mergeParams: true });
+exports.requirementSummaryRouter.post("/generate", auth_middleware_js_1.authenticate, (0, authorization_middleware_js_1.authorize)(permissions_constants_js_1.PERMISSIONS.CONSULTATION_UPDATE), requirement_summary_controller_js_1.requirementSummaryController.generate);
+exports.requirementSummaryRouter.get("/", auth_middleware_js_1.authenticate, (0, authorization_middleware_js_1.authorize)(permissions_constants_js_1.PERMISSIONS.CONSULTATION_READ), requirement_summary_controller_js_1.requirementSummaryController.get);
+exports.requirementSummaryRouter.patch("/", auth_middleware_js_1.authenticate, (0, authorization_middleware_js_1.authorize)(permissions_constants_js_1.PERMISSIONS.CONSULTATION_UPDATE), requirement_summary_controller_js_1.requirementSummaryController.update);

@@ -1,0 +1,14 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.messagesRouter = exports.consultationMessagesRouter = void 0;
+const express_1 = require("express");
+const auth_middleware_js_1 = require("../auth/auth.middleware.js");
+const authorization_middleware_js_1 = require("../auth/authorization.middleware.js");
+const permissions_constants_js_1 = require("../auth/permissions.constants.js");
+const conversations_controller_js_1 = require("./conversations.controller.js");
+exports.consultationMessagesRouter = (0, express_1.Router)({ mergeParams: true });
+exports.messagesRouter = (0, express_1.Router)();
+exports.consultationMessagesRouter.get("/", auth_middleware_js_1.authenticate, (0, authorization_middleware_js_1.authorize)(permissions_constants_js_1.PERMISSIONS.CONSULTATION_READ), conversations_controller_js_1.conversationsController.list);
+exports.consultationMessagesRouter.post("/", auth_middleware_js_1.authenticate, (0, authorization_middleware_js_1.authorize)(permissions_constants_js_1.PERMISSIONS.CONSULTATION_UPDATE), conversations_controller_js_1.conversationsController.create);
+exports.messagesRouter.patch("/:id", auth_middleware_js_1.authenticate, (0, authorization_middleware_js_1.authorize)(permissions_constants_js_1.PERMISSIONS.CONSULTATION_UPDATE), conversations_controller_js_1.conversationsController.update);
+exports.messagesRouter.delete("/:id", auth_middleware_js_1.authenticate, (0, authorization_middleware_js_1.authorize)(permissions_constants_js_1.PERMISSIONS.CONSULTATION_UPDATE), conversations_controller_js_1.conversationsController.remove);

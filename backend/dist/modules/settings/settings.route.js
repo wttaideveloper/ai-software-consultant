@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.settingsRouter = void 0;
+const express_1 = require("express");
+const auth_middleware_js_1 = require("../auth/auth.middleware.js");
+const authorization_middleware_js_1 = require("../auth/authorization.middleware.js");
+const permissions_constants_js_1 = require("../auth/permissions.constants.js");
+const settings_controller_js_1 = require("./settings.controller.js");
+exports.settingsRouter = (0, express_1.Router)();
+exports.settingsRouter.get("/organization", auth_middleware_js_1.authenticate, (0, authorization_middleware_js_1.authorize)(permissions_constants_js_1.PERMISSIONS.SETTINGS_READ), settings_controller_js_1.settingsController.getOrganizationSettings);
+exports.settingsRouter.patch("/organization", auth_middleware_js_1.authenticate, (0, authorization_middleware_js_1.authorize)(permissions_constants_js_1.PERMISSIONS.SETTINGS_UPDATE), settings_controller_js_1.settingsController.updateOrganizationSettings);
+exports.settingsRouter.get("/user", auth_middleware_js_1.authenticate, (0, authorization_middleware_js_1.authorize)(permissions_constants_js_1.PERMISSIONS.SETTINGS_READ), settings_controller_js_1.settingsController.getUserSettings);
+exports.settingsRouter.patch("/user", auth_middleware_js_1.authenticate, (0, authorization_middleware_js_1.authorize)(permissions_constants_js_1.PERMISSIONS.SETTINGS_UPDATE), settings_controller_js_1.settingsController.updateUserSettings);

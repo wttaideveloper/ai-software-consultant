@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.API_PREFIX = exports.TIMEZONE = exports.DATE_FORMAT = exports.DEFAULT_LANGUAGE = exports.MAX_PAGE_SIZE = exports.DEFAULT_PAGE_SIZE = exports.APP_VERSION = exports.APP_NAME = void 0;
+exports.APP_NAME = "AI Software Consultant";
+exports.APP_VERSION = "1.0.0";
+exports.DEFAULT_PAGE_SIZE = 10;
+exports.MAX_PAGE_SIZE = 100;
+exports.DEFAULT_LANGUAGE = "en";
+exports.DATE_FORMAT = "YYYY-MM-DD";
+exports.TIMEZONE = "UTC";
+exports.API_PREFIX = "/api";

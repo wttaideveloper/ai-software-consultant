@@ -20,6 +20,7 @@ import {
 import { featureLibraryRouter } from "./modules/feature-library/feature-library.route.js";
 import { proposalRouter } from "./modules/proposal/proposal.route.js";
 import { requirementSummaryRouter } from "./modules/requirement-summary/requirement-summary.route.js";
+import { settingsRouter } from "./modules/settings/settings.route.js";
 import { usersRouter } from "./modules/users/users.route.js";
 import { API_PREFIX } from "./shared/constants/app.js";
 
@@ -67,6 +68,7 @@ app.use(
 app.use(`${API_PREFIX}/features`, featuresRouter);
 app.use(`${API_PREFIX}/feature-library`, featureLibraryRouter);
 app.use(`${API_PREFIX}/messages`, messagesRouter);
+app.use(`${API_PREFIX}/settings`, settingsRouter);
 
 app.use(notFound);
 app.use(errorHandler);

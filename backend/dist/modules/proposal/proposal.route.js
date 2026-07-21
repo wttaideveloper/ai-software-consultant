@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.proposalRouter = void 0;
+const express_1 = require("express");
+const auth_middleware_js_1 = require("../auth/auth.middleware.js");
+const authorization_middleware_js_1 = require("../auth/authorization.middleware.js");
+const permissions_constants_js_1 = require("../auth/permissions.constants.js");
+const proposal_controller_js_1 = require("./proposal.controller.js");
+exports.proposalRouter = (0, express_1.Router)({ mergeParams: true });
+exports.proposalRouter.post("/generate", auth_middleware_js_1.authenticate, (0, authorization_middleware_js_1.authorize)(permissions_constants_js_1.PERMISSIONS.CONSULTATION_UPDATE), proposal_controller_js_1.proposalController.generate);
+exports.proposalRouter.get("/", auth_middleware_js_1.authenticate, (0, authorization_middleware_js_1.authorize)(permissions_constants_js_1.PERMISSIONS.CONSULTATION_READ), proposal_controller_js_1.proposalController.get);
+exports.proposalRouter.patch("/", auth_middleware_js_1.authenticate, (0, authorization_middleware_js_1.authorize)(permissions_constants_js_1.PERMISSIONS.CONSULTATION_UPDATE), proposal_controller_js_1.proposalController.update);

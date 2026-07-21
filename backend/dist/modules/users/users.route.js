@@ -1,0 +1,14 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.usersRouter = void 0;
+const express_1 = require("express");
+const auth_middleware_js_1 = require("../auth/auth.middleware.js");
+const authorization_middleware_js_1 = require("../auth/authorization.middleware.js");
+const permissions_constants_js_1 = require("../auth/permissions.constants.js");
+const users_controller_js_1 = require("./users.controller.js");
+exports.usersRouter = (0, express_1.Router)();
+exports.usersRouter.get("/", auth_middleware_js_1.authenticate, (0, authorization_middleware_js_1.authorize)(permissions_constants_js_1.PERMISSIONS.USER_READ), users_controller_js_1.usersController.list);
+exports.usersRouter.get("/:id", auth_middleware_js_1.authenticate, (0, authorization_middleware_js_1.authorize)(permissions_constants_js_1.PERMISSIONS.USER_READ), users_controller_js_1.usersController.getById);
+exports.usersRouter.post("/", auth_middleware_js_1.authenticate, (0, authorization_middleware_js_1.authorize)(permissions_constants_js_1.PERMISSIONS.USER_CREATE), users_controller_js_1.usersController.create);
+exports.usersRouter.patch("/:id", auth_middleware_js_1.authenticate, (0, authorization_middleware_js_1.authorize)(permissions_constants_js_1.PERMISSIONS.USER_UPDATE), users_controller_js_1.usersController.update);
+exports.usersRouter.delete("/:id", auth_middleware_js_1.authenticate, (0, authorization_middleware_js_1.authorize)(permissions_constants_js_1.PERMISSIONS.USER_DELETE), users_controller_js_1.usersController.remove);

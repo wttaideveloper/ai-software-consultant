@@ -1,0 +1,28 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.RESERVED_TEMPLATE_VARIABLES = exports.PROMPT_DEFAULTS = exports.PROMPT_TYPES = void 0;
+exports.PROMPT_TYPES = {
+    CONSULTATION: "CONSULTATION",
+    FEATURE_DETECTION: "FEATURE_DETECTION",
+    FEATURE_MATCHING: "FEATURE_MATCHING",
+    REQUIREMENT_SUMMARY: "REQUIREMENT_SUMMARY",
+    ESTIMATION: "ESTIMATION",
+    PROPOSAL: "PROPOSAL",
+    EMAIL: "EMAIL",
+    MEETING_SUMMARY: "MEETING_SUMMARY",
+};
+exports.PROMPT_DEFAULTS = {
+    MAX_CONVERSATION_HISTORY: 20,
+    DEFAULT_SYSTEM_ROLE: "system",
+};
+exports.RESERVED_TEMPLATE_VARIABLES = {
+    ORGANIZATION_NAME: "organizationName",
+    ORGANIZATION_ID: "organizationId",
+    CONSULTATION_TITLE: "consultationTitle",
+    CONSULTATION_ID: "consultationId",
+    INDUSTRY: "industry",
+    PROJECT_TYPE: "projectType",
+    BUDGET_RANGE: "budgetRange",
+    TIMELINE: "timeline",
+    USER_MESSAGE: "userMessage",
+};

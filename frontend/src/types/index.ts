@@ -14,4 +14,5 @@ export * from "./feature";
 export * from "./feature-library";
 export * from "./proposal";
 export * from "./requirement-summary";
+export * from "./settings";
 export * from "./user-management";
