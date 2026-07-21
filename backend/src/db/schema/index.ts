@@ -34,6 +34,11 @@ export type {
 } from "./project-estimations.js";
 export { projectProposals } from "./project-proposals.js";
 export { featureLibrary } from "./feature-library.js";
+export { structuredRequirements } from "./structured-requirements.js";
+export type {
+  RequirementFeature,
+  StructuredRequirement,
+} from "./structured-requirements.js";
 
 export {
   organizationsRelations,
@@ -55,4 +60,5 @@ export {
   projectEstimationsRelations,
   projectProposalsRelations,
   featureLibraryRelations,
+  structuredRequirementsRelations,
 } from "./relations.js";

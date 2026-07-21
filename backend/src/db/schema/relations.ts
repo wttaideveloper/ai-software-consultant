@@ -14,6 +14,7 @@ import { refreshTokens } from "./refresh-tokens.js";
 import { requirementSummaries } from "./requirement-summaries.js";
 import { rolePermissions } from "./role-permissions.js";
 import { roles } from "./roles.js";
+import { structuredRequirements } from "./structured-requirements.js";
 import { userRoles } from "./user-roles.js";
 import { userSettings } from "./user-settings.js";
 import { users } from "./users.js";
@@ -32,6 +33,7 @@ export const organizationsRelations = relations(organizations, ({ many }) => ({
   projectEstimations: many(projectEstimations),
   projectProposals: many(projectProposals),
   featureLibrary: many(featureLibrary),
+  structuredRequirements: many(structuredRequirements),
 }));
 
 export const usersRelations = relations(users, ({ one, many }) => ({
@@ -170,6 +172,7 @@ export const consultationsRelations = relations(
     detectedFeatures: many(detectedFeatures),
     projectEstimation: many(projectEstimations),
     projectProposal: many(projectProposals),
+    structuredRequirement: many(structuredRequirements),
   }),
 );
 
@@ -289,3 +292,17 @@ export const featureLibraryRelations = relations(featureLibrary, ({ one }) => ({
     references: [organizations.id],
   }),
 }));
+
+export const structuredRequirementsRelations = relations(
+  structuredRequirements,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [structuredRequirements.organizationId],
+      references: [organizations.id],
+    }),
+    consultation: one(consultations, {
+      fields: [structuredRequirements.consultationId],
+      references: [consultations.id],
+    }),
+  }),
+);

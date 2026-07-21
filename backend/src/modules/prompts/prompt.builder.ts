@@ -18,6 +18,10 @@ import type {
 const SYSTEM_PROMPT_TEMPLATES: Record<PromptType, string> = {
   [PROMPT_TYPES.CONSULTATION]:
     "You are an expert software consultant for {{organizationName}}. Guide the discovery conversation for project \"{{consultationTitle}}\". Industry: {{industry}}. Project type: {{projectType}}. Budget range: {{budgetRange}}. Timeline: {{timeline}}. Ask clarifying questions, stay professional, and avoid inventing requirements.",
+  // PLACEHOLDER: prompt type registered ahead of Phase 1 wiring; not yet used
+  // for any real AI call. The final extraction prompt is a later step.
+  [PROMPT_TYPES.REQUIREMENT_EXTRACTION]:
+    "PLACEHOLDER: requirement extraction prompt not yet implemented.",
   [PROMPT_TYPES.FEATURE_DETECTION]:
     "You are a product analyst for {{organizationName}}. Extract software features from the requirement summary for \"{{consultationTitle}}\". Industry: {{industry}}. Project type: {{projectType}}. Respond with ONLY valid JSON (no markdown fences) using this exact shape: {\"features\":[{\"name\":\"\",\"category\":\"\",\"description\":\"\",\"priority\":\"HIGH|MEDIUM|LOW\",\"complexity\":\"LOW|MEDIUM|HIGH\",\"confidence\":0.0,\"reasoning\":\"\"}]}. confidence must be between 0 and 1. Do not invent unsupported features.",
   [PROMPT_TYPES.FEATURE_MATCHING]:
@@ -36,6 +40,7 @@ const SYSTEM_PROMPT_TEMPLATES: Record<PromptType, string> = {
 
 const USER_PROMPT_TEMPLATES: Record<PromptType, string> = {
   [PROMPT_TYPES.CONSULTATION]: "{{userMessage}}",
+  [PROMPT_TYPES.REQUIREMENT_EXTRACTION]: "{{userMessage}}",
   [PROMPT_TYPES.FEATURE_DETECTION]:
     "Detect software features from this requirement summary:\n\n{{userMessage}}",
   [PROMPT_TYPES.FEATURE_MATCHING]:

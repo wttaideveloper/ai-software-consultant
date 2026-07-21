@@ -19,6 +19,7 @@ import {
 } from "./modules/feature-detection/feature-detection.route.js";
 import { featureLibraryRouter } from "./modules/feature-library/feature-library.route.js";
 import { proposalRouter } from "./modules/proposal/proposal.route.js";
+import { requirementExtractionRouter } from "./modules/requirement-extraction/requirement-extraction.route.js";
 import { requirementSummaryRouter } from "./modules/requirement-summary/requirement-summary.route.js";
 import { settingsRouter } from "./modules/settings/settings.route.js";
 import { usersRouter } from "./modules/users/users.route.js";
@@ -48,6 +49,10 @@ app.use(
 app.use(
   `${API_PREFIX}/consultations/:consultationId/chat`,
   chatRouter,
+);
+app.use(
+  `${API_PREFIX}/consultations/:consultationId/requirement-extraction`,
+  requirementExtractionRouter,
 );
 app.use(
   `${API_PREFIX}/consultations/:consultationId/requirement-summary`,

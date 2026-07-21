@@ -64,6 +64,13 @@
       "when": 1784328909995,
       "tag": "0008_feature_library",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1784644491742,
+      "tag": "0009_structured_requirements",
+      "breakpoints": true
     }
   ]
 }
