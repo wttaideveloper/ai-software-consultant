@@ -22,6 +22,7 @@ function loadEnv() {
         OPENAI_TIMEOUT: Number(process.env.OPENAI_TIMEOUT) || 60_000,
         APP_NAME: process.env.APP_NAME ?? "AI Software Consultant",
         APP_VERSION: process.env.APP_VERSION ?? "1.0.0",
+        DISCOVERY_MAX_CLARIFICATION_QUESTIONS: Number(process.env.DISCOVERY_MAX_CLARIFICATION_QUESTIONS) || 8,
     };
 }
 exports.config = loadEnv();

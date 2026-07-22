@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.featureLibraryRelations = exports.projectProposalsRelations = exports.projectEstimationsRelations = exports.detectedFeaturesRelations = exports.requirementSummariesRelations = exports.aiGenerationsRelations = exports.conversationMessagesRelations = exports.consultationsRelations = exports.auditLogsRelations = exports.userSettingsRelations = exports.organizationSettingsRelations = exports.verificationTokensRelations = exports.refreshTokensRelations = exports.userRolesRelations = exports.rolePermissionsRelations = exports.permissionsRelations = exports.rolesRelations = exports.usersRelations = exports.organizationsRelations = void 0;
+exports.structuredRequirementsRelations = exports.featureLibraryRelations = exports.projectProposalsRelations = exports.projectEstimationsRelations = exports.detectedFeaturesRelations = exports.requirementSummariesRelations = exports.aiGenerationsRelations = exports.conversationMessagesRelations = exports.consultationsRelations = exports.auditLogsRelations = exports.userSettingsRelations = exports.organizationSettingsRelations = exports.verificationTokensRelations = exports.refreshTokensRelations = exports.userRolesRelations = exports.rolePermissionsRelations = exports.permissionsRelations = exports.rolesRelations = exports.usersRelations = exports.organizationsRelations = void 0;
 const drizzle_orm_1 = require("drizzle-orm");
 const ai_generations_js_1 = require("./ai-generations.js");
 const audit_logs_js_1 = require("./audit-logs.js");
@@ -17,6 +17,7 @@ const refresh_tokens_js_1 = require("./refresh-tokens.js");
 const requirement_summaries_js_1 = require("./requirement-summaries.js");
 const role_permissions_js_1 = require("./role-permissions.js");
 const roles_js_1 = require("./roles.js");
+const structured_requirements_js_1 = require("./structured-requirements.js");
 const user_roles_js_1 = require("./user-roles.js");
 const user_settings_js_1 = require("./user-settings.js");
 const users_js_1 = require("./users.js");
@@ -34,6 +35,7 @@ exports.organizationsRelations = (0, drizzle_orm_1.relations)(organizations_js_1
     projectEstimations: many(project_estimations_js_1.projectEstimations),
     projectProposals: many(project_proposals_js_1.projectProposals),
     featureLibrary: many(feature_library_js_1.featureLibrary),
+    structuredRequirements: many(structured_requirements_js_1.structuredRequirements),
 }));
 exports.usersRelations = (0, drizzle_orm_1.relations)(users_js_1.users, ({ one, many }) => ({
     organization: one(organizations_js_1.organizations, {
@@ -150,6 +152,7 @@ exports.consultationsRelations = (0, drizzle_orm_1.relations)(consultations_js_1
     detectedFeatures: many(detected_features_js_1.detectedFeatures),
     projectEstimation: many(project_estimations_js_1.projectEstimations),
     projectProposal: many(project_proposals_js_1.projectProposals),
+    structuredRequirement: many(structured_requirements_js_1.structuredRequirements),
 }));
 exports.conversationMessagesRelations = (0, drizzle_orm_1.relations)(conversation_messages_js_1.conversationMessages, ({ one, many }) => ({
     consultation: one(consultations_js_1.consultations, {
@@ -244,5 +247,15 @@ exports.featureLibraryRelations = (0, drizzle_orm_1.relations)(feature_library_j
     organization: one(organizations_js_1.organizations, {
         fields: [feature_library_js_1.featureLibrary.organizationId],
         references: [organizations_js_1.organizations.id],
+    }),
+}));
+exports.structuredRequirementsRelations = (0, drizzle_orm_1.relations)(structured_requirements_js_1.structuredRequirements, ({ one }) => ({
+    organization: one(organizations_js_1.organizations, {
+        fields: [structured_requirements_js_1.structuredRequirements.organizationId],
+        references: [organizations_js_1.organizations.id],
+    }),
+    consultation: one(consultations_js_1.consultations, {
+        fields: [structured_requirements_js_1.structuredRequirements.consultationId],
+        references: [consultations_js_1.consultations.id],
     }),
 }));

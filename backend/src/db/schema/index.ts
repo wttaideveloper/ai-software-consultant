@@ -1,5 +1,7 @@
 export {
   aiGenerationStatusEnum,
+  clientLeadStatusEnum,
+  clientPreferredContactMethodEnum,
   featureComplexityEnum,
   featurePriorityEnum,
   messageSenderTypeEnum,
@@ -11,6 +13,12 @@ export {
 export { createdAt, deletedAt, updatedAt } from "./helpers.js";
 
 export { organizations } from "./organizations.js";
+export { clientLeads } from "./client-leads.js";
+export type {
+  ClientLeadEstimate,
+  ClientLeadEstimateBreakdownItem,
+  ClientLeadFeature,
+} from "./client-leads.js";
 export { users } from "./users.js";
 export { roles } from "./roles.js";
 export { permissions } from "./permissions.js";

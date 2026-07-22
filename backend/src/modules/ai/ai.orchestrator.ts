@@ -29,6 +29,22 @@ export type GenerateConversationReplyInput = {
   variables?: TemplateVariables;
 };
 
+/**
+ * Input for AI calls that have no organization/consultation to scope to
+ * (e.g. the public, unauthenticated Client Portal). `promptType` is required
+ * since there's no CONSULTATION default that makes sense outside that context.
+ */
+export type GenerateStandaloneReplyInput = {
+  promptType: PromptType;
+  conversationHistory: ConversationPromptMessage[];
+  userMessage: string;
+  model?: AIModel;
+  maxTokens?: number;
+  temperature?: number;
+  metadata?: Record<string, unknown>;
+  variables?: TemplateVariables;
+};
+
 export class AIOrchestrator {
   constructor(
     private readonly promptService: PromptService,
@@ -50,6 +66,31 @@ export class AIOrchestrator {
     );
 
     return finalizedResponse;
+  }
+
+  async generateStandaloneReply(
+    input: GenerateStandaloneReplyInput,
+  ): Promise<AIResponse> {
+    const model: AIModel = input.model ?? {
+      provider: AI_PROVIDERS.OPENAI,
+      name: config.OPENAI_DEFAULT_MODEL,
+    };
+
+    const request = this.promptService.buildAIRequest({
+      promptType: input.promptType,
+      model,
+      userMessage: input.userMessage,
+      conversationHistory: input.conversationHistory,
+      maxTokens: input.maxTokens,
+      temperature: input.temperature,
+      variables: input.variables,
+      metadata: {
+        promptType: input.promptType,
+        ...input.metadata,
+      },
+    });
+
+    return this.aiService.generateResponse(request);
   }
 
   private buildRequest(input: GenerateConversationReplyInput): AIRequest {

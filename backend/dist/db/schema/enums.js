@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.proposalStatusEnum = exports.featureComplexityEnum = exports.featurePriorityEnum = exports.requirementSummaryGeneratedByEnum = exports.requirementSummaryStatusEnum = exports.aiGenerationStatusEnum = exports.messageSenderTypeEnum = exports.verificationTokenTypeEnum = void 0;
+exports.clientPreferredContactMethodEnum = exports.clientLeadStatusEnum = exports.proposalStatusEnum = exports.featureComplexityEnum = exports.featurePriorityEnum = exports.requirementSummaryGeneratedByEnum = exports.requirementSummaryStatusEnum = exports.aiGenerationStatusEnum = exports.messageSenderTypeEnum = exports.verificationTokenTypeEnum = void 0;
 const pg_core_1 = require("drizzle-orm/pg-core");
 exports.verificationTokenTypeEnum = (0, pg_core_1.pgEnum)("verification_token_type", [
     "EMAIL_VERIFY",
@@ -33,3 +33,10 @@ exports.proposalStatusEnum = (0, pg_core_1.pgEnum)("proposal_status", [
     "REVIEWED",
     "APPROVED",
 ]);
+exports.clientLeadStatusEnum = (0, pg_core_1.pgEnum)("client_lead_status", [
+    "NEW",
+    "CONTACTED",
+    "CONVERTED",
+    "CLOSED",
+]);
+exports.clientPreferredContactMethodEnum = (0, pg_core_1.pgEnum)("client_preferred_contact_method", ["EMAIL", "PHONE", "WHATSAPP"]);

@@ -1,8 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.featureLibraryRelations = exports.projectProposalsRelations = exports.projectEstimationsRelations = exports.detectedFeaturesRelations = exports.requirementSummariesRelations = exports.aiGenerationsRelations = exports.conversationMessagesRelations = exports.consultationsRelations = exports.auditLogsRelations = exports.userSettingsRelations = exports.organizationSettingsRelations = exports.verificationTokensRelations = exports.refreshTokensRelations = exports.userRolesRelations = exports.rolePermissionsRelations = exports.permissionsRelations = exports.rolesRelations = exports.usersRelations = exports.organizationsRelations = exports.featureLibrary = exports.projectProposals = exports.projectEstimations = exports.detectedFeatures = exports.requirementSummaries = exports.aiGenerations = exports.conversationMessages = exports.consultations = exports.auditLogs = exports.userSettings = exports.organizationSettings = exports.verificationTokens = exports.refreshTokens = exports.userRoles = exports.rolePermissions = exports.permissions = exports.roles = exports.users = exports.organizations = exports.updatedAt = exports.deletedAt = exports.createdAt = exports.verificationTokenTypeEnum = exports.requirementSummaryStatusEnum = exports.requirementSummaryGeneratedByEnum = exports.proposalStatusEnum = exports.messageSenderTypeEnum = exports.featurePriorityEnum = exports.featureComplexityEnum = exports.aiGenerationStatusEnum = void 0;
+exports.detectedFeaturesRelations = exports.requirementSummariesRelations = exports.aiGenerationsRelations = exports.conversationMessagesRelations = exports.consultationsRelations = exports.auditLogsRelations = exports.userSettingsRelations = exports.organizationSettingsRelations = exports.verificationTokensRelations = exports.refreshTokensRelations = exports.userRolesRelations = exports.rolePermissionsRelations = exports.permissionsRelations = exports.rolesRelations = exports.usersRelations = exports.organizationsRelations = exports.structuredRequirements = exports.featureLibrary = exports.projectProposals = exports.projectEstimations = exports.detectedFeatures = exports.requirementSummaries = exports.aiGenerations = exports.conversationMessages = exports.consultations = exports.auditLogs = exports.userSettings = exports.organizationSettings = exports.verificationTokens = exports.refreshTokens = exports.userRoles = exports.rolePermissions = exports.permissions = exports.roles = exports.users = exports.clientLeads = exports.organizations = exports.updatedAt = exports.deletedAt = exports.createdAt = exports.verificationTokenTypeEnum = exports.requirementSummaryStatusEnum = exports.requirementSummaryGeneratedByEnum = exports.proposalStatusEnum = exports.messageSenderTypeEnum = exports.featurePriorityEnum = exports.featureComplexityEnum = exports.clientPreferredContactMethodEnum = exports.clientLeadStatusEnum = exports.aiGenerationStatusEnum = void 0;
+exports.structuredRequirementsRelations = exports.featureLibraryRelations = exports.projectProposalsRelations = exports.projectEstimationsRelations = void 0;
 var enums_js_1 = require("./enums.js");
 Object.defineProperty(exports, "aiGenerationStatusEnum", { enumerable: true, get: function () { return enums_js_1.aiGenerationStatusEnum; } });
+Object.defineProperty(exports, "clientLeadStatusEnum", { enumerable: true, get: function () { return enums_js_1.clientLeadStatusEnum; } });
+Object.defineProperty(exports, "clientPreferredContactMethodEnum", { enumerable: true, get: function () { return enums_js_1.clientPreferredContactMethodEnum; } });
 Object.defineProperty(exports, "featureComplexityEnum", { enumerable: true, get: function () { return enums_js_1.featureComplexityEnum; } });
 Object.defineProperty(exports, "featurePriorityEnum", { enumerable: true, get: function () { return enums_js_1.featurePriorityEnum; } });
 Object.defineProperty(exports, "messageSenderTypeEnum", { enumerable: true, get: function () { return enums_js_1.messageSenderTypeEnum; } });
@@ -16,6 +19,8 @@ Object.defineProperty(exports, "deletedAt", { enumerable: true, get: function ()
 Object.defineProperty(exports, "updatedAt", { enumerable: true, get: function () { return helpers_js_1.updatedAt; } });
 var organizations_js_1 = require("./organizations.js");
 Object.defineProperty(exports, "organizations", { enumerable: true, get: function () { return organizations_js_1.organizations; } });
+var client_leads_js_1 = require("./client-leads.js");
+Object.defineProperty(exports, "clientLeads", { enumerable: true, get: function () { return client_leads_js_1.clientLeads; } });
 var users_js_1 = require("./users.js");
 Object.defineProperty(exports, "users", { enumerable: true, get: function () { return users_js_1.users; } });
 var roles_js_1 = require("./roles.js");
@@ -52,6 +57,8 @@ var project_proposals_js_1 = require("./project-proposals.js");
 Object.defineProperty(exports, "projectProposals", { enumerable: true, get: function () { return project_proposals_js_1.projectProposals; } });
 var feature_library_js_1 = require("./feature-library.js");
 Object.defineProperty(exports, "featureLibrary", { enumerable: true, get: function () { return feature_library_js_1.featureLibrary; } });
+var structured_requirements_js_1 = require("./structured-requirements.js");
+Object.defineProperty(exports, "structuredRequirements", { enumerable: true, get: function () { return structured_requirements_js_1.structuredRequirements; } });
 var relations_js_1 = require("./relations.js");
 Object.defineProperty(exports, "organizationsRelations", { enumerable: true, get: function () { return relations_js_1.organizationsRelations; } });
 Object.defineProperty(exports, "usersRelations", { enumerable: true, get: function () { return relations_js_1.usersRelations; } });
@@ -72,3 +79,4 @@ Object.defineProperty(exports, "detectedFeaturesRelations", { enumerable: true, 
 Object.defineProperty(exports, "projectEstimationsRelations", { enumerable: true, get: function () { return relations_js_1.projectEstimationsRelations; } });
 Object.defineProperty(exports, "projectProposalsRelations", { enumerable: true, get: function () { return relations_js_1.projectProposalsRelations; } });
 Object.defineProperty(exports, "featureLibraryRelations", { enumerable: true, get: function () { return relations_js_1.featureLibraryRelations; } });
+Object.defineProperty(exports, "structuredRequirementsRelations", { enumerable: true, get: function () { return relations_js_1.structuredRequirementsRelations; } });

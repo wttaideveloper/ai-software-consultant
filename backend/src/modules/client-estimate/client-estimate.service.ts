@@ -1,0 +1,110 @@
+import { HTTP_STATUS } from "../../shared/constants/http-status.js";
+import { AppError } from "../../shared/errors/app-error.js";
+import { logger } from "../../shared/logger/logger.js";
+import { aiOrchestrator } from "../ai/ai.orchestrator.js";
+import { aiEstimationPayloadSchema } from "../estimation/estimation.validation.js";
+import { PROMPT_TYPES } from "../prompts/prompt.constants.js";
+import type { ClientEstimateResponseDto } from "./client-estimate.dto.js";
+import type { GenerateClientEstimateInput } from "./client-estimate.validation.js";
+
+/**
+ * Duplicated verbatim from the admin AI-generating services (see CLAUDE.md "Common
+ * Pitfalls" #6) rather than introduced as a new shared helper — consolidating it is a
+ * separate, explicitly out-of-scope decision. Everything else here is genuinely
+ * reused: PROMPT_TYPES.ESTIMATION is the admin module's own prompt (unmodified), and
+ * aiEstimationPayloadSchema is imported directly from estimation.validation.ts rather
+ * than redefined.
+ */
+function extractJsonPayload(content: string): unknown {
+  const trimmed = content.trim();
+
+  try {
+    return JSON.parse(trimmed) as unknown;
+  } catch {
+    const fencedMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (fencedMatch?.[1]) {
+      return JSON.parse(fencedMatch[1].trim()) as unknown;
+    }
+
+    const firstBrace = trimmed.indexOf("{");
+    const lastBrace = trimmed.lastIndexOf("}");
+    if (firstBrace >= 0 && lastBrace > firstBrace) {
+      return JSON.parse(trimmed.slice(firstBrace, lastBrace + 1)) as unknown;
+    }
+
+    throw new Error("Invalid JSON payload");
+  }
+}
+
+function buildFeaturesPrompt(features: GenerateClientEstimateInput["features"]): string {
+  return ["DETECTED FEATURES JSON:", JSON.stringify(features, null, 2)].join("\n");
+}
+
+function resolveSafeErrorMessage(error: unknown): string {
+  if (error instanceof AppError) {
+    return error.message;
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "Unknown error";
+}
+
+/**
+ * Backs the public, unauthenticated Client Portal's Estimate step. Same prompt and
+ * same AI response contract as the admin flow, fed the client's *edited* feature list
+ * instead of an admin-side detected_features table — no requirement summary is sent,
+ * matching the explicit "Input: features" contract; the feature list (name,
+ * description, priority, complexity per item) already carries enough context on its
+ * own. Stateless like the rest of the Client Portal backend (see
+ * client-requirements.service.ts for why).
+ */
+export class ClientEstimateService {
+  async generate(input: GenerateClientEstimateInput): Promise<ClientEstimateResponseDto> {
+    try {
+      const response = await aiOrchestrator.generateStandaloneReply({
+        promptType: PROMPT_TYPES.ESTIMATION,
+        conversationHistory: [],
+        userMessage: buildFeaturesPrompt(input.features),
+      });
+
+      let parsed: unknown;
+      try {
+        parsed = extractJsonPayload(response.message.content);
+      } catch {
+        throw new AppError(
+          "AI returned an invalid estimation format",
+          HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        );
+      }
+
+      const validated = aiEstimationPayloadSchema.safeParse(parsed);
+      if (!validated.success) {
+        throw new AppError(
+          "AI returned incomplete estimation data",
+          HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        );
+      }
+
+      return {
+        estimatedHours: validated.data.estimatedHours,
+        estimatedWeeks: validated.data.estimatedWeeks,
+        teamSize: validated.data.teamSize,
+        complexity: validated.data.complexity,
+        confidence: validated.data.confidence,
+        assumptions: validated.data.assumptions,
+        risks: validated.data.risks,
+        breakdown: validated.data.breakdown,
+      };
+    } catch (error) {
+      logger.error(`Client estimation failed: ${resolveSafeErrorMessage(error)}`);
+      throw error instanceof AppError
+        ? error
+        : new AppError("Failed to generate the estimate", HTTP_STATUS.INTERNAL_SERVER_ERROR);
+    }
+  }
+}
+
+export const clientEstimateService = new ClientEstimateService();

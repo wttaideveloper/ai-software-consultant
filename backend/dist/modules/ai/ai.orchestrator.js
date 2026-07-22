@@ -24,6 +24,26 @@ class AIOrchestrator {
         const finalizedResponse = await this.applyPostGenerationHooks(preparedRequest, response, input);
         return finalizedResponse;
     }
+    async generateStandaloneReply(input) {
+        const model = input.model ?? {
+            provider: ai_constants_js_1.AI_PROVIDERS.OPENAI,
+            name: env_js_1.config.OPENAI_DEFAULT_MODEL,
+        };
+        const request = this.promptService.buildAIRequest({
+            promptType: input.promptType,
+            model,
+            userMessage: input.userMessage,
+            conversationHistory: input.conversationHistory,
+            maxTokens: input.maxTokens,
+            temperature: input.temperature,
+            variables: input.variables,
+            metadata: {
+                promptType: input.promptType,
+                ...input.metadata,
+            },
+        });
+        return this.aiService.generateResponse(request);
+    }
     buildRequest(input) {
         const model = input.model ?? {
             provider: ai_constants_js_1.AI_PROVIDERS.OPENAI,
@@ -38,6 +58,7 @@ class AIOrchestrator {
             conversationHistory: input.conversationHistory,
             maxTokens: input.maxTokens,
             temperature: input.temperature,
+            variables: input.variables,
             metadata: {
                 consultationId: input.consultation.id,
                 organizationId: input.organization.id,

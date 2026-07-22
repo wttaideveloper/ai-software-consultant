@@ -44,3 +44,15 @@ export const proposalStatusEnum = pgEnum("proposal_status", [
   "REVIEWED",
   "APPROVED",
 ]);
+
+export const clientLeadStatusEnum = pgEnum("client_lead_status", [
+  "NEW",
+  "CONTACTED",
+  "CONVERTED",
+  "CLOSED",
+]);
+
+export const clientPreferredContactMethodEnum = pgEnum(
+  "client_preferred_contact_method",
+  ["EMAIL", "PHONE", "WHATSAPP"],
+);

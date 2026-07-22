@@ -7,6 +7,11 @@ import { errorHandler } from "./middleware/error-handler.js";
 import { notFound } from "./middleware/not-found.js";
 import { authRouter } from "./modules/auth/auth.route.js";
 import { chatRouter } from "./modules/chat/chat.route.js";
+import { clientEstimateRouter } from "./modules/client-estimate/client-estimate.route.js";
+import { clientFeaturesRouter } from "./modules/client-features/client-features.route.js";
+import { clientLeadRouter } from "./modules/client-lead/client-lead.route.js";
+import { clientRequirementSummaryRouter } from "./modules/client-requirement-summary/client-requirement-summary.route.js";
+import { clientRequirementsRouter } from "./modules/client-requirements/client-requirements.route.js";
 import { consultationsRouter } from "./modules/consultations/consultations.route.js";
 import {
   consultationMessagesRouter,
@@ -39,6 +44,11 @@ app.get("/api/health", (_req, res) => {
   });
 });
 
+app.use(`${API_PREFIX}/client/questions`, clientRequirementsRouter);
+app.use(`${API_PREFIX}/client/summary`, clientRequirementSummaryRouter);
+app.use(`${API_PREFIX}/client/features`, clientFeaturesRouter);
+app.use(`${API_PREFIX}/client/estimate`, clientEstimateRouter);
+app.use(`${API_PREFIX}/client/request-proposal`, clientLeadRouter);
 app.use(`${API_PREFIX}/auth`, authRouter);
 app.use(`${API_PREFIX}/users`, usersRouter);
 app.use(`${API_PREFIX}/consultations`, consultationsRouter);
