@@ -14,7 +14,7 @@ export function useRegister() {
     onSuccess: (session) => {
       setSession(session);
       toast.success(`${session.organization.name} is ready. Welcome aboard!`);
-      navigate("/", { replace: true });
+      navigate("/dashboard", { replace: true });
     },
     onError: (error) => {
       toast.error(getApiErrorMessage(error, "Could not create your account."));

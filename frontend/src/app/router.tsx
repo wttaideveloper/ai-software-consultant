@@ -4,7 +4,7 @@ import { PublicRoute } from "@/app/public-route";
 import { ClientDetectedFeaturesPage } from "@/client-portal/pages/client-detected-features-page";
 import { ClientEstimatePage } from "@/client-portal/pages/client-estimate-page";
 import { ClientGiftPage } from "@/client-portal/pages/client-gift-page";
-import { ClientHomePage } from "@/client-portal/pages/client-home-page";
+import { ClientLandingPage } from "@/client-portal/pages/client-landing-page";
 import { ClientRequestProposalPage } from "@/client-portal/pages/client-request-proposal-page";
 import { ClientRequirementSummaryPage } from "@/client-portal/pages/client-requirement-summary-page";
 import { RequirementsWizardIndexRedirect } from "@/client-portal/requirements-wizard/requirements-wizard-index-redirect";
@@ -31,7 +31,7 @@ export function AppRouter() {
   return (
     <Routes>
       {/* Public Client Portal — no authentication required, independent of the Admin Portal below. */}
-      <Route path="/portal" element={<ClientHomePage />} />
+      <Route path="/" element={<ClientLandingPage />} />
 
       <Route path="/requirements" element={<RequirementsWizardLayout />}>
         <Route index element={<RequirementsWizardIndexRedirect />} />
@@ -47,14 +47,16 @@ export function AppRouter() {
       <Route path="/request-proposal" element={<ClientRequestProposalPage />} />
       <Route path="/gift" element={<ClientGiftPage />} />
 
+      {/* Public Admin Login — dedicated URL, kept separate from the Client Portal above. */}
       <Route element={<PublicRoute />}>
-        <Route path="/login" element={<LoginPage />} />
+        <Route path="/admin-login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
       </Route>
 
+      {/* Protected Admin Portal — unchanged behavior, now rooted at /dashboard since / belongs to the Client Portal. */}
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
-          <Route index element={<DashboardPage />} />
+          <Route path="dashboard" element={<DashboardPage />} />
           <Route path="consultations" element={<ConsultationsPage />} />
           <Route path="chat" element={<ChatPage />} />
           <Route path="requirement-summary" element={<RequirementSummaryPage />} />

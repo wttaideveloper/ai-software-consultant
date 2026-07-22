@@ -31,7 +31,7 @@ export function Navbar() {
   const handleLogout = () => {
     setProfileOpen(false);
     clearSession();
-    navigate("/login", { replace: true });
+    navigate("/admin-login", { replace: true });
   };
 
   useEffect(() => {

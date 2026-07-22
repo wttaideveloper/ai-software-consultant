@@ -6,7 +6,7 @@ export function ClientPortalHeader() {
   return (
     <header className="border-b border-border bg-surface">
       <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-4 sm:px-6">
-        <Link to="/portal" className="flex items-center gap-2.5">
+        <Link to="/" className="flex items-center gap-2.5">
           <div className="asc-gradient-accent flex h-9 w-9 items-center justify-center rounded-xl text-white shadow-sm shadow-accent/25">
             <Hexagon className="h-[18px] w-[18px]" strokeWidth={2.25} />
           </div>
@@ -16,10 +16,10 @@ export function ClientPortalHeader() {
           </div>
         </Link>
         <Link
-          to="/login"
+          to="/admin-login"
           className="text-sm font-medium text-accent transition-colors hover:text-accent-hover"
         >
-          Staff sign in
+          Staff Login
         </Link>
       </div>
     </header>

@@ -57,7 +57,7 @@ export function Sidebar({
             <NavLink
               key={item.href}
               to={item.href}
-              end={item.href === "/"}
+              end={item.href === "/dashboard"}
               onClick={onNavigate}
               className={({ isActive }) =>
                 cn(

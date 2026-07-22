@@ -14,7 +14,7 @@ export function useLogin() {
     onSuccess: (session) => {
       setSession(session);
       toast.success(`Welcome back, ${session.user.fullName.split(" ")[0]}.`);
-      navigate("/", { replace: true });
+      navigate("/dashboard", { replace: true });
     },
     onError: (error) => {
       toast.error(getApiErrorMessage(error, "Invalid email or password."));

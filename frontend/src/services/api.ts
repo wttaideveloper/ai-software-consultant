@@ -34,8 +34,8 @@ api.interceptors.response.use(
       useAuthStore.getState().clearSession();
       toast.error("Your session has expired. Please log in again.");
 
-      if (window.location.pathname !== "/login") {
-        window.location.assign("/login");
+      if (window.location.pathname !== "/admin-login") {
+        window.location.assign("/admin-login");
       }
     }
 

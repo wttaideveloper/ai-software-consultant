@@ -19,7 +19,7 @@ export type AppNavItem = {
 };
 
 export const APP_NAV_ITEMS: AppNavItem[] = [
-  { label: "Dashboard", href: "/", icon: LayoutDashboard },
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Consultations", href: "/consultations", icon: FolderKanban },
   { label: "Requirement Summary", href: "/requirement-summary", icon: FileText },
   { label: "Detected Features", href: "/detected-features", icon: Sparkles },
