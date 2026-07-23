@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 import type { FeatureComplexity, FeaturePriority } from "@/types";
 
 /**
@@ -9,6 +9,37 @@ import type { FeatureComplexity, FeaturePriority } from "@/types";
  * expected to be tightened once real logic is implemented, same as `conversation`
  * was tightened once the AI discovery backend landed.
  */
+
+/**
+ * The only storage key this store ever touches. Exported so the clearing logic
+ * below (and any future consumer) references one constant instead of a literal.
+ */
+export const CLIENT_CONSULTATION_STORAGE_KEY = "asc-client-consultation";
+
+/**
+ * Persisted to **sessionStorage, not localStorage**, deliberately.
+ *
+ * A visitor mid-consultation must survive an accidental refresh, so the wizard
+ * state has to be persisted somewhere. But it must NOT survive the browser being
+ * closed: a public portal that resurrects last week's project on a fresh visit is
+ * both wrong and a privacy leak on a shared machine. sessionStorage is exactly
+ * that boundary — it outlives a reload, not the tab.
+ *
+ * On top of that, the key is removed outright when a consultation ends (lead
+ * submitted) or a new one is started — see clearClientConsultation().
+ *
+ * Scoped strictly to this key: `asc-auth`, `asc-theme` and `asc-proposal-drafts`
+ * are other features' data and are never touched here.
+ */
+const clientConsultationStorage = createJSONStorage(() => sessionStorage);
+
+/**
+ * Earlier builds persisted this same key to localStorage — that entry is why a
+ * completed consultation came back after a browser restart. Drop the orphan once
+ * on load so existing visitors get the fixed behaviour without clearing site
+ * data, and so no stale copy lingers. One key only; never localStorage.clear().
+ */
+localStorage.removeItem(CLIENT_CONSULTATION_STORAGE_KEY);
 
 export type ClientPreferredContactMethod = "EMAIL" | "PHONE" | "WHATSAPP";
 
@@ -214,7 +245,36 @@ export const useClientConsultationStore = create<
       reset: () => set(INITIAL_STATE),
     }),
     {
-      name: "asc-client-consultation",
+      name: CLIENT_CONSULTATION_STORAGE_KEY,
+      storage: clientConsultationStorage,
     },
   ),
 );
+
+/**
+ * Ends the current consultation: wipes the in-memory state *and* removes the
+ * persisted key, so nothing is left to rehydrate from.
+ *
+ * `reset()` alone only writes INITIAL_STATE back through the persist middleware,
+ * which leaves the key present — fine for the UI, but it keeps a (now empty)
+ * record of the visit around. Removing the key is the honest end state.
+ *
+ * A plain function rather than a hook so it can be called from mutation
+ * callbacks and other non-component code. For the common "clear and go to step
+ * one" case, use useStartNewConsultation().
+ */
+export function clearClientConsultation() {
+  useClientConsultationStore.getState().reset();
+  useClientConsultationStore.persist.clearStorage();
+}
+
+/**
+ * True when there is an in-progress consultation worth offering to resume.
+ * Checks the fields a visitor can only have filled by actually starting the
+ * flow — `currentStep` alone would be true after merely opening step one.
+ */
+export const selectHasConsultationProgress = (state: ClientConsultationState) =>
+  state.projectIdea.trim().length > 0 ||
+  state.conversation.length > 0 ||
+  state.summary !== null ||
+  state.features.length > 0;

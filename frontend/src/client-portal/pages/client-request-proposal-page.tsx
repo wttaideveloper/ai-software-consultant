@@ -9,8 +9,12 @@ import {
   type ContactFormValues,
 } from "@/client-portal/proposal-request/contact-form.schema";
 import { useCreateClientLead } from "@/client-portal/proposal-request/hooks/use-create-client-lead";
+import { useStartNewConsultation } from "@/client-portal/hooks/use-start-new-consultation";
 import { Button, EmptyState, Input, Select, Textarea } from "@/components/ui";
-import { useClientConsultationStore } from "@/store/client-consultation.store";
+import {
+  clearClientConsultation,
+  useClientConsultationStore,
+} from "@/store/client-consultation.store";
 
 const CONTACT_METHOD_OPTIONS = [
   { label: "Email", value: "EMAIL" },
@@ -36,6 +40,7 @@ export function ClientRequestProposalPage() {
   const setContactInfo = useClientConsultationStore((state) => state.setContactInfo);
 
   const createLead = useCreateClientLead();
+  const startNewConsultation = useStartNewConsultation();
 
   const {
     register,
@@ -81,7 +86,16 @@ export function ClientRequestProposalPage() {
         })),
         estimate: estimate!,
       },
-      { onSuccess: () => navigate("/gift") },
+      {
+        onSuccess: () => {
+          // The consultation is now the server's record, so the local copy has
+          // done its job — drop it before this page unmounts. Navigating first
+          // keeps both updates in one batch, so the guard below can't flash its
+          // empty state on the way out. Only the wizard's own key is removed.
+          navigate("/gift");
+          clearClientConsultation();
+        },
+      },
     );
   });
 
@@ -92,7 +106,7 @@ export function ClientRequestProposalPage() {
           icon={FileText}
           title="Nothing to request yet"
           description="Complete the requirements, features, and estimate steps first."
-          action={<Button onClick={() => navigate("/requirements/project-idea")}>Start over</Button>}
+          action={<Button onClick={startNewConsultation}>Start over</Button>}
         />
       </ClientLayout>
     );

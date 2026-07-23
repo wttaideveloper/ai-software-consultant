@@ -285,7 +285,16 @@ Every response: `{ success, message, data | errors, timestamp }` (`successRespon
 
 ### Global
 
-Zustand, two stores: `theme-store.ts` (`persist` to `localStorage` key `asc-theme`; `initializeTheme()` runs once in `main.tsx` before render to avoid a theme flash, falling back to `prefers-color-scheme`) and `ui-store.ts` (sidebar/drawer flags, not persisted). No auth store exists — the frontend has nowhere to keep a logged-in user or token.
+Zustand. Each persisted store owns exactly one storage key and never clears another's:
+
+| Store | Key | Storage | Notes |
+|---|---|---|---|
+| `store/theme-store.ts` | `asc-theme` | localStorage | `initializeTheme()` runs once in `main.tsx` before render to avoid a theme flash, falling back to `prefers-color-scheme`. |
+| `store/auth-store.ts` | `asc-auth` | local **or** session | "Remember me" picks the storage via `setAuthStoragePreference()`; the custom `dualStorage` writes one and removes the other. |
+| `store/client-consultation.store.ts` | `asc-client-consultation` | **sessionStorage** | Client Portal wizard state. Session-scoped on purpose: a refresh mid-consultation must not lose answers, but closing the browser must not resurrect the project on the next visit. Cleared outright by `clearClientConsultation()` on lead submit and on "start a new consultation" (`client-portal/hooks/use-start-new-consultation.ts`). |
+| `features/proposal-editor/proposal-draft.store.ts` | `asc-proposal-drafts` | localStorage | Admin lead-proposal drafts, keyed by lead id — intentionally durable across restarts. |
+
+`store/ui-store.ts` (sidebar/drawer flags) is not persisted. Never call `localStorage.clear()` — remove the specific key.
 
 ### Local
 

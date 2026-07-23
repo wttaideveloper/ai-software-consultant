@@ -13,7 +13,13 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ClientPortalHeader } from "@/client-portal/layouts/client-portal-header";
+import { useStartNewConsultation } from "@/client-portal/hooks/use-start-new-consultation";
+import { REQUIREMENTS_WIZARD_BASE_PATH } from "@/client-portal/requirements-wizard/requirements-wizard.config";
 import { Button } from "@/components/ui";
+import {
+  selectHasConsultationProgress,
+  useClientConsultationStore,
+} from "@/store/client-consultation.store";
 import {
   SCROLL_VIEWPORT,
   scrollReveal,
@@ -72,7 +78,17 @@ const TRUST_POINTS = ["No account required", "Free to use", "Takes ~5 minutes"];
 
 export function ClientLandingPage() {
   const navigate = useNavigate();
-  const startFlow = () => navigate("/requirements/project-idea");
+
+  /**
+   * An unfinished consultation only ever exists within the current browser
+   * session, and it is never resumed implicitly — the visitor is shown that it
+   * exists and chooses. Starting a new one discards the old one outright, which
+   * is the whole point of the affordance.
+   */
+  const hasProgress = useClientConsultationStore(selectHasConsultationProgress);
+  const startNewConsultation = useStartNewConsultation();
+  // The wizard index redirect picks up the last-viewed step.
+  const resumeConsultation = () => navigate(REQUIREMENTS_WIZARD_BASE_PATH);
 
   return (
     <div className="flex min-h-dvh flex-col bg-canvas">
@@ -132,10 +148,31 @@ export function ClientLandingPage() {
               variants={staggerItem}
               className="mt-9 flex flex-col items-center gap-4"
             >
-              <Button size="lg" onClick={startFlow} className="w-full sm:w-auto">
-                Start Free AI Consultation
-                <ArrowRight className="h-4 w-4" />
-              </Button>
+              {hasProgress ? (
+                <div className="flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row">
+                  <Button
+                    size="lg"
+                    onClick={resumeConsultation}
+                    className="w-full sm:w-auto"
+                  >
+                    Resume your consultation
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="secondary"
+                    onClick={startNewConsultation}
+                    className="w-full sm:w-auto"
+                  >
+                    Start a new one
+                  </Button>
+                </div>
+              ) : (
+                <Button size="lg" onClick={startNewConsultation} className="w-full sm:w-auto">
+                  Start Free AI Consultation
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              )}
 
               <ul className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
                 {TRUST_POINTS.map((point) => (
@@ -286,12 +323,14 @@ export function ClientLandingPage() {
               No account, no sales call — just answer a few questions and get your estimate.
             </p>
             <div className="relative mt-8">
+              {/* Non-destructive by design: the only button that discards an
+                  in-progress consultation is the explicit one in the hero. */}
               <Button
                 size="lg"
-                onClick={startFlow}
+                onClick={hasProgress ? resumeConsultation : startNewConsultation}
                 className="border-0 bg-white bg-none text-accent shadow-md hover:bg-white hover:text-accent hover:shadow-lg"
               >
-                Start Free AI Consultation
+                {hasProgress ? "Resume your consultation" : "Start Free AI Consultation"}
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </div>

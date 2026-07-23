@@ -1,7 +1,13 @@
 import { CheckCircle2, Mail } from "lucide-react";
 import { ClientLayout } from "@/client-portal/layouts/client-layout";
+import { useStartNewConsultation } from "@/client-portal/hooks/use-start-new-consultation";
+import { Button } from "@/components/ui";
 
 export function ClientGiftPage() {
+  // The submitted consultation was already cleared on success; this only puts an
+  // explicit "start again" affordance on the flow's dead end.
+  const startNewConsultation = useStartNewConsultation();
+
   return (
     <ClientLayout>
       <div className="flex flex-col items-center py-8 text-center">
@@ -30,6 +36,10 @@ export function ClientGiftPage() {
             </div>
           </div>
         </div>
+
+        <Button variant="secondary" className="mt-6" onClick={startNewConsultation}>
+          Start a new consultation
+        </Button>
       </div>
     </ClientLayout>
   );
