@@ -1,12 +1,10 @@
 import {
-  BookOpen,
-  Calculator,
-  FileText,
-  FolderKanban,
+  Coins,
+  FileSignature,
+  Inbox,
   LayoutDashboard,
   Library,
   Settings,
-  Sparkles,
   Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -24,32 +22,35 @@ export type AppNavGroup = {
 };
 
 /**
- * Grouped navigation. The nine destinations map onto three mental models —
- * where you work, the AI pipeline's stages in the order they run, and
- * workspace administration — so the sidebar scans as three short lists
- * instead of one flat nine-item column.
+ * Admin navigation.
+ *
+ * Client Requests is the primary workflow: leads arriving from the public
+ * Client Portal are the entry point to everything else.
+ *
+ * Consultations (and the rest of the old AI discovery pipeline — Chat,
+ * Requirement Summary, Detected Features, Estimations) are deliberately absent.
+ * Those modules and their routes still exist and remain reachable by URL; they
+ * are only unlinked from navigation.
  */
 export const APP_NAV_GROUPS: AppNavGroup[] = [
   {
     title: "Workspace",
     items: [
       { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { label: "Consultations", href: "/consultations", icon: FolderKanban },
+      { label: "Client Requests", href: "/client-requests", icon: Inbox },
     ],
   },
   {
-    title: "Discovery Pipeline",
+    title: "Delivery",
     items: [
-      { label: "Requirement Summary", href: "/requirement-summary", icon: FileText },
-      { label: "Detected Features", href: "/detected-features", icon: Sparkles },
-      { label: "Estimations", href: "/estimations", icon: Calculator },
-      { label: "Proposals", href: "/proposals", icon: BookOpen },
-    ],
-  },
-  {
-    title: "Manage",
-    items: [
+      { label: "Proposal Management", href: "/proposals", icon: FileSignature },
       { label: "Feature Library", href: "/feature-library", icon: Library },
+      { label: "Cost Settings", href: "/cost-settings", icon: Coins },
+    ],
+  },
+  {
+    title: "Administration",
+    items: [
       { label: "Users", href: "/users", icon: Users },
       { label: "Settings", href: "/settings", icon: Settings },
     ],

@@ -14,6 +14,7 @@ const auth_route_js_1 = require("./modules/auth/auth.route.js");
 const chat_route_js_1 = require("./modules/chat/chat.route.js");
 const client_estimate_route_js_1 = require("./modules/client-estimate/client-estimate.route.js");
 const client_features_route_js_1 = require("./modules/client-features/client-features.route.js");
+const client_lead_admin_route_js_1 = require("./modules/client-lead/client-lead.admin.route.js");
 const client_lead_route_js_1 = require("./modules/client-lead/client-lead.route.js");
 const client_requirement_summary_route_js_1 = require("./modules/client-requirement-summary/client-requirement-summary.route.js");
 const client_requirements_route_js_1 = require("./modules/client-requirements/client-requirements.route.js");
@@ -45,6 +46,10 @@ app.use(`${app_js_1.API_PREFIX}/client/features`, client_features_route_js_1.cli
 app.use(`${app_js_1.API_PREFIX}/client/estimate`, client_estimate_route_js_1.clientEstimateRouter);
 app.use(`${app_js_1.API_PREFIX}/client/request-proposal`, client_lead_route_js_1.clientLeadRouter);
 app.use(`${app_js_1.API_PREFIX}/auth`, auth_route_js_1.authRouter);
+// Admin lead inbox — same module as the public submit route above, but
+// authenticated. Mounted at a top-level path so it is not confused with the
+// public /client/* namespace.
+app.use(`${app_js_1.API_PREFIX}/client-leads`, client_lead_admin_route_js_1.clientLeadAdminRouter);
 app.use(`${app_js_1.API_PREFIX}/users`, users_route_js_1.usersRouter);
 app.use(`${app_js_1.API_PREFIX}/consultations`, consultations_route_js_1.consultationsRouter);
 app.use(`${app_js_1.API_PREFIX}/consultations/:consultationId/messages`, conversations_route_js_1.consultationMessagesRouter);

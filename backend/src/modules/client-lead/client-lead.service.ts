@@ -1,9 +1,45 @@
 import { HTTP_STATUS } from "../../shared/constants/http-status.js";
 import { AppError } from "../../shared/errors/app-error.js";
 import { logger } from "../../shared/logger/logger.js";
-import type { ClientLeadResponseDto } from "./client-lead.dto.js";
-import { clientLeadRepository } from "./client-lead.repository.js";
-import type { CreateClientLeadInput } from "./client-lead.validation.js";
+import type {
+  ClientLeadListItemDto,
+  ClientLeadResponseDto,
+  PaginatedClientLeadsDto,
+} from "./client-lead.dto.js";
+import {
+  clientLeadRepository,
+  type ClientLeadRecord,
+} from "./client-lead.repository.js";
+import type {
+  CreateClientLeadInput,
+  ListClientLeadsQuery,
+} from "./client-lead.validation.js";
+
+function toListItemDto(lead: ClientLeadRecord): ClientLeadListItemDto {
+  return {
+    id: lead.id,
+    name: lead.name,
+    email: lead.email,
+    company: lead.company,
+    phone: lead.phone,
+    consultationTime: lead.consultationTime,
+    platforms: lead.platforms,
+    otherPlatform: lead.otherPlatform,
+    status: lead.status,
+    createdAt: lead.createdAt,
+  };
+}
+
+/**
+ * A `dateTo` of 2026-07-23 arrives parsed as midnight, which would exclude every
+ * lead created during that day. Widen it to the final millisecond so the filter
+ * behaves the way a date picker implies (inclusive of the chosen day).
+ */
+function toEndOfDay(date: Date): Date {
+  const end = new Date(date);
+  end.setHours(23, 59, 59, 999);
+  return end;
+}
 
 /**
  * Pure persistence — no AI call here. Saves the visitor's contact details alongside
@@ -31,6 +67,37 @@ export class ClientLeadService {
         HTTP_STATUS.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  /**
+   * Admin lead inbox. Not organization-scoped — client_leads carries no
+   * organizationId (see the table definition), so any authenticated caller
+   * holding CRM_READ sees every lead in the system.
+   */
+  async list(query: ListClientLeadsQuery): Promise<PaginatedClientLeadsDto> {
+    const filters = {
+      search: query.search,
+      status: query.status,
+      dateFrom: query.dateFrom,
+      dateTo: query.dateTo ? toEndOfDay(query.dateTo) : undefined,
+      page: query.page,
+      pageSize: query.pageSize,
+    };
+
+    const [total, leads] = await Promise.all([
+      clientLeadRepository.countAll(filters),
+      clientLeadRepository.findMany(filters),
+    ]);
+
+    return {
+      items: leads.map(toListItemDto),
+      meta: {
+        page: query.page,
+        pageSize: query.pageSize,
+        total,
+        totalPages: total === 0 ? 0 : Math.ceil(total / query.pageSize),
+      },
+    };
   }
 }
 

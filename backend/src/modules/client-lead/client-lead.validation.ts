@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  DEFAULT_PAGE_SIZE,
+  MAX_PAGE_SIZE,
+} from "../../shared/constants/app.js";
+import { clientLeadStatusEnum } from "../../db/schema/enums.js";
 
 const featureInputSchema = z.object({
   name: z.string().trim().min(1),
@@ -46,3 +51,36 @@ export const createClientLeadSchema = z.object({
 });
 
 export type CreateClientLeadInput = z.infer<typeof createClientLeadSchema>;
+
+/**
+ * Admin-side lead inbox query. Follows the project-wide pagination contract
+ * (page / pageSize / search) and adds status + created-date filters.
+ *
+ * Status values are read straight off the pgEnum so this can never drift from
+ * the column definition. The enum currently has four members — there is no
+ * PROPOSAL_SENT state in the database.
+ */
+export const listClientLeadsQuerySchema = z
+  .object({
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(MAX_PAGE_SIZE)
+      .default(DEFAULT_PAGE_SIZE),
+    /** Matched against name, company and email. */
+    search: z.string().trim().optional(),
+    status: z.enum(clientLeadStatusEnum.enumValues).optional(),
+    /** Inclusive lower bound on createdAt. */
+    dateFrom: z.coerce.date().optional(),
+    /** Inclusive upper bound on createdAt — widened to end-of-day in the service. */
+    dateTo: z.coerce.date().optional(),
+  })
+  .refine(
+    (value) =>
+      !value.dateFrom || !value.dateTo || value.dateFrom <= value.dateTo,
+    { message: "dateFrom must be on or before dateTo", path: ["dateFrom"] },
+  );
+
+export type ListClientLeadsQuery = z.infer<typeof listClientLeadsQuerySchema>;

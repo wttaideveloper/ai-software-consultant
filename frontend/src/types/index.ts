@@ -8,6 +8,7 @@ export type ThemeMode = "light" | "dark";
 
 export * from "./auth";
 export * from "./chat";
+export * from "./client-lead";
 export * from "./consultation";
 export * from "./estimation";
 export * from "./feature";

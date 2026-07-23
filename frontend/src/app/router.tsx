@@ -85,6 +85,21 @@ const DashboardPage = lazy(() =>
     default: m.DashboardPage,
   })),
 );
+const ClientRequestsPage = lazy(() =>
+  import("@/features/client-requests/client-requests-page").then((m) => ({
+    default: m.ClientRequestsPage,
+  })),
+);
+const ClientRequestDetailsPage = lazy(() =>
+  import("@/features/client-requests/client-request-details-page").then((m) => ({
+    default: m.ClientRequestDetailsPage,
+  })),
+);
+const CostSettingsPage = lazy(() =>
+  import("@/features/cost-settings/cost-settings-page").then((m) => ({
+    default: m.CostSettingsPage,
+  })),
+);
 const ConsultationsPage = lazy(() =>
   import("@/features/consultations/consultations-page").then((m) => ({
     default: m.ConsultationsPage,
@@ -158,15 +173,30 @@ export function AppRouter() {
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
             <Route path="dashboard" element={<DashboardPage />} />
+
+            {/* Client Requests — the primary Admin workflow. */}
+            <Route path="client-requests" element={<ClientRequestsPage />} />
+            <Route
+              path="client-requests/:leadId"
+              element={<ClientRequestDetailsPage />}
+            />
+
+            <Route path="proposals" element={<ProposalPage />} />
+            <Route path="feature-library" element={<FeatureLibraryPage />} />
+            <Route path="cost-settings" element={<CostSettingsPage />} />
+            <Route path="users" element={<UsersPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+
+            {/*
+              Unlinked from the sidebar but intentionally still routable: the
+              Consultation module and the AI discovery pipeline are not deleted,
+              only removed from navigation.
+            */}
             <Route path="consultations" element={<ConsultationsPage />} />
             <Route path="chat" element={<ChatPage />} />
             <Route path="requirement-summary" element={<RequirementSummaryPage />} />
             <Route path="detected-features" element={<DetectedFeaturesPage />} />
             <Route path="estimations" element={<EstimationPage />} />
-            <Route path="proposals" element={<ProposalPage />} />
-            <Route path="feature-library" element={<FeatureLibraryPage />} />
-            <Route path="users" element={<UsersPage />} />
-            <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Route>
 
