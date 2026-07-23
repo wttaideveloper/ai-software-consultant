@@ -24,6 +24,8 @@ export type ClientLead = {
   consultationTime: string;
   platforms: string[];
   otherPlatform: string | null;
+  /** Free text from the wizard's first step — a lead has no title column, so this is its name. Truncate for display. */
+  projectIdea: string;
   status: ClientLeadStatus;
   createdAt: string;
 };
@@ -67,7 +69,6 @@ export type ClientLeadDetail = ClientLead & {
   country: string | null;
   preferredContactMethod: string;
   notes: string | null;
-  projectIdea: string;
   requirementSummary: string;
   features: ClientLeadFeature[];
   estimate: ClientLeadEstimate;

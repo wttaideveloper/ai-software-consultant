@@ -41,7 +41,7 @@ export function DashboardHero() {
         {greeting}, {firstName}.
       </h1>
       <p className="relative mt-3 max-w-2xl text-sm leading-relaxed text-muted text-pretty md:text-base">
-        Here&apos;s what&apos;s happening across your consulting pipeline today.
+        Here&apos;s what&apos;s happening across your client requests today.
       </p>
     </motion.div>
   );

@@ -27,6 +27,7 @@ function toListItemDto(lead: ClientLeadRecord): ClientLeadListItemDto {
     consultationTime: lead.consultationTime,
     platforms: lead.platforms,
     otherPlatform: lead.otherPlatform,
+    projectIdea: lead.projectIdea,
     status: lead.status,
     createdAt: lead.createdAt,
   };
@@ -40,7 +41,7 @@ function toDetailDto(lead: ClientLeadRecord): ClientLeadDetailDto {
     country: lead.country,
     preferredContactMethod: lead.preferredContactMethod,
     notes: lead.notes,
-    projectIdea: lead.projectIdea,
+    // projectIdea comes from toListItemDto — it is a list column now.
     requirementSummary: lead.requirementSummary,
     features: lead.features,
     estimate: lead.estimate,

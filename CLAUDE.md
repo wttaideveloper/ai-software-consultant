@@ -138,7 +138,7 @@ Backend: strict one-module-per-folder under `src/modules/<name>/` (see Backend A
 
 Three tiers:
 1. `components/ui/` — generic primitives: `Avatar, Badge, Button, Card/CardHeader/CardTitle/CardDescription, ConfirmDialog, Drawer, EmptyState, Input, Modal, Select, Skeleton/SkeletonCard, Spinner/PageLoader, Table/THead/TBody/TR/TH/TD, Tabs, Textarea`. Styled via `cn()` (`clsx` + `tailwind-merge`).
-2. `components/shared/` — `PageHeader` (title/description/actions row).
+2. `components/shared/` — app-specific but cross-feature: `PageHeader` (title/description/actions row), `SectionError` (failed-panel retry), `PaginationControls`, `MarkdownViewer`, `ProcessingOverlay`, `SplitWorkspaceLayout`, `WorkspaceSection`, and `Timeline` (presentational vertical event list — callers build the `TimelineEvent[]`; used by both the Lead Details activity timeline and the dashboard's Recent Activity).
 3. `features/<name>/` — page-level components composed from the above.
 
 ### Layouts
@@ -186,6 +186,12 @@ Animate `transform`/`opacity` only — they stay on the compositor. Any `layoutI
 - **Confirm-before-destructive-action**: `ConfirmDialog` wraps `Modal` with `tone: "danger" | "primary"` — use it instead of a native `confirm()`.
 - **Portal overlays**: `Modal`/`Drawer` both use `createPortal` + `AnimatePresence`, lock body scroll, and close on `Escape`; `Modal` also traps Tab and restores focus to the trigger. Follow this for new overlay components.
 - **Accessibility baseline**: a global `:focus-visible` ring is defined in `globals.css`; custom interactive elements that override `outline` must re-add `focus-visible:outline-*`. Hover-revealed controls need `focus-within:opacity-100` so they stay keyboard-reachable. `AppLayout` renders a skip-to-content link targeting `#main-content`.
+
+### Dashboard
+
+`/dashboard` is a **sales** dashboard for the client-request workflow (Client Portal → Client Request → Lead Details → Proposal → Lead Status). Every widget reads `client_leads` through the existing `GET /api/client-leads`; there is no stats endpoint. The five KPI counts come from `?status=X&pageSize=1` → `meta.total` (one row per request, `countAll()` does the work), and "Total" plus Recent Requests plus Recent Activity all share one `pageSize=5` query via `useRecentClientRequests()`. It reuses the Client Requests feature's `useClientLeads` hook, so both screens share a cache.
+
+The old consultation widgets (status totals, recent consultations, AI progress, Create Consultation, Open AI Chat) were removed with the discovery pipeline's demotion — don't reintroduce consultation data here. **Recent Activity shows lead-created events only**: `audit_logs` exists but has no writers, proposal export is client-side, and `updatedAt` cannot distinguish a status change from a summary edit — see `dashboard-activity.ts` before adding event types.
 
 ### Navigation
 

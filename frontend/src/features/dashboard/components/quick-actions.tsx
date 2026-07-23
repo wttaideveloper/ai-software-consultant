@@ -1,43 +1,35 @@
 import { motion } from "framer-motion";
-import { FolderPlus, Library, MessageSquareText, Users } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
+import { APP_NAV_ITEMS } from "@/layouts/nav-config";
 import { staggerContainer, staggerItem } from "@/utils/motion";
 
-type QuickAction = {
-  label: string;
-  description: string;
-  href: string;
-  icon: LucideIcon;
+/**
+ * The five destinations of the sales workflow, in workflow order.
+ *
+ * Labels and icons are looked up from APP_NAV_ITEMS by href rather than restated
+ * here, so a rename in nav-config can't leave the dashboard showing a stale name
+ * or a link the sidebar no longer has. Only the descriptions are local — the
+ * sidebar has no room for them.
+ */
+const QUICK_ACTION_DESCRIPTIONS: Record<string, string> = {
+  "/client-requests": "Review incoming leads",
+  "/proposals": "Build and send proposals",
+  "/feature-library": "Browse reusable feature templates",
+  "/users": "Manage your team and roles",
+  "/settings": "Organization and account preferences",
 };
 
-const QUICK_ACTIONS: QuickAction[] = [
-  {
-    label: "Create Consultation",
-    description: "Start a new discovery pipeline",
-    href: "/consultations",
-    icon: FolderPlus,
-  },
-  {
-    label: "Open AI Chat",
-    description: "Continue a discovery conversation",
-    href: "/chat",
-    icon: MessageSquareText,
-  },
-  {
-    label: "Feature Library",
-    description: "Browse reusable feature templates",
-    href: "/feature-library",
-    icon: Library,
-  },
-  {
-    label: "Users",
-    description: "Manage your team and roles",
-    href: "/users",
-    icon: Users,
-  },
-];
+const QUICK_ACTIONS = [
+  "/client-requests",
+  "/proposals",
+  "/feature-library",
+  "/users",
+  "/settings",
+].flatMap((href) => {
+  const navItem = APP_NAV_ITEMS.find((item) => item.href === href);
+  return navItem ? [{ ...navItem, description: QUICK_ACTION_DESCRIPTIONS[href] ?? "" }] : [];
+});
 
 export function QuickActions() {
   return (
@@ -45,7 +37,7 @@ export function QuickActions() {
       variants={staggerContainer}
       initial="hidden"
       animate="visible"
-      className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+      className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
     >
       {QUICK_ACTIONS.map((action) => {
         const Icon = action.icon;

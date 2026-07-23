@@ -19,9 +19,14 @@ export type PaginationMetaDto = {
 
 /**
  * Row shape for the Admin lead inbox. Deliberately excludes the heavy snapshot
- * columns (projectIdea, requirementSummary, features, estimate) — the table
- * never renders them, and a page of 100 leads would otherwise ship a large
- * amount of JSON the client discards. The Lead Details endpoint returns those.
+ * columns (requirementSummary, features, estimate) — the table never renders
+ * them, and a page of 100 leads would otherwise ship a large amount of JSON the
+ * client discards. The Lead Details endpoint returns those.
+ *
+ * `projectIdea` is the one snapshot column that is included: it is the only
+ * human-readable name a lead has (there is no title column), and both the lead
+ * inbox and the Sales Dashboard need a "Project" column. It is a short
+ * free-text field, unlike the three above, and callers truncate it for display.
  */
 export type ClientLeadListItemDto = {
   id: string;
@@ -32,6 +37,7 @@ export type ClientLeadListItemDto = {
   consultationTime: string;
   platforms: string[];
   otherPlatform: string | null;
+  projectIdea: string;
   status: ClientLeadStatus;
   createdAt: Date;
 };
@@ -55,7 +61,6 @@ export type ClientLeadDetailDto = ClientLeadListItemDto & {
   preferredContactMethod: string;
   notes: string | null;
 
-  projectIdea: string;
   requirementSummary: string;
   features: ClientLeadFeature[];
   estimate: ClientLeadEstimate;
