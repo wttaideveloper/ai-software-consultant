@@ -4,6 +4,7 @@ export {
   clientPreferredContactMethodEnum,
   featureComplexityEnum,
   featurePriorityEnum,
+  leadProposalStatusEnum,
   messageSenderTypeEnum,
   proposalStatusEnum,
   requirementSummaryGeneratedByEnum,
@@ -19,6 +20,8 @@ export type {
   ClientLeadEstimateBreakdownItem,
   ClientLeadFeature,
 } from "./client-leads.js";
+export { leadProposals } from "./lead-proposals.js";
+export type { LeadProposalContent } from "./lead-proposals.js";
 export { users } from "./users.js";
 export { roles } from "./roles.js";
 export { permissions } from "./permissions.js";

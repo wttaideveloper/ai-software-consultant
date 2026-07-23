@@ -22,6 +22,7 @@ export const PERMISSIONS = {
   PROPOSAL_CREATE: "PROPOSAL_CREATE",
   PROPOSAL_READ: "PROPOSAL_READ",
   PROPOSAL_UPDATE: "PROPOSAL_UPDATE",
+  PROPOSAL_DELETE: "PROPOSAL_DELETE",
 
   CRM_READ: "CRM_READ",
   CRM_CREATE: "CRM_CREATE",
@@ -133,6 +134,11 @@ export const SYSTEM_PERMISSION_DEFINITIONS: readonly SystemPermissionDefinition[
       code: PERMISSIONS.PROPOSAL_UPDATE,
       module: "proposal",
       description: "Update proposals",
+    },
+    {
+      code: PERMISSIONS.PROPOSAL_DELETE,
+      module: "proposal",
+      description: "Delete draft proposals",
     },
     {
       code: PERMISSIONS.CRM_READ,

@@ -149,8 +149,8 @@ export function buildProposalDraft(lead: ClientLeadDetail): LeadProposalDraft {
     // Column is a single newline-joined string; the estimate stores an array.
     assumptions: lead.estimate.assumptions.join("\n"),
     pricingNotes: buildCommercialSummary(lead),
-    status: "DRAFT",
-
+    // No status here — a new version's status is set by the server (DRAFT), and
+    // moving it is a lifecycle action, not part of the generated body.
     features: lead.features,
     teamStructure: buildTeamStructure(lead),
     risks: lead.estimate.risks,

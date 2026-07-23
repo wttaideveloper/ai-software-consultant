@@ -13,15 +13,17 @@ import { LeadDetailsSkeleton } from "@/features/client-requests/components/lead-
 import { LeadEstimateSection } from "@/features/client-requests/components/lead-estimate-section";
 import { LeadFeaturesSection } from "@/features/client-requests/components/lead-features-section";
 import { LeadNotesSection } from "@/features/client-requests/components/lead-notes-section";
-import { LeadProposalSection } from "@/features/client-requests/components/lead-proposal-section";
 import { LeadStatusModal } from "@/features/client-requests/components/lead-status-modal";
 import { LeadSummarySection } from "@/features/client-requests/components/lead-summary-section";
 import { useClientLead } from "@/features/client-requests/hooks/use-client-lead";
 import { useUpdateClientLead } from "@/features/client-requests/hooks/use-update-client-lead";
+import { LeadProposalVersionsSection } from "@/features/lead-proposals/components/lead-proposal-versions-section";
+import { useLeadProposalVersions } from "@/features/lead-proposals/hooks/use-lead-proposals";
 import { buildProposalDraft } from "@/features/proposal-editor/build-proposal-draft";
 import { DownloadProposalMenu } from "@/features/proposal-editor/components/download-proposal-menu";
 import { useExportProposal } from "@/features/proposal-editor/hooks/use-export-proposal";
-import { useProposalDraftStore } from "@/features/proposal-editor/proposal-draft.store";
+import { toDraft } from "@/features/proposal-editor/lead-proposal.types";
+import { leadProposalsService } from "@/services/lead-proposals.service";
 import type { ClientLeadFeature, ClientLeadStatus } from "@/types";
 import { staggerContainer } from "@/utils/motion";
 
@@ -42,9 +44,7 @@ export function ClientRequestDetailsPage() {
   const { data: lead, isLoading, isError, error, refetch } = useClientLead(leadId);
   const updateLead = useUpdateClientLead();
   const { runExport, exportingFormat } = useExportProposal();
-  const storedDraft = useProposalDraftStore((state) =>
-    leadId ? state.drafts[leadId] : undefined,
-  );
+  const { data: versions } = useLeadProposalVersions(leadId);
 
   const goBack = () => navigate(BACK_PATH);
 
@@ -116,6 +116,25 @@ export function ClientRequestDetailsPage() {
       successMessage: "Features saved.",
     });
 
+  /**
+   * The version a header export should produce: whatever is currently with the
+   * client, else the newest draft, else a prefill built from the request.
+   */
+  const exportHeadlineProposal = async (format: "pdf" | "docx") => {
+    const headline = versions?.summary.active ?? versions?.summary.latest ?? null;
+
+    if (!headline) {
+      await runExport(format, { draft: buildProposalDraft(lead), lead });
+      return;
+    }
+
+    const detail = await leadProposalsService.getById(headline.id);
+    await runExport(format, {
+      draft: toDraft(detail.title, detail.content),
+      lead,
+    });
+  };
+
   const saveStatus = (status: ClientLeadStatus) =>
     updateLead.mutate(
       {
@@ -168,17 +187,14 @@ export function ClientRequestDetailsPage() {
               Edit Status
             </Button>
             {/*
-              Exports the saved draft when one exists; otherwise generates a
-              fresh prefill on the fly, so an admin can download a usable
-              proposal without opening the editor first.
+              Header export is a shortcut for "give me the proposal for this
+              client": it exports the active version, falling back to the latest,
+              and generates a fresh prefill only when no version exists at all —
+              so an admin can download something usable without opening a version
+              first. Per-version export lives in the Proposal Versions section.
             */}
             <DownloadProposalMenu
-              onSelect={(format) =>
-                void runExport(format, {
-                  draft: storedDraft?.draft ?? buildProposalDraft(lead),
-                  lead,
-                })
-              }
+              onSelect={(format) => void exportHeadlineProposal(format)}
               exportingFormat={exportingFormat}
             />
             <Button
@@ -215,7 +231,7 @@ export function ClientRequestDetailsPage() {
 
         <LeadEstimateSection estimate={lead.estimate} />
 
-        <LeadProposalSection />
+        <LeadProposalVersionsSection lead={lead} />
 
         <LeadNotesSection />
 

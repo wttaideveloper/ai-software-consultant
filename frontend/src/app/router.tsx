@@ -95,6 +95,11 @@ const ProposalEditorPage = lazy(() =>
     default: m.ProposalEditorPage,
   })),
 );
+const LeadProposalLibraryPage = lazy(() =>
+  import("@/features/lead-proposals/lead-proposal-library-page").then((m) => ({
+    default: m.LeadProposalLibraryPage,
+  })),
+);
 const CostSettingsPage = lazy(() =>
   import("@/features/cost-settings/cost-settings-page").then((m) => ({
     default: m.CostSettingsPage,
@@ -184,12 +189,14 @@ export function AppRouter() {
               path="client-requests/:leadId"
               element={<ClientRequestDetailsPage />}
             />
+            {/* The editor addresses one VERSION: a lead has many proposals. */}
             <Route
-              path="client-requests/:leadId/proposal"
+              path="client-requests/:leadId/proposals/:proposalId"
               element={<ProposalEditorPage />}
             />
 
-            <Route path="proposals" element={<ProposalPage />} />
+            {/* Proposal Management is now the lead-proposal library. */}
+            <Route path="proposals" element={<LeadProposalLibraryPage />} />
             <Route path="feature-library" element={<FeatureLibraryPage />} />
             <Route path="cost-settings" element={<CostSettingsPage />} />
             <Route path="users" element={<UsersPage />} />
@@ -205,6 +212,13 @@ export function AppRouter() {
             <Route path="requirement-summary" element={<RequirementSummaryPage />} />
             <Route path="detected-features" element={<DetectedFeaturesPage />} />
             <Route path="estimations" element={<EstimationPage />} />
+            {/*
+              The consultation-based proposal screen, moved off /proposals when
+              that path became the lead-proposal library. It is the only UI for
+              the AI proposal generation endpoint, so it stays routable here
+              alongside its sibling pipeline screens rather than being deleted.
+            */}
+            <Route path="consultation-proposals" element={<ProposalPage />} />
           </Route>
         </Route>
 

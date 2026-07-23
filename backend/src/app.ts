@@ -25,6 +25,10 @@ import {
   featuresRouter,
 } from "./modules/feature-detection/feature-detection.route.js";
 import { featureLibraryRouter } from "./modules/feature-library/feature-library.route.js";
+import {
+  leadProposalRouter,
+  leadProposalVersionsRouter,
+} from "./modules/lead-proposal/lead-proposal.route.js";
 import { proposalRouter } from "./modules/proposal/proposal.route.js";
 import { requirementExtractionRouter } from "./modules/requirement-extraction/requirement-extraction.route.js";
 import { requirementSummaryRouter } from "./modules/requirement-summary/requirement-summary.route.js";
@@ -56,6 +60,15 @@ app.use(`${API_PREFIX}/auth`, authRouter);
 // authenticated. Mounted at a top-level path so it is not confused with the
 // public /client/* namespace.
 app.use(`${API_PREFIX}/client-leads`, clientLeadAdminRouter);
+// Proposal versions of one client request. Safe to mount after the lead router
+// above: its `/:id` routes match a single path segment, so they never swallow
+// `/client-leads/<id>/proposals`.
+app.use(
+  `${API_PREFIX}/client-leads/:leadId/proposals`,
+  leadProposalVersionsRouter,
+);
+// Proposal library + single-version operations.
+app.use(`${API_PREFIX}/lead-proposals`, leadProposalRouter);
 app.use(`${API_PREFIX}/users`, usersRouter);
 app.use(`${API_PREFIX}/consultations`, consultationsRouter);
 app.use(

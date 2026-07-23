@@ -25,6 +25,9 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { useClientLead } from "@/features/client-requests/hooks/use-client-lead";
+import { LeadProposalStatusActions } from "@/features/lead-proposals/components/lead-proposal-status-actions";
+import { LeadProposalStatusBadge } from "@/features/lead-proposals/components/lead-proposal-status-badge";
+import { useLeadProposal } from "@/features/lead-proposals/hooks/use-lead-proposals";
 import { DownloadProposalMenu } from "@/features/proposal-editor/components/download-proposal-menu";
 import { ListField } from "@/features/proposal-editor/components/list-field";
 import { MarkdownField } from "@/features/proposal-editor/components/markdown-field";
@@ -32,22 +35,37 @@ import { ProposalClientInfo } from "@/features/proposal-editor/components/propos
 import { ProposalFeaturesEditor } from "@/features/proposal-editor/components/proposal-features-editor";
 import { ProposalEditorSkeleton } from "@/features/proposal-editor/components/proposal-editor-skeleton";
 import { useExportProposal } from "@/features/proposal-editor/hooks/use-export-proposal";
-import { useLeadProposal } from "@/features/proposal-editor/hooks/use-lead-proposal";
+import { useProposalEditorDraft } from "@/features/proposal-editor/hooks/use-proposal-editor-draft";
 import { formatRelativeTime } from "@/utils/format";
 import { staggerContainer } from "@/utils/motion";
 
 /**
- * Proposal Editor — a single-page workspace for drafting a client proposal.
+ * Proposal Editor — a single-page workspace for one proposal VERSION.
  *
- * Prefilled from the lead's requirement summary, detected features and
- * estimate. Drafts are saved to this browser only; see proposal-draft.store.ts
- * for why server persistence is blocked without a schema change.
+ * Addressed by proposal id, not by lead: a lead has many versions and this page
+ * edits exactly one of them. The body is persisted server-side in
+ * `lead_proposals`; status moves through its own actions so saving prose can
+ * never change what stage the proposal is at.
+ *
+ * The section layout below is unchanged from the original editor — only its
+ * storage seam (useProposalEditorDraft) and version chrome are new.
  */
 export function ProposalEditorPage() {
-  const { leadId } = useParams<{ leadId: string }>();
+  const { leadId, proposalId } = useParams<{
+    leadId: string;
+    proposalId: string;
+  }>();
   const navigate = useNavigate();
 
-  const { data: lead, isLoading, isError, error, refetch } = useClientLead(leadId);
+  const { data: lead, isLoading: isLoadingLead, isError: isErrorLead, error: leadError, refetch } =
+    useClientLead(leadId);
+  const {
+    data: proposal,
+    isLoading: isLoadingProposal,
+    isError: isErrorProposal,
+    error: proposalError,
+  } = useLeadProposal(proposalId);
+
   const {
     draft,
     patch,
@@ -57,8 +75,12 @@ export function ProposalEditorPage() {
     savedAt,
     reset,
     regenerateFromLead,
-  } = useLeadProposal(lead);
+  } = useProposalEditorDraft(proposal, lead);
   const { runExport, exportingFormat } = useExportProposal();
+
+  const isLoading = isLoadingLead || isLoadingProposal;
+  const isError = isErrorLead || isErrorProposal;
+  const error = leadError ?? proposalError;
 
   const backToLead = () => navigate(`/client-requests/${leadId}`);
 
@@ -78,23 +100,25 @@ export function ProposalEditorPage() {
     return <ProposalEditorSkeleton />;
   }
 
+  // Covers both a missing lead and a missing/deleted version — either way the
+  // thing being edited doesn't exist, and the way back is the same.
   if (isNotFound) {
     return (
       <EmptyState
         icon={FileSearch}
-        title="Request not found"
-        description="This client request doesn't exist, so a proposal can't be drafted for it."
+        title="Proposal not found"
+        description="This proposal version doesn't exist, or it has been deleted."
         action={
-          <Button variant="secondary" onClick={() => navigate("/client-requests")}>
+          <Button variant="secondary" onClick={backToLead}>
             <ArrowLeft className="h-4 w-4" />
-            Back to Client Requests
+            Back to Lead Details
           </Button>
         }
       />
     );
   }
 
-  if (isError || !lead || !draft) {
+  if (isError || !lead || !proposal || !draft) {
     return (
       <div>
         <div className="mb-5">
@@ -104,7 +128,7 @@ export function ProposalEditorPage() {
           </Button>
         </div>
         <SectionError
-          message="Couldn't load this client request."
+          message="Couldn't load this proposal."
           onRetry={() => void refetch()}
         />
       </div>
@@ -129,15 +153,16 @@ export function ProposalEditorPage() {
             </Button>
             <div className="min-w-0">
               <p className="text-[11px] font-semibold tracking-wider text-accent-text uppercase">
-                Proposal Editor
+                Proposal Editor · Version {proposal.versionNumber}
               </p>
               <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <h1 className="truncate text-lg font-semibold tracking-tight text-foreground">
                   {lead.company ?? lead.name}
                 </h1>
                 <Badge variant="default" size="sm">
-                  {draft.status}
+                  V{proposal.versionNumber}
                 </Badge>
+                <LeadProposalStatusBadge status={proposal.status} />
                 {isDirty ? (
                   <Badge variant="warning" size="sm" dot>
                     Unsaved changes
@@ -152,6 +177,7 @@ export function ProposalEditorPage() {
           </div>
 
           <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <LeadProposalStatusActions proposal={proposal} />
             <Button
               variant="ghost"
               size="sm"
@@ -181,17 +207,18 @@ export function ProposalEditorPage() {
         </div>
       </div>
 
-      {/* Storage caveat stated up front, not buried — an admin should know
-          before investing effort that this draft is browser-local. */}
-      <div
-        role="note"
-        className="mb-5 rounded-xl border border-warning/25 bg-warning-subtle px-4 py-3 text-xs leading-relaxed text-warning"
-      >
-        Proposal drafts are saved to <strong>this browser only</strong> and are not
-        yet stored on the server — they aren't visible to teammates and will be lost
-        if you clear site data. Server persistence needs a database change, which is
-        out of scope for this sprint.
-      </div>
+      {/* Editing a version the client has already seen is allowed, but an admin
+          should know that is what they are doing before they type. */}
+      {proposal.status !== "DRAFT" ? (
+        <div
+          role="note"
+          className="mb-5 rounded-xl border border-warning/25 bg-warning-subtle px-4 py-3 text-xs leading-relaxed text-warning"
+        >
+          This version is marked <strong>{proposal.status.toLowerCase()}</strong>.
+          Editing it changes the record of what was shared with the client — create
+          a new version instead if you want to keep this one as it stands.
+        </div>
+      ) : null}
 
       <motion.div
         variants={staggerContainer}

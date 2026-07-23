@@ -45,6 +45,24 @@ export const proposalStatusEnum = pgEnum("proposal_status", [
   "APPROVED",
 ]);
 
+/**
+ * Lifecycle of one proposal version for a client lead.
+ *
+ * Deliberately a separate enum from `proposal_status` (DRAFT/REVIEWED/APPROVED),
+ * which belongs to the consultation-based `project_proposals` table: the two
+ * documents have different lifecycles and must be able to evolve independently.
+ * It is also unrelated to `client_lead_status` — a lead's sales stage and a
+ * proposal's state are independent axes and are never mixed.
+ */
+export const leadProposalStatusEnum = pgEnum("lead_proposal_status", [
+  "DRAFT",
+  "READY",
+  "SENT",
+  "ACCEPTED",
+  "REJECTED",
+  "ARCHIVED",
+]);
+
 export const clientLeadStatusEnum = pgEnum("client_lead_status", [
   "NEW",
   "CONTACTED",

@@ -13,6 +13,7 @@ export * from "./consultation";
 export * from "./estimation";
 export * from "./feature";
 export * from "./feature-library";
+export * from "./lead-proposal";
 export * from "./proposal";
 export * from "./requirement-summary";
 export * from "./settings";

@@ -20,6 +20,7 @@ exports.PERMISSIONS = {
     PROPOSAL_CREATE: "PROPOSAL_CREATE",
     PROPOSAL_READ: "PROPOSAL_READ",
     PROPOSAL_UPDATE: "PROPOSAL_UPDATE",
+    PROPOSAL_DELETE: "PROPOSAL_DELETE",
     CRM_READ: "CRM_READ",
     CRM_CREATE: "CRM_CREATE",
     CRM_UPDATE: "CRM_UPDATE",
@@ -117,6 +118,11 @@ exports.SYSTEM_PERMISSION_DEFINITIONS = [
         code: exports.PERMISSIONS.PROPOSAL_UPDATE,
         module: "proposal",
         description: "Update proposals",
+    },
+    {
+        code: exports.PERMISSIONS.PROPOSAL_DELETE,
+        module: "proposal",
+        description: "Delete draft proposals",
     },
     {
         code: exports.PERMISSIONS.CRM_READ,

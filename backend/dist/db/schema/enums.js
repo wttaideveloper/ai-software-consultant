@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.clientPreferredContactMethodEnum = exports.clientLeadStatusEnum = exports.proposalStatusEnum = exports.featureComplexityEnum = exports.featurePriorityEnum = exports.requirementSummaryGeneratedByEnum = exports.requirementSummaryStatusEnum = exports.aiGenerationStatusEnum = exports.messageSenderTypeEnum = exports.verificationTokenTypeEnum = void 0;
+exports.clientPreferredContactMethodEnum = exports.clientLeadStatusEnum = exports.leadProposalStatusEnum = exports.proposalStatusEnum = exports.featureComplexityEnum = exports.featurePriorityEnum = exports.requirementSummaryGeneratedByEnum = exports.requirementSummaryStatusEnum = exports.aiGenerationStatusEnum = exports.messageSenderTypeEnum = exports.verificationTokenTypeEnum = void 0;
 const pg_core_1 = require("drizzle-orm/pg-core");
 exports.verificationTokenTypeEnum = (0, pg_core_1.pgEnum)("verification_token_type", [
     "EMAIL_VERIFY",
@@ -32,6 +32,23 @@ exports.proposalStatusEnum = (0, pg_core_1.pgEnum)("proposal_status", [
     "DRAFT",
     "REVIEWED",
     "APPROVED",
+]);
+/**
+ * Lifecycle of one proposal version for a client lead.
+ *
+ * Deliberately a separate enum from `proposal_status` (DRAFT/REVIEWED/APPROVED),
+ * which belongs to the consultation-based `project_proposals` table: the two
+ * documents have different lifecycles and must be able to evolve independently.
+ * It is also unrelated to `client_lead_status` — a lead's sales stage and a
+ * proposal's state are independent axes and are never mixed.
+ */
+exports.leadProposalStatusEnum = (0, pg_core_1.pgEnum)("lead_proposal_status", [
+    "DRAFT",
+    "READY",
+    "SENT",
+    "ACCEPTED",
+    "REJECTED",
+    "ARCHIVED",
 ]);
 exports.clientLeadStatusEnum = (0, pg_core_1.pgEnum)("client_lead_status", [
     "NEW",

@@ -24,6 +24,7 @@ const conversations_route_js_1 = require("./modules/conversations/conversations.
 const estimation_route_js_1 = require("./modules/estimation/estimation.route.js");
 const feature_detection_route_js_1 = require("./modules/feature-detection/feature-detection.route.js");
 const feature_library_route_js_1 = require("./modules/feature-library/feature-library.route.js");
+const lead_proposal_route_js_1 = require("./modules/lead-proposal/lead-proposal.route.js");
 const proposal_route_js_1 = require("./modules/proposal/proposal.route.js");
 const requirement_extraction_route_js_1 = require("./modules/requirement-extraction/requirement-extraction.route.js");
 const requirement_summary_route_js_1 = require("./modules/requirement-summary/requirement-summary.route.js");
@@ -51,6 +52,12 @@ app.use(`${app_js_1.API_PREFIX}/auth`, auth_route_js_1.authRouter);
 // authenticated. Mounted at a top-level path so it is not confused with the
 // public /client/* namespace.
 app.use(`${app_js_1.API_PREFIX}/client-leads`, client_lead_admin_route_js_1.clientLeadAdminRouter);
+// Proposal versions of one client request. Safe to mount after the lead router
+// above: its `/:id` routes match a single path segment, so they never swallow
+// `/client-leads/<id>/proposals`.
+app.use(`${app_js_1.API_PREFIX}/client-leads/:leadId/proposals`, lead_proposal_route_js_1.leadProposalVersionsRouter);
+// Proposal library + single-version operations.
+app.use(`${app_js_1.API_PREFIX}/lead-proposals`, lead_proposal_route_js_1.leadProposalRouter);
 app.use(`${app_js_1.API_PREFIX}/users`, users_route_js_1.usersRouter);
 app.use(`${app_js_1.API_PREFIX}/consultations`, consultations_route_js_1.consultationsRouter);
 app.use(`${app_js_1.API_PREFIX}/consultations/:consultationId/messages`, conversations_route_js_1.consultationMessagesRouter);
