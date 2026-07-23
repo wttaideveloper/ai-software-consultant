@@ -1,9 +1,8 @@
 import { isAxiosError } from "axios";
 import { motion } from "framer-motion";
-import { ArrowLeft, Download, FileSearch, SlidersHorizontal } from "lucide-react";
+import { ArrowLeft, FileSearch, SlidersHorizontal } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { toast } from "sonner";
 import { SectionError } from "@/components/shared/section-error";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -19,6 +18,10 @@ import { LeadStatusModal } from "@/features/client-requests/components/lead-stat
 import { LeadSummarySection } from "@/features/client-requests/components/lead-summary-section";
 import { useClientLead } from "@/features/client-requests/hooks/use-client-lead";
 import { useUpdateClientLead } from "@/features/client-requests/hooks/use-update-client-lead";
+import { buildProposalDraft } from "@/features/proposal-editor/build-proposal-draft";
+import { DownloadProposalMenu } from "@/features/proposal-editor/components/download-proposal-menu";
+import { useExportProposal } from "@/features/proposal-editor/hooks/use-export-proposal";
+import { useProposalDraftStore } from "@/features/proposal-editor/proposal-draft.store";
 import type { ClientLeadFeature, ClientLeadStatus } from "@/types";
 import { staggerContainer } from "@/utils/motion";
 
@@ -38,6 +41,10 @@ export function ClientRequestDetailsPage() {
 
   const { data: lead, isLoading, isError, error, refetch } = useClientLead(leadId);
   const updateLead = useUpdateClientLead();
+  const { runExport, exportingFormat } = useExportProposal();
+  const storedDraft = useProposalDraftStore((state) =>
+    leadId ? state.drafts[leadId] : undefined,
+  );
 
   const goBack = () => navigate(BACK_PATH);
 
@@ -161,19 +168,19 @@ export function ClientRequestDetailsPage() {
               Edit Status
             </Button>
             {/*
-              Placeholder: kept enabled rather than disabled so it stays
-              keyboard-reachable, and says plainly that it isn't wired up.
+              Exports the saved draft when one exists; otherwise generates a
+              fresh prefill on the fly, so an admin can download a usable
+              proposal without opening the editor first.
             */}
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() =>
-                toast.info("Proposal download isn't available yet.")
+            <DownloadProposalMenu
+              onSelect={(format) =>
+                void runExport(format, {
+                  draft: storedDraft?.draft ?? buildProposalDraft(lead),
+                  lead,
+                })
               }
-            >
-              <Download className="h-3.5 w-3.5" />
-              Download Proposal
-            </Button>
+              exportingFormat={exportingFormat}
+            />
             <Button
               variant="ghost"
               size="sm"

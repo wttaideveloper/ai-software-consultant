@@ -25,11 +25,13 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { useClientLead } from "@/features/client-requests/hooks/use-client-lead";
+import { DownloadProposalMenu } from "@/features/proposal-editor/components/download-proposal-menu";
 import { ListField } from "@/features/proposal-editor/components/list-field";
 import { MarkdownField } from "@/features/proposal-editor/components/markdown-field";
 import { ProposalClientInfo } from "@/features/proposal-editor/components/proposal-client-info";
 import { ProposalFeaturesEditor } from "@/features/proposal-editor/components/proposal-features-editor";
 import { ProposalEditorSkeleton } from "@/features/proposal-editor/components/proposal-editor-skeleton";
+import { useExportProposal } from "@/features/proposal-editor/hooks/use-export-proposal";
 import { useLeadProposal } from "@/features/proposal-editor/hooks/use-lead-proposal";
 import { formatRelativeTime } from "@/utils/format";
 import { staggerContainer } from "@/utils/motion";
@@ -56,6 +58,7 @@ export function ProposalEditorPage() {
     reset,
     regenerateFromLead,
   } = useLeadProposal(lead);
+  const { runExport, exportingFormat } = useExportProposal();
 
   const backToLead = () => navigate(`/client-requests/${leadId}`);
 
@@ -164,6 +167,12 @@ export function ProposalEditorPage() {
                 Discard
               </Button>
             ) : null}
+            {/* Exports the current on-screen draft, saved or not — what the
+                admin sees is what lands in the document. */}
+            <DownloadProposalMenu
+              onSelect={(format) => void runExport(format, { draft, lead })}
+              exportingFormat={exportingFormat}
+            />
             <Button size="sm" onClick={save} isLoading={isSaving} disabled={!isDirty}>
               <Save className="h-3.5 w-3.5" />
               Save proposal
