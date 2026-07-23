@@ -4,22 +4,22 @@
 
 /* Design tokens — light */
 :root {
-  --bg-page: #F8FAFC;
-  --bg-surface: #ffffff;
-  --bg-surface-muted: #F3F0F9;
-  --text-primary: #111827;
-  --text-secondary: #374151;
-  --text-muted: #6B7280;
-  --border: #E5E7EB;
-  --border-strong: #D1D5DB;
+  --bg-page: #F2EEF9;
+  --bg-surface: #FAF8FD;
+  --bg-surface-muted: #EDE7F6;
+  --text-primary: #1C1033;
+  --text-secondary: #3D2E5C;
+  --text-muted: #7B6A99;
+  --border: #DDD5EE;
+  --border-strong: #C9BDE3;
 
   --accent: #351E61;
   --accent-hover: #2A1750;
-  --accent-subtle: #F0EBFF;
+  --accent-subtle: #EAE2F8;
   --accent-mid: #5B3FA6;
 
   --success: #16a34a;
-  --success-subtle: #f0fdf4;
+  --success-subtle: #ecfdf5;
   --warning: #d97706;
   --warning-subtle: #fffbeb;
   --danger: #dc2626;
@@ -27,26 +27,26 @@
 
   --gradient-accent: linear-gradient(135deg, #4B2D8F 0%, #351E61 100%);
   --gradient-accent-hover: linear-gradient(135deg, #351E61 0%, #2A1750 100%);
-  --gradient-subtle: #F0EBFF;
-  --gradient-surface: #ffffff;
+  --gradient-subtle: #EAE2F8;
+  --gradient-surface: #FAF8FD;
   --gradient-page: none;
 }
 
 /* Design tokens — dark */
 .dark {
-  --bg-page: #0D0B14;
-  --bg-surface: #16112A;
-  --bg-surface-muted: #221A3A;
-  --text-primary: #F9FAFB;
-  --text-secondary: #E5E7EB;
-  --text-muted: #9CA3AF;
-  --border: rgb(255 255 255 / 0.08);
-  --border-strong: rgb(255 255 255 / 0.16);
+  --bg-page: #1A1230;
+  --bg-surface: #231843;
+  --bg-surface-muted: #2E2155;
+  --text-primary: #EDE8F8;
+  --text-secondary: #C4B8E0;
+  --text-muted: #8B7AAD;
+  --border: rgb(180 160 230 / 0.12);
+  --border-strong: rgb(180 160 230 / 0.22);
 
-  --accent: #7C5CBF;
-  --accent-hover: #9B7FD4;
-  --accent-subtle: rgb(124 92 191 / 0.15);
-  --accent-mid: #9B7FD4;
+  --accent: #8B6FD4;
+  --accent-hover: #A68EE0;
+  --accent-subtle: rgb(139 111 212 / 0.18);
+  --accent-mid: #A68EE0;
 
   --success: #22c55e;
   --success-subtle: rgb(34 197 94 / 0.12);
@@ -55,10 +55,10 @@
   --danger: #ef4444;
   --danger-subtle: rgb(239 68 68 / 0.12);
 
-  --gradient-accent: linear-gradient(135deg, #7C5CBF 0%, #4B2D8F 100%);
-  --gradient-accent-hover: linear-gradient(135deg, #9B7FD4 0%, #7C5CBF 100%);
-  --gradient-subtle: rgb(124 92 191 / 0.15);
-  --gradient-surface: #16112A;
+  --gradient-accent: linear-gradient(135deg, #8B6FD4 0%, #5B3FA6 100%);
+  --gradient-accent-hover: linear-gradient(135deg, #A68EE0 0%, #8B6FD4 100%);
+  --gradient-subtle: rgb(139 111 212 / 0.18);
+  --gradient-surface: #231843;
   --gradient-page: none;
 }
 
