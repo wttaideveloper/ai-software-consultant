@@ -20,3 +20,22 @@ clientLeadAdminRouter.get(
   authorize(PERMISSIONS.CRM_READ),
   clientLeadController.list,
 );
+
+clientLeadAdminRouter.get(
+  "/:id",
+  authenticate,
+  authorize(PERMISSIONS.CRM_READ),
+  clientLeadController.getById,
+);
+
+/**
+ * Admin edits from the Lead Details Workspace. Uses the existing CRM_UPDATE
+ * permission — writing to a lead is a stronger action than reading one, so it
+ * is deliberately not folded into CRM_READ.
+ */
+clientLeadAdminRouter.patch(
+  "/:id",
+  authenticate,
+  authorize(PERMISSIONS.CRM_UPDATE),
+  clientLeadController.update,
+);

@@ -95,6 +95,11 @@ const ClientRequestDetailsPage = lazy(() =>
     default: m.ClientRequestDetailsPage,
   })),
 );
+const ProposalEditorPage = lazy(() =>
+  import("@/features/proposal-editor/proposal-editor-page").then((m) => ({
+    default: m.ProposalEditorPage,
+  })),
+);
 const CostSettingsPage = lazy(() =>
   import("@/features/cost-settings/cost-settings-page").then((m) => ({
     default: m.CostSettingsPage,
@@ -179,6 +184,10 @@ export function AppRouter() {
             <Route
               path="client-requests/:leadId"
               element={<ClientRequestDetailsPage />}
+            />
+            <Route
+              path="client-requests/:leadId/proposal"
+              element={<ProposalEditorPage />}
             />
 
             <Route path="proposals" element={<ProposalPage />} />

@@ -28,6 +28,59 @@ export type ClientLead = {
   createdAt: string;
 };
 
+export const FEATURE_PRIORITIES = ["HIGH", "MEDIUM", "LOW"] as const;
+export type ClientLeadFeaturePriority = (typeof FEATURE_PRIORITIES)[number];
+
+export const FEATURE_COMPLEXITIES = ["LOW", "MEDIUM", "HIGH"] as const;
+export type ClientLeadFeatureComplexity = (typeof FEATURE_COMPLEXITIES)[number];
+
+/** Snapshot of one feature as the client left it at submission time. */
+export type ClientLeadFeature = {
+  name: string;
+  category: string;
+  description: string;
+  priority: ClientLeadFeaturePriority;
+  complexity: ClientLeadFeatureComplexity;
+  included: boolean;
+};
+
+export type ClientLeadEstimateBreakdownItem = {
+  category: string;
+  hours: number;
+};
+
+export type ClientLeadEstimate = {
+  estimatedHours: number;
+  estimatedWeeks: number;
+  teamSize: number;
+  complexity: ClientLeadFeatureComplexity;
+  /** 0–1. Rendered as a percentage. */
+  confidence: number;
+  assumptions: string[];
+  risks: string[];
+  breakdown: ClientLeadEstimateBreakdownItem[];
+};
+
+/** Full lead returned by GET /api/client-leads/:id. */
+export type ClientLeadDetail = ClientLead & {
+  whatsapp: string | null;
+  country: string | null;
+  preferredContactMethod: string;
+  notes: string | null;
+  projectIdea: string;
+  requirementSummary: string;
+  features: ClientLeadFeature[];
+  estimate: ClientLeadEstimate;
+  updatedAt: string;
+};
+
+/** Only the three admin-editable fields; contact details and the estimate are immutable. */
+export type UpdateClientLeadPayload = {
+  status?: ClientLeadStatus;
+  requirementSummary?: string;
+  features?: ClientLeadFeature[];
+};
+
 export type ListClientLeadsParams = {
   page?: number;
   pageSize?: number;

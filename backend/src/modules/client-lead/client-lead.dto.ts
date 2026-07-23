@@ -1,3 +1,7 @@
+import type {
+  ClientLeadEstimate,
+  ClientLeadFeature,
+} from "../../db/schema/client-leads.js";
 import type { ClientLeadStatus } from "./client-lead.repository.js";
 
 export type ClientLeadResponseDto = {
@@ -35,4 +39,26 @@ export type ClientLeadListItemDto = {
 export type PaginatedClientLeadsDto = {
   items: ClientLeadListItemDto[];
   meta: PaginationMetaDto;
+};
+
+/**
+ * Full lead for the Lead Details Workspace — the list row plus the snapshot
+ * columns the workspace renders.
+ *
+ * Extends ClientLeadListItemDto rather than restating its ten fields, and the
+ * feature/estimate shapes are imported from the table definition so this DTO
+ * can never drift from the jsonb columns it describes.
+ */
+export type ClientLeadDetailDto = ClientLeadListItemDto & {
+  whatsapp: string | null;
+  country: string | null;
+  preferredContactMethod: string;
+  notes: string | null;
+
+  projectIdea: string;
+  requirementSummary: string;
+  features: ClientLeadFeature[];
+  estimate: ClientLeadEstimate;
+
+  updatedAt: Date;
 };

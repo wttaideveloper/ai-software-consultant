@@ -84,3 +84,35 @@ export const listClientLeadsQuerySchema = z
   );
 
 export type ListClientLeadsQuery = z.infer<typeof listClientLeadsQuerySchema>;
+
+export const clientLeadIdParamsSchema = z.object({
+  id: z.string().uuid("Client request id must be a valid UUID"),
+});
+
+/**
+ * Admin edits to a lead. Scoped to exactly the three things the Lead Details
+ * Workspace can change — status, the requirement summary, and the feature list.
+ *
+ * Contact details and the estimate snapshot are deliberately not editable: the
+ * estimate is a record of what the client was shown at submission time, and
+ * rewriting it would destroy that audit trail.
+ *
+ * `featureInputSchema` is reused from the create payload above, so an admin
+ * cannot store a feature shape the Client Portal could not have produced.
+ */
+export const updateClientLeadSchema = z
+  .object({
+    status: z.enum(clientLeadStatusEnum.enumValues).optional(),
+    requirementSummary: z
+      .string()
+      .trim()
+      .min(1, "Requirement summary cannot be empty")
+      .optional(),
+    features: z.array(featureInputSchema).optional(),
+  })
+  .refine(
+    (value) => Object.keys(value).length > 0,
+    "At least one field must be provided",
+  );
+
+export type UpdateClientLeadInput = z.infer<typeof updateClientLeadSchema>;

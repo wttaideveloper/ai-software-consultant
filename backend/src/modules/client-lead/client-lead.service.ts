@@ -2,6 +2,7 @@ import { HTTP_STATUS } from "../../shared/constants/http-status.js";
 import { AppError } from "../../shared/errors/app-error.js";
 import { logger } from "../../shared/logger/logger.js";
 import type {
+  ClientLeadDetailDto,
   ClientLeadListItemDto,
   ClientLeadResponseDto,
   PaginatedClientLeadsDto,
@@ -13,6 +14,7 @@ import {
 import type {
   CreateClientLeadInput,
   ListClientLeadsQuery,
+  UpdateClientLeadInput,
 } from "./client-lead.validation.js";
 
 function toListItemDto(lead: ClientLeadRecord): ClientLeadListItemDto {
@@ -27,6 +29,22 @@ function toListItemDto(lead: ClientLeadRecord): ClientLeadListItemDto {
     otherPlatform: lead.otherPlatform,
     status: lead.status,
     createdAt: lead.createdAt,
+  };
+}
+
+/** Builds on toListItemDto so the shared ten fields are mapped in exactly one place. */
+function toDetailDto(lead: ClientLeadRecord): ClientLeadDetailDto {
+  return {
+    ...toListItemDto(lead),
+    whatsapp: lead.whatsapp,
+    country: lead.country,
+    preferredContactMethod: lead.preferredContactMethod,
+    notes: lead.notes,
+    projectIdea: lead.projectIdea,
+    requirementSummary: lead.requirementSummary,
+    features: lead.features,
+    estimate: lead.estimate,
+    updatedAt: lead.updatedAt,
   };
 }
 
@@ -98,6 +116,36 @@ export class ClientLeadService {
         totalPages: total === 0 ? 0 : Math.ceil(total / query.pageSize),
       },
     };
+  }
+
+  /** Full lead for the Lead Details Workspace. Reuses the existing findById. */
+  async getById(leadId: string): Promise<ClientLeadDetailDto> {
+    const lead = await clientLeadRepository.findById(leadId);
+
+    if (!lead) {
+      throw new AppError("Client request not found.", HTTP_STATUS.NOT_FOUND);
+    }
+
+    return toDetailDto(lead);
+  }
+
+  /**
+   * Applies an admin edit (status / requirement summary / feature list) and
+   * returns the updated lead, so the client can refresh from the response
+   * rather than issuing a second read.
+   */
+  async update(
+    leadId: string,
+    input: UpdateClientLeadInput,
+  ): Promise<ClientLeadDetailDto> {
+    const lead = await clientLeadRepository.update(leadId, input);
+
+    if (!lead) {
+      throw new AppError("Client request not found.", HTTP_STATUS.NOT_FOUND);
+    }
+
+    logger.info(`Client lead updated: ${lead.id}`);
+    return toDetailDto(lead);
   }
 }
 

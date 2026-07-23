@@ -1,0 +1,159 @@
+import type { LeadProposalDraft } from "@/features/proposal-editor/lead-proposal.types";
+import type { ClientLeadDetail } from "@/types";
+
+/**
+ * Builds the initial proposal draft from a lead's three AI artefacts:
+ * the requirement summary, the detected features, and the estimate.
+ *
+ * Pure and side-effect free — no AI call is made here. Every value is derived
+ * from data already saved on the lead, so this runs instantly and produces the
+ * same draft every time.
+ *
+ * Deliberately does NOT invent commercial figures: no rate card exists in the
+ * schema (Cost Settings is still a placeholder), so the commercial section
+ * states the effort facts and leaves pricing for a human to fill in rather than
+ * fabricating a number that could end up in front of a client.
+ */
+
+const DEFAULT_TERMS = `1. This proposal is valid for 30 days from the date of issue.
+2. The scope described above is fixed; changes will be handled through a written change request and may affect timeline and cost.
+3. Payment terms, invoicing schedule and late-payment conditions are to be agreed before work begins.
+4. Intellectual property in the delivered work transfers to the client on final payment.
+5. Either party may terminate with written notice; work completed to that point remains payable.`;
+
+/** Sentence-cases a comma-free label for use in prose. */
+function toSentence(value: string): string {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return trimmed;
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+}
+
+function buildExecutiveSummary(lead: ClientLeadDetail): string {
+  const { estimate } = lead;
+  const client = lead.company ?? lead.name;
+  const includedCount = lead.features.filter((feature) => feature.included).length;
+  const confidence = Math.round(estimate.confidence * 100);
+  const platforms = [
+    ...lead.platforms,
+    ...(lead.otherPlatform ? [lead.otherPlatform] : []),
+  ];
+
+  const platformSentence =
+    platforms.length > 0
+      ? ` The solution targets ${platforms.join(", ")}.`
+      : "";
+
+  return [
+    `${client} is seeking a partner to deliver the project outlined below.${platformSentence}`,
+    "",
+    `Based on our discovery process we have identified ${includedCount} in-scope feature${includedCount === 1 ? "" : "s"}, with an estimated effort of ${estimate.estimatedHours} development hours across approximately ${estimate.estimatedWeeks} week${estimate.estimatedWeeks === 1 ? "" : "s"}. We recommend a team of ${estimate.teamSize}. Overall delivery complexity is assessed as ${estimate.complexity.toLowerCase()}, at ${confidence}% confidence.`,
+    "",
+    "This proposal sets out the scope, timeline, team structure, assumptions and commercial basis for the engagement.",
+  ].join("\n");
+}
+
+/** One scope line per in-scope feature, grouped implicitly by the order given. */
+function buildScopeOfWork(lead: ClientLeadDetail): string[] {
+  const included = lead.features.filter((feature) => feature.included);
+
+  if (included.length === 0) {
+    return ["Scope to be confirmed with the client."];
+  }
+
+  return included.map(
+    (feature) => `${feature.name} — ${toSentence(feature.description)}`,
+  );
+}
+
+/** Deliverables are derived from the distinct feature categories in scope. */
+function buildDeliverables(lead: ClientLeadDetail): string[] {
+  const categories = Array.from(
+    new Set(
+      lead.features
+        .filter((feature) => feature.included)
+        .map((feature) => feature.category.trim())
+        .filter(Boolean),
+    ),
+  );
+
+  if (categories.length === 0) {
+    return ["Deliverables to be confirmed with the client."];
+  }
+
+  return [
+    ...categories.map((category) => `${category} implementation`),
+    "Source code and technical documentation",
+    "Deployment support and handover",
+  ];
+}
+
+function buildTimeline(lead: ClientLeadDetail): string {
+  const { estimatedWeeks, breakdown } = lead.estimate;
+  const header = `Estimated duration: ${estimatedWeeks} week${estimatedWeeks === 1 ? "" : "s"} from kick-off.`;
+
+  if (breakdown.length === 0) {
+    return header;
+  }
+
+  const totalHours =
+    breakdown.reduce((sum, item) => sum + item.hours, 0) || 1;
+
+  // Distribute the calendar estimate across phases in proportion to effort —
+  // a starting point for the admin to adjust, not a committed schedule.
+  const phases = breakdown.map((item) => {
+    const share = item.hours / totalHours;
+    const weeks = Math.max(1, Math.round(share * estimatedWeeks));
+    return `- ${item.category}: ~${weeks} week${weeks === 1 ? "" : "s"} (${item.hours}h)`;
+  });
+
+  return [header, "", "Indicative phasing:", ...phases].join("\n");
+}
+
+function buildTeamStructure(lead: ClientLeadDetail): string {
+  const { teamSize, estimatedWeeks } = lead.estimate;
+
+  return [
+    `Recommended team size: ${teamSize} concurrent contributor${teamSize === 1 ? "" : "s"} over ${estimatedWeeks} week${estimatedWeeks === 1 ? "" : "s"}.`,
+    "",
+    "Proposed roles:",
+    "- Engagement lead — scope, planning and client communication",
+    "- Engineering — implementation, code review and testing",
+    "- Quality assurance — functional and regression testing",
+    "",
+    "Exact role split to be confirmed during kick-off.",
+  ].join("\n");
+}
+
+function buildCommercialSummary(lead: ClientLeadDetail): string {
+  const { estimatedHours, estimatedWeeks, teamSize } = lead.estimate;
+
+  // No rate card exists in the schema, so no figure is invented here.
+  return [
+    "Commercial summary — to be completed.",
+    "",
+    `Effort basis: ${estimatedHours} development hours across ~${estimatedWeeks} week${estimatedWeeks === 1 ? "" : "s"} with a team of ${teamSize}.`,
+    "",
+    "Add the applicable rate card, total investment, payment schedule and any discounts before sharing this proposal with the client.",
+  ].join("\n");
+}
+
+export function buildProposalDraft(lead: ClientLeadDetail): LeadProposalDraft {
+  const client = lead.company ?? lead.name;
+
+  return {
+    title: `${client} — Project Proposal`,
+    executiveSummary: buildExecutiveSummary(lead),
+    scopeOfWork: buildScopeOfWork(lead),
+    deliverables: buildDeliverables(lead),
+    timeline: buildTimeline(lead),
+    // Column is a single newline-joined string; the estimate stores an array.
+    assumptions: lead.estimate.assumptions.join("\n"),
+    pricingNotes: buildCommercialSummary(lead),
+    status: "DRAFT",
+
+    features: lead.features,
+    teamStructure: buildTeamStructure(lead),
+    risks: lead.estimate.risks,
+    termsAndConditions: DEFAULT_TERMS,
+  };
+}

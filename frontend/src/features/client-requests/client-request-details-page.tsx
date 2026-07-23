@@ -1,42 +1,226 @@
-import { ArrowLeft, FileSearch } from "lucide-react";
+import { isAxiosError } from "axios";
+import { motion } from "framer-motion";
+import { ArrowLeft, Download, FileSearch, SlidersHorizontal } from "lucide-react";
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { PageHeader } from "@/components/shared/page-header";
+import { toast } from "sonner";
+import { SectionError } from "@/components/shared/section-error";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ClientLeadStatusBadge } from "@/features/client-requests/components/client-lead-status-badge";
+import { LeadActivityTimeline } from "@/features/client-requests/components/lead-activity-timeline";
+import { LeadClientInfoCard } from "@/features/client-requests/components/lead-client-info-card";
+import { LeadDetailsSkeleton } from "@/features/client-requests/components/lead-details-skeleton";
+import { LeadEstimateSection } from "@/features/client-requests/components/lead-estimate-section";
+import { LeadFeaturesSection } from "@/features/client-requests/components/lead-features-section";
+import { LeadNotesSection } from "@/features/client-requests/components/lead-notes-section";
+import { LeadProposalSection } from "@/features/client-requests/components/lead-proposal-section";
+import { LeadStatusModal } from "@/features/client-requests/components/lead-status-modal";
+import { LeadSummarySection } from "@/features/client-requests/components/lead-summary-section";
+import { useClientLead } from "@/features/client-requests/hooks/use-client-lead";
+import { useUpdateClientLead } from "@/features/client-requests/hooks/use-update-client-lead";
+import type { ClientLeadFeature, ClientLeadStatus } from "@/types";
+import { staggerContainer } from "@/utils/motion";
+
+const BACK_PATH = "/client-requests";
 
 /**
- * Placeholder target for the Client Requests row action.
+ * Lead Details Workspace — the sales team's primary screen.
  *
- * Intentionally not built out yet — this route exists so "Open" has somewhere
- * to navigate. The lead id is read from the URL and shown so the routing can be
- * verified end to end; the detail view itself is a separate piece of work.
+ * Every section lives on this one page by design: an admin working a lead needs
+ * the summary, features and estimate visible together while they talk to the
+ * client, so nothing here is split across routes.
  */
 export function ClientRequestDetailsPage() {
   const { leadId } = useParams<{ leadId: string }>();
   const navigate = useNavigate();
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
+
+  const { data: lead, isLoading, isError, error, refetch } = useClientLead(leadId);
+  const updateLead = useUpdateClientLead();
+
+  const goBack = () => navigate(BACK_PATH);
+
+  const isNotFound = isAxiosError(error) && error.response?.status === 404;
+
+  // ---- Loading -----------------------------------------------------------
+  if (isLoading) {
+    return (
+      <div>
+        <div className="mb-5 flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={goBack}>
+            <ArrowLeft className="h-4 w-4" />
+            Back to Client Requests
+          </Button>
+        </div>
+        <LeadDetailsSkeleton />
+      </div>
+    );
+  }
+
+  // ---- Not found (distinct from a transport failure) ---------------------
+  if (isNotFound) {
+    return (
+      <div>
+        <EmptyState
+          icon={FileSearch}
+          title="Request not found"
+          description="This client request doesn't exist, or it has been deleted."
+          action={
+            <Button variant="secondary" onClick={goBack}>
+              <ArrowLeft className="h-4 w-4" />
+              Back to Client Requests
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
+
+  // ---- Error -------------------------------------------------------------
+  if (isError || !lead) {
+    return (
+      <div>
+        <div className="mb-5">
+          <Button variant="ghost" size="sm" onClick={goBack}>
+            <ArrowLeft className="h-4 w-4" />
+            Back to Client Requests
+          </Button>
+        </div>
+        <SectionError
+          message="Couldn't load this client request."
+          onRetry={() => void refetch()}
+        />
+      </div>
+    );
+  }
+
+  const saveSummary = (requirementSummary: string) =>
+    updateLead.mutate({
+      leadId: lead.id,
+      payload: { requirementSummary },
+      successMessage: "Requirement summary saved.",
+    });
+
+  const saveFeatures = (features: ClientLeadFeature[]) =>
+    updateLead.mutate({
+      leadId: lead.id,
+      payload: { features },
+      successMessage: "Features saved.",
+    });
+
+  const saveStatus = (status: ClientLeadStatus) =>
+    updateLead.mutate(
+      {
+        leadId: lead.id,
+        payload: { status },
+        successMessage: "Status updated.",
+      },
+      { onSuccess: () => setStatusModalOpen(false) },
+    );
 
   return (
-    <div>
-      <PageHeader
-        eyebrow="Client Requests"
-        title="Request Details"
-        description="The full lead detail view — contact information, requirement summary, feature list and estimate — is not built yet."
-        actions={
-          <Button variant="secondary" onClick={() => navigate("/client-requests")}>
-            <ArrowLeft className="h-4 w-4" />
-            Back to requests
-          </Button>
-        }
-      />
+    <div className="pb-4">
+      {/*
+        Sticky workspace header. `top-16` clears the app Navbar (h-16, sticky
+        top-0); the negative insets let the frosted bar span the main region's
+        horizontal padding instead of floating inside it.
+      */}
+      <div className="asc-glass sticky top-16 z-20 -mx-4 mb-5 border-b border-border px-4 py-3 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={goBack}
+              aria-label="Back to Client Requests"
+              className="shrink-0"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold tracking-wider text-accent-text uppercase">
+                Client Request
+              </p>
+              <div className="flex min-w-0 items-center gap-2">
+                <h1 className="truncate text-lg font-semibold tracking-tight text-foreground">
+                  {lead.name}
+                </h1>
+                <ClientLeadStatusBadge status={lead.status} />
+              </div>
+            </div>
+          </div>
 
-      <EmptyState
-        icon={FileSearch}
-        title="Lead details coming soon"
-        description={
-          leadId
-            ? `This page will show the full submission for request ${leadId}.`
-            : "This page will show the full client submission."
-        }
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setStatusModalOpen(true)}
+            >
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              Edit Status
+            </Button>
+            {/*
+              Placeholder: kept enabled rather than disabled so it stays
+              keyboard-reachable, and says plainly that it isn't wired up.
+            */}
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() =>
+                toast.info("Proposal download isn't available yet.")
+              }
+            >
+              <Download className="h-3.5 w-3.5" />
+              Download Proposal
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={goBack}
+              className="hidden sm:inline-flex"
+            >
+              Back to Client Requests
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <motion.div
+        variants={staggerContainer}
+        initial="hidden"
+        animate="visible"
+        className="flex flex-col gap-5"
+      >
+        <LeadClientInfoCard lead={lead} />
+
+        <LeadSummarySection
+          summary={lead.requirementSummary}
+          onSave={saveSummary}
+          isSaving={updateLead.isPending}
+        />
+
+        <LeadFeaturesSection
+          features={lead.features}
+          onSave={saveFeatures}
+          isSaving={updateLead.isPending}
+        />
+
+        <LeadEstimateSection estimate={lead.estimate} />
+
+        <LeadProposalSection />
+
+        <LeadNotesSection />
+
+        <LeadActivityTimeline lead={lead} />
+      </motion.div>
+
+      <LeadStatusModal
+        open={statusModalOpen}
+        onClose={() => setStatusModalOpen(false)}
+        currentStatus={lead.status}
+        onConfirm={saveStatus}
+        isSaving={updateLead.isPending}
       />
     </div>
   );

@@ -12,10 +12,18 @@ import {
 } from "drizzle-orm";
 import { db, type DbExecutor } from "../../db/index.js";
 import { clientLeads } from "../../db/schema/index.js";
+import type { ClientLeadFeature } from "../../db/schema/client-leads.js";
 import type { CreateClientLeadInput } from "./client-lead.validation.js";
 
 export type ClientLeadRecord = typeof clientLeads.$inferSelect;
 export type ClientLeadStatus = ClientLeadRecord["status"];
+
+/** Admin-editable columns only — see updateClientLeadSchema for the rationale. */
+export type UpdateClientLeadData = {
+  status?: ClientLeadStatus;
+  requirementSummary?: string;
+  features?: ClientLeadFeature[];
+};
 
 export type ListClientLeadsFilters = {
   /** Matched case-insensitively against name, company and email. */
@@ -143,6 +151,25 @@ export class ClientLeadRepository {
       .from(clientLeads)
       .where(and(eq(clientLeads.id, leadId), isNull(clientLeads.deletedAt)))
       .limit(1);
+
+    return lead ?? null;
+  }
+
+  /**
+   * Partial update of the admin-editable columns. Returns null when no row
+   * matched so the service can raise a 404 rather than a generic failure —
+   * a soft-deleted or unknown id is a client error, not a bug.
+   */
+  async update(
+    leadId: string,
+    data: UpdateClientLeadData,
+    executor: DbExecutor = db,
+  ): Promise<ClientLeadRecord | null> {
+    const [lead] = await executor
+      .update(clientLeads)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(eq(clientLeads.id, leadId), isNull(clientLeads.deletedAt)))
+      .returning();
 
     return lead ?? null;
   }
