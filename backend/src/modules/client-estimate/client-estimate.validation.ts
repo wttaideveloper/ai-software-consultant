@@ -17,3 +17,18 @@ export const generateClientEstimateSchema = z.object({
 });
 
 export type GenerateClientEstimateInput = z.infer<typeof generateClientEstimateSchema>;
+
+/**
+ * Re-prices an already-generated estimate after the client toggles features on or
+ * off. Carries only effort (hours + the unchanged complexity) and platforms — no
+ * features, no AI: the same Cost Engine that priced the first estimate reprices the
+ * new hour total. This is what makes the Project Cost interactive without a second
+ * AI call.
+ */
+export const priceClientEstimateSchema = z.object({
+  estimatedHours: z.number().positive(),
+  complexity: z.enum(["LOW", "MEDIUM", "HIGH"]),
+  platforms: z.array(z.string().trim().min(1)).optional(),
+});
+
+export type PriceClientEstimateInput = z.infer<typeof priceClientEstimateSchema>;

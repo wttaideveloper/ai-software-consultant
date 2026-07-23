@@ -5,3 +5,4 @@ import { clientEstimateController } from "./client-estimate.controller.js";
 export const clientEstimateRouter = Router();
 
 clientEstimateRouter.post("/", clientEstimateController.generate);
+clientEstimateRouter.post("/price", clientEstimateController.price);

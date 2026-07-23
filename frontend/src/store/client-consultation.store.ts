@@ -91,13 +91,13 @@ export type ClientEstimate = {
   breakdown: ClientEstimateBreakdownItem[];
 };
 
-/** One row of the Estimate step's per-feature display — `hours` is matched from the AI's breakdown by feature name where possible, null otherwise (never guessed). */
+/** One row of the Estimate step's per-feature display. `hours` is the feature's share of the AI's total effort (split by complexity) and drives the live Project Cost as rows are toggled. */
 export type ClientFeatureBreakdownItem = {
   featureId: string;
   name: string;
   category: string;
   complexity: FeatureComplexity;
-  hours: number | null;
+  hours: number;
   included: boolean;
 };
 
@@ -123,8 +123,15 @@ export type ClientConsultationState = {
   recommendedTeam: number | null;
   /** AI-recommended technology stack; null until an estimate is generated, or when the AI returns none. */
   techStack: string[] | null;
-  /** Final project cost from the Cost Engine (never the AI); null until priced, or on a pricing failure. */
+  /** Final project cost from the Cost Engine (never the AI) at the AI's full hours; null until priced, or on a pricing failure. */
   pricing: CostPreview | null;
+  /**
+   * The price after the client's feature toggles — exactly what the Estimate page
+   * is showing. Persisted so later steps (the Proposal) can *present* the figure
+   * the client already saw instead of asking the Cost Engine for it again. Null
+   * when nothing is priced, or when every feature has been switched off.
+   */
+  currentPricing: CostPreview | null;
   featureBreakdown: ClientFeatureBreakdownItem[];
   contactInfo: ClientContactInfo;
 };
@@ -155,6 +162,8 @@ type ClientConsultationActions = {
     techStack: string[] | null;
     pricing: CostPreview | null;
   }) => void;
+  /** Records the repriced figure the Estimate page is displaying, so every later step presents the same number. */
+  setCurrentPricing: (value: CostPreview | null) => void;
   toggleFeatureIncluded: (featureId: string) => void;
   setContactInfo: (value: Partial<ClientContactInfo>) => void;
   reset: () => void;
@@ -178,6 +187,7 @@ const INITIAL_STATE: ClientConsultationState = {
   recommendedTeam: null,
   techStack: null,
   pricing: null,
+  currentPricing: null,
   featureBreakdown: [],
   contactInfo: {
     name: "",
@@ -243,8 +253,12 @@ export const useClientConsultationStore = create<
           recommendedTeam: estimate.teamSize,
           techStack,
           pricing,
+          // A fresh estimate starts with every feature included, so the current
+          // price is the original one until the client toggles something.
+          currentPricing: pricing,
           featureBreakdown,
         }),
+      setCurrentPricing: (value) => set({ currentPricing: value }),
       toggleFeatureIncluded: (featureId) =>
         set((state) => ({
           featureBreakdown: state.featureBreakdown.map((item) =>

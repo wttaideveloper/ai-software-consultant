@@ -1,9 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
-  clientEstimateService,
-  type GenerateClientEstimateResponse,
-} from "@/services/client-estimate.service";
+import { distributeFeatureHours } from "@/client-portal/estimate/estimate-pricing";
+import { clientEstimateService } from "@/services/client-estimate.service";
 import {
   useClientConsultationStore,
   type ClientFeature,
@@ -11,24 +9,29 @@ import {
 } from "@/store/client-consultation.store";
 import { getApiErrorMessage } from "@/utils/api-error";
 
-/** Matches each current feature to a breakdown entry by name — the AI often keys its breakdown by feature name when given distinct ones, but this is never assumed, only used when it actually matches. Unmatched features simply show no hours rather than a guessed value. */
+/**
+ * Gives every feature a share of the AI's total hours (split by complexity via
+ * distributeFeatureHours), so toggling any row moves the total — and the live
+ * Project Cost — sensibly. The AI returns one project total, not hours per
+ * feature, so this split is the honest way to make the breakdown interactive
+ * without a second AI call. `included` is carried over so a regenerate keeps the
+ * client's earlier choices.
+ */
 function buildFeatureBreakdown(
   features: ClientFeature[],
-  breakdown: GenerateClientEstimateResponse["breakdown"],
+  totalHours: number,
   previousIncluded: Map<string, boolean>,
 ): ClientFeatureBreakdownItem[] {
-  return features.map((feature) => {
-    const match = breakdown.find((item) => item.category.toLowerCase() === feature.name.toLowerCase());
+  const hoursByFeature = distributeFeatureHours(features, totalHours);
 
-    return {
-      featureId: feature.id,
-      name: feature.name,
-      category: feature.category,
-      complexity: feature.complexity,
-      hours: match?.hours ?? null,
-      included: previousIncluded.get(feature.id) ?? true,
-    };
-  });
+  return features.map((feature) => ({
+    featureId: feature.id,
+    name: feature.name,
+    category: feature.category,
+    complexity: feature.complexity,
+    hours: hoursByFeature.get(feature.id) ?? 0,
+    included: previousIncluded.get(feature.id) ?? true,
+  }));
 }
 
 export function useGenerateClientEstimate() {
@@ -52,7 +55,7 @@ export function useGenerateClientEstimate() {
           risks: data.risks,
           breakdown: data.breakdown,
         },
-        featureBreakdown: buildFeatureBreakdown(features, data.breakdown, previousIncluded),
+        featureBreakdown: buildFeatureBreakdown(features, data.estimatedHours, previousIncluded),
         techStack: data.techStack,
         pricing: data.pricing,
       });

@@ -35,6 +35,14 @@ export type GenerateClientEstimateResponse = {
   pricing: CostPreview | null;
 };
 
+/** Effort + complexity for a live reprice — no features, no AI, just the Cost Engine. */
+export type PriceClientEstimatePayload = {
+  estimatedHours: number;
+  complexity: FeatureComplexity;
+  /** Wizard-selected platform labels — priced server-side by the Cost Engine. */
+  platforms?: string[];
+};
+
 /** Public, unauthenticated Client Portal endpoint — reuses the admin's ESTIMATION prompt server-side, not a duplicate estimation implementation. */
 export const clientEstimateService = {
   async generate(
@@ -42,6 +50,19 @@ export const clientEstimateService = {
   ): Promise<GenerateClientEstimateResponse> {
     const response = await api.post<ApiSuccessResponse<GenerateClientEstimateResponse>>(
       "/api/client/estimate",
+      payload,
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Reprices an already-generated estimate for a new hour total — the endpoint
+   * behind the interactive Project Cost. Runs the same Cost Engine as `generate`,
+   * never the AI, so toggling features is cheap and instant.
+   */
+  async price(payload: PriceClientEstimatePayload): Promise<CostPreview> {
+    const response = await api.post<ApiSuccessResponse<CostPreview>>(
+      "/api/client/estimate/price",
       payload,
     );
     return response.data.data;

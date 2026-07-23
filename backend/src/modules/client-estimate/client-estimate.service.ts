@@ -8,7 +8,10 @@ import { aiEstimationPayloadSchema } from "../estimation/estimation.validation.j
 import { PROMPT_TYPES } from "../prompts/prompt.constants.js";
 import { clientEstimateRepository } from "./client-estimate.repository.js";
 import type { ClientEstimateResponseDto } from "./client-estimate.dto.js";
-import type { GenerateClientEstimateInput } from "./client-estimate.validation.js";
+import type {
+  GenerateClientEstimateInput,
+  PriceClientEstimateInput,
+} from "./client-estimate.validation.js";
 
 /**
  * Duplicated verbatim from the admin AI-generating services (see CLAUDE.md "Common
@@ -115,6 +118,33 @@ export class ClientEstimateService {
         ? error
         : new AppError("Failed to generate the estimate", HTTP_STATUS.INTERNAL_SERVER_ERROR);
     }
+  }
+
+  /**
+   * Reprices an estimate for a new hour total — the endpoint behind the Client
+   * Portal's live "Project Cost" recalculation when features are toggled.
+   *
+   * No AI is involved: the AI already ran once at generation. This only feeds the
+   * updated hours (plus the unchanged complexity and platforms) back through the
+   * same Cost Engine, so a toggle costs one cheap rate-card lookup, never a model
+   * call. Throws when a price cannot be produced so the client keeps its last good
+   * figure rather than showing a wrong one.
+   */
+  async price(input: PriceClientEstimateInput): Promise<CostPreviewDto> {
+    const pricing = await this.priceEstimate({
+      estimatedHours: input.estimatedHours,
+      complexity: input.complexity,
+      platformLabels: input.platforms ?? [],
+    });
+
+    if (!pricing) {
+      throw new AppError(
+        "Unable to calculate pricing right now",
+        HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    return pricing;
   }
 
   /**

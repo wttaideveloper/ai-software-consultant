@@ -5,6 +5,14 @@ import { useForm } from "react-hook-form";
 import { ClientLayout } from "@/client-portal/layouts/client-layout";
 import { MetricCard } from "@/client-portal/estimate/components/metric-card";
 import {
+  PRICE_RANGE_HELPER_TEXT,
+  TIMELINE_RANGE_HELPER_TEXT,
+  formatPriceRange,
+  formatWeekRange,
+  toPriceRange,
+  toWeekRange,
+} from "@/client-portal/estimate/estimate-pricing";
+import {
   contactFormSchema,
   type ContactFormValues,
 } from "@/client-portal/proposal-request/contact-form.schema";
@@ -33,9 +41,9 @@ export function ClientRequestProposalPage() {
   const features = useClientConsultationStore((state) => state.features);
   const featureBreakdown = useClientConsultationStore((state) => state.featureBreakdown);
   const estimate = useClientConsultationStore((state) => state.estimate);
-  const timeline = useClientConsultationStore((state) => state.timeline);
   const complexity = useClientConsultationStore((state) => state.complexity);
   const recommendedTeam = useClientConsultationStore((state) => state.recommendedTeam);
+  const currentPricing = useClientConsultationStore((state) => state.currentPricing);
   const contactInfo = useClientConsultationStore((state) => state.contactInfo);
   const setContactInfo = useClientConsultationStore((state) => state.setContactInfo);
 
@@ -112,6 +120,21 @@ export function ClientRequestProposalPage() {
     );
   }
 
+  /**
+   * Pure presentation of what the Estimate step already produced — no AI call and
+   * no trip to the Cost Engine. `currentPricing` is the figure that page displayed
+   * (after any feature toggles), and both ranges are built with the same helpers it
+   * used, so the two screens can never disagree.
+   */
+  const costRangeDisplay = currentPricing
+    ? formatPriceRange(
+        toPriceRange(currentPricing.breakdown.finalPrice),
+        currentPricing.currency,
+      )
+    : "Not available";
+
+  const timelineDisplay = formatWeekRange(toWeekRange(estimate.estimatedWeeks));
+
   return (
     <ClientLayout>
       <div>
@@ -123,8 +146,17 @@ export function ClientRequestProposalPage() {
         </p>
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <MetricCard label="Estimated Cost" value="Not available" unavailable />
-          <MetricCard label="Timeline" value={timeline ?? "—"} />
+          <MetricCard
+            label="Estimated Cost"
+            value={costRangeDisplay}
+            unavailable={!currentPricing}
+            hint={currentPricing ? PRICE_RANGE_HELPER_TEXT : undefined}
+          />
+          <MetricCard
+            label="Timeline"
+            value={timelineDisplay}
+            hint={TIMELINE_RANGE_HELPER_TEXT}
+          />
           <MetricCard label="Complexity" value={complexity ?? "—"} />
           <MetricCard
             label="Recommended Team"

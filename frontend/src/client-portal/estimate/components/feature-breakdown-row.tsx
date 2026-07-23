@@ -22,9 +22,7 @@ export function FeatureBreakdownRow({ item, onToggleIncluded }: FeatureBreakdown
           <Badge variant={COMPLEXITY_META[item.complexity].variant}>
             {COMPLEXITY_META[item.complexity].label}
           </Badge>
-          <span className="text-xs text-muted">
-            {item.hours !== null ? `${item.hours} hrs` : "Hours not itemized separately"}
-          </span>
+          <span className="asc-tabular text-xs text-muted">{item.hours} hrs</span>
         </div>
       </div>
       <Checkbox

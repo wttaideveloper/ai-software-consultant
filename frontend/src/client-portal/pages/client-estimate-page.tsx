@@ -1,12 +1,20 @@
 import { Calculator, RotateCcw } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ClientLayout } from "@/client-portal/layouts/client-layout";
+import { EstimateSavingsSummary } from "@/client-portal/estimate/components/estimate-savings-summary";
 import { FeatureBreakdownRow } from "@/client-portal/estimate/components/feature-breakdown-row";
 import { MetricCard } from "@/client-portal/estimate/components/metric-card";
+import { ProjectCostCard } from "@/client-portal/estimate/components/project-cost-card";
+import {
+  TIMELINE_RANGE_HELPER_TEXT,
+  formatWeekRange,
+  resolveWizardPlatformLabels,
+  toWeekRange,
+} from "@/client-portal/estimate/estimate-pricing";
+import { useClientEstimatePrice } from "@/client-portal/estimate/hooks/use-client-estimate-price";
 import { useGenerateClientEstimate } from "@/client-portal/estimate/hooks/use-generate-client-estimate";
 import { Button, ConfirmDialog, EmptyState, Spinner } from "@/components/ui";
-import { formatMoney } from "@/features/cost-settings/cost-settings.labels";
 import { useClientConsultationStore } from "@/store/client-consultation.store";
 
 /**
@@ -21,17 +29,66 @@ export function ClientEstimatePage() {
   const platforms = useClientConsultationStore((state) => state.platforms);
   const otherPlatform = useClientConsultationStore((state) => state.otherPlatform);
   const estimate = useClientConsultationStore((state) => state.estimate);
-  const timeline = useClientConsultationStore((state) => state.timeline);
   const complexity = useClientConsultationStore((state) => state.complexity);
   const recommendedTeam = useClientConsultationStore((state) => state.recommendedTeam);
   const techStack = useClientConsultationStore((state) => state.techStack);
   const pricing = useClientConsultationStore((state) => state.pricing);
   const featureBreakdown = useClientConsultationStore((state) => state.featureBreakdown);
   const toggleFeatureIncluded = useClientConsultationStore((state) => state.toggleFeatureIncluded);
+  const setCurrentPricing = useClientConsultationStore((state) => state.setCurrentPricing);
 
   const generateEstimate = useGenerateClientEstimate();
   const hasGeneratedRef = useRef(false);
   const [isRegenerateConfirmOpen, setIsRegenerateConfirmOpen] = useState(false);
+
+  const platformLabels = useMemo(
+    () => resolveWizardPlatformLabels(platforms, otherPlatform),
+    [platforms, otherPlatform],
+  );
+
+  /** Effort of the features still switched on — the input the live reprice keys on. */
+  const currentHours = useMemo(
+    () =>
+      featureBreakdown.reduce((total, item) => (item.included ? total + item.hours : total), 0),
+    [featureBreakdown],
+  );
+
+  const originalHours = estimate?.estimatedHours ?? 0;
+
+  /**
+   * Repricing is only offered once generation proved the rate card works. When the
+   * first estimate came back unpriced, the card stays an honest "not available"
+   * rather than firing a request per toggle that is already known to fail.
+   */
+  const canReprice = pricing !== null && complexity !== null;
+
+  const priceQuery = useClientEstimatePrice(
+    {
+      estimatedHours: currentHours,
+      complexity: complexity ?? "MEDIUM",
+      platforms: platformLabels,
+    },
+    canReprice,
+  );
+
+  // Falls back to the generation-time price until the first reprice resolves, so
+  // the card always has a figure to show. With everything switched off there is no
+  // scope to price — the last known price would be actively misleading there.
+  const currentPricing = currentHours > 0 ? (priceQuery.data ?? pricing) : null;
+
+  /**
+   * Publishes the figure this page is showing to the shared consultation state, so
+   * the Proposal step can present the client's *current* price without repricing.
+   * Writing the derived value (rather than the raw query result) is what keeps the
+   * two screens identical, including the "everything switched off" case.
+   */
+  useEffect(() => {
+    setCurrentPricing(currentPricing);
+  }, [currentPricing, setCurrentPricing]);
+
+  const timelineDisplay = estimate
+    ? formatWeekRange(toWeekRange(estimate.estimatedWeeks))
+    : "—";
 
   const requestGeneration = () => {
     if (features.length === 0) return;
@@ -44,12 +101,9 @@ export function ClientEstimatePage() {
         complexity: featureComplexity,
       })),
       // Wizard-selected platforms drive the Cost Engine's platform premium; the AI
-      // is only asked for effort. The "Other" sentinel is replaced by its free-text
-      // value, and blank entries are dropped.
-      platforms: [
-        ...platforms.filter((platform) => platform !== "Other"),
-        otherPlatform.trim(),
-      ].filter((platform) => platform.length > 0),
+      // is only asked for effort. Same labels the live reprice uses, so generation
+      // and every subsequent toggle price against identical platforms.
+      platforms: platformLabels,
     });
   };
 
@@ -88,7 +142,7 @@ export function ClientEstimatePage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Project Estimate</h1>
         <p className="mt-1.5 text-sm text-muted">
-          Generated from your feature list. Toggle features off to see how scope affects your project.
+          Generated from your feature list. Toggle features off and your estimated cost updates instantly.
         </p>
 
         <div className="mt-6">
@@ -113,17 +167,18 @@ export function ClientEstimatePage() {
 
           {estimate ? (
             <div className="flex flex-col gap-8">
+              <ProjectCostCard
+                pricing={currentPricing}
+                isUpdating={canReprice && priceQuery.isFetching}
+                noFeaturesSelected={featureBreakdown.length > 0 && currentHours === 0}
+              />
+
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <MetricCard
-                  label="Project Cost"
-                  value={
-                    pricing
-                      ? formatMoney(pricing.breakdown.finalPrice, pricing.currency)
-                      : "Not available"
-                  }
-                  unavailable={!pricing}
+                  label="Timeline"
+                  value={timelineDisplay}
+                  hint={TIMELINE_RANGE_HELPER_TEXT}
                 />
-                <MetricCard label="Timeline" value={timeline ?? "—"} />
                 <MetricCard label="Complexity" value={complexity ?? "—"} />
                 <MetricCard
                   label="Recommended Team"
@@ -135,6 +190,13 @@ export function ClientEstimatePage() {
                   unavailable={!techStack || techStack.length === 0}
                 />
               </div>
+
+              <EstimateSavingsSummary
+                originalHours={originalHours}
+                currentHours={currentHours}
+                originalPricing={pricing}
+                currentPricing={currentPricing}
+              />
 
               <div>
                 <h2 className="text-sm font-semibold tracking-tight text-foreground-soft">
