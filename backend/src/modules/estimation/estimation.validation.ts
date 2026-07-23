@@ -34,4 +34,8 @@ export const aiEstimationPayloadSchema = z.object({
   assumptions: z.array(z.string().min(1)).min(1),
   risks: z.array(z.string().min(1)).min(1),
   breakdown: z.array(breakdownItemSchema).min(1),
+  // Optional so responses from a model that omits it (or older cached ones) still
+  // validate. The admin pipeline parses but does not persist it; the Client Portal
+  // estimate surfaces it as the recommended technology stack.
+  techStack: z.array(z.string().trim().min(1)).optional(),
 });

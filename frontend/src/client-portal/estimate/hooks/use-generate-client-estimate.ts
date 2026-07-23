@@ -53,6 +53,8 @@ export function useGenerateClientEstimate() {
           breakdown: data.breakdown,
         },
         featureBreakdown: buildFeatureBreakdown(features, data.breakdown, previousIncluded),
+        techStack: data.techStack,
+        pricing: data.pricing,
       });
     },
     onError: (error) => {

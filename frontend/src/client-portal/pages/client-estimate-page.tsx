@@ -6,6 +6,7 @@ import { FeatureBreakdownRow } from "@/client-portal/estimate/components/feature
 import { MetricCard } from "@/client-portal/estimate/components/metric-card";
 import { useGenerateClientEstimate } from "@/client-portal/estimate/hooks/use-generate-client-estimate";
 import { Button, ConfirmDialog, EmptyState, Spinner } from "@/components/ui";
+import { formatMoney } from "@/features/cost-settings/cost-settings.labels";
 import { useClientConsultationStore } from "@/store/client-consultation.store";
 
 /**
@@ -17,10 +18,14 @@ export function ClientEstimatePage() {
   const navigate = useNavigate();
 
   const features = useClientConsultationStore((state) => state.features);
+  const platforms = useClientConsultationStore((state) => state.platforms);
+  const otherPlatform = useClientConsultationStore((state) => state.otherPlatform);
   const estimate = useClientConsultationStore((state) => state.estimate);
   const timeline = useClientConsultationStore((state) => state.timeline);
   const complexity = useClientConsultationStore((state) => state.complexity);
   const recommendedTeam = useClientConsultationStore((state) => state.recommendedTeam);
+  const techStack = useClientConsultationStore((state) => state.techStack);
+  const pricing = useClientConsultationStore((state) => state.pricing);
   const featureBreakdown = useClientConsultationStore((state) => state.featureBreakdown);
   const toggleFeatureIncluded = useClientConsultationStore((state) => state.toggleFeatureIncluded);
 
@@ -38,6 +43,13 @@ export function ClientEstimatePage() {
         priority,
         complexity: featureComplexity,
       })),
+      // Wizard-selected platforms drive the Cost Engine's platform premium; the AI
+      // is only asked for effort. The "Other" sentinel is replaced by its free-text
+      // value, and blank entries are dropped.
+      platforms: [
+        ...platforms.filter((platform) => platform !== "Other"),
+        otherPlatform.trim(),
+      ].filter((platform) => platform.length > 0),
     });
   };
 
@@ -102,14 +114,26 @@ export function ClientEstimatePage() {
           {estimate ? (
             <div className="flex flex-col gap-8">
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <MetricCard label="Project Cost" value="Not available" unavailable />
+                <MetricCard
+                  label="Project Cost"
+                  value={
+                    pricing
+                      ? formatMoney(pricing.breakdown.finalPrice, pricing.currency)
+                      : "Not available"
+                  }
+                  unavailable={!pricing}
+                />
                 <MetricCard label="Timeline" value={timeline ?? "—"} />
                 <MetricCard label="Complexity" value={complexity ?? "—"} />
                 <MetricCard
                   label="Recommended Team"
                   value={recommendedTeam ? `${recommendedTeam} member${recommendedTeam === 1 ? "" : "s"}` : "—"}
                 />
-                <MetricCard label="Technology Stack" value="Not available" unavailable />
+                <MetricCard
+                  label="Technology Stack"
+                  value={techStack && techStack.length > 0 ? techStack.join(", ") : "Not available"}
+                  unavailable={!techStack || techStack.length === 0}
+                />
               </div>
 
               <div>

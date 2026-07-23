@@ -1,5 +1,10 @@
 import { api } from "@/services/api";
-import type { ApiSuccessResponse, FeatureComplexity, FeaturePriority } from "@/types";
+import type {
+  ApiSuccessResponse,
+  CostPreview,
+  FeatureComplexity,
+  FeaturePriority,
+} from "@/types";
 
 export type EstimateFeatureInput = {
   name: string;
@@ -11,6 +16,8 @@ export type EstimateFeatureInput = {
 
 export type GenerateClientEstimatePayload = {
   features: EstimateFeatureInput[];
+  /** Wizard-selected platform labels — priced server-side by the Cost Engine. */
+  platforms?: string[];
 };
 
 export type GenerateClientEstimateResponse = {
@@ -22,6 +29,10 @@ export type GenerateClientEstimateResponse = {
   assumptions: string[];
   risks: string[];
   breakdown: Array<{ category: string; hours: number }>;
+  /** Recommended technology stack from the AI, or null when it returned none. */
+  techStack: string[] | null;
+  /** Final project cost from the Cost Engine (never the AI), or null on a pricing failure. */
+  pricing: CostPreview | null;
 };
 
 /** Public, unauthenticated Client Portal endpoint — reuses the admin's ESTIMATION prompt server-side, not a duplicate estimation implementation. */

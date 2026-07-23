@@ -3,7 +3,7 @@ import { cn } from "@/utils/cn";
 type MetricCardProps = {
   label: string;
   value: string;
-  /** True for Project Cost / Technology Stack — no source data in the reused Estimation response, shown as an honest "not available" state instead of fabricated. */
+  /** Dims the value to signal a "not available" fallback (e.g. cost or tech stack the response didn't include) rather than a real figure. */
   unavailable?: boolean;
 };
 

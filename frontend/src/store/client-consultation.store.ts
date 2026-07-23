@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import type { FeatureComplexity, FeaturePriority } from "@/types";
+import type { CostPreview, FeatureComplexity, FeaturePriority } from "@/types";
 
 /**
  * Structure only for fields not yet backed by a real flow — no business logic here.
@@ -76,10 +76,9 @@ export type ClientEstimateBreakdownItem = {
 };
 
 /**
- * Mirrors the admin's aiEstimationPayloadSchema exactly — no projectCost or
- * techStack fields exist because the reused, unmodified Estimation prompt doesn't
- * produce them (see client-estimate.service.ts backend-side); both are surfaced in
- * the UI as an honest "not available" state rather than fabricated.
+ * The AI's effort estimate (hours, weeks, team, complexity, breakdown). The
+ * project cost is never part of this — it is priced separately by the Cost Engine
+ * and kept in `pricing`, so the AI is never the source of a number the client pays.
  */
 export type ClientEstimate = {
   estimatedHours: number;
@@ -122,8 +121,10 @@ export type ClientConsultationState = {
   timeline: string | null;
   complexity: FeatureComplexity | null;
   recommendedTeam: number | null;
-  /** Always null — the reused Estimation prompt has no tech-stack field. Kept as its own field per spec, not fabricated. */
+  /** AI-recommended technology stack; null until an estimate is generated, or when the AI returns none. */
   techStack: string[] | null;
+  /** Final project cost from the Cost Engine (never the AI); null until priced, or on a pricing failure. */
+  pricing: CostPreview | null;
   featureBreakdown: ClientFeatureBreakdownItem[];
   contactInfo: ClientContactInfo;
 };
@@ -147,10 +148,12 @@ type ClientConsultationActions = {
   addFeature: (feature: Omit<ClientFeature, "id">) => void;
   updateFeature: (id: string, patch: Partial<Omit<ClientFeature, "id">>) => void;
   removeFeature: (id: string) => void;
-  /** Bulk sets estimate + the derived timeline/complexity/recommendedTeam/featureBreakdown together, used after generate/regenerate. */
+  /** Bulk sets estimate + the derived timeline/complexity/recommendedTeam/techStack/pricing/featureBreakdown together, used after generate/regenerate. */
   applyEstimateResult: (input: {
     estimate: ClientEstimate;
     featureBreakdown: ClientFeatureBreakdownItem[];
+    techStack: string[] | null;
+    pricing: CostPreview | null;
   }) => void;
   toggleFeatureIncluded: (featureId: string) => void;
   setContactInfo: (value: Partial<ClientContactInfo>) => void;
@@ -174,6 +177,7 @@ const INITIAL_STATE: ClientConsultationState = {
   complexity: null,
   recommendedTeam: null,
   techStack: null,
+  pricing: null,
   featureBreakdown: [],
   contactInfo: {
     name: "",
@@ -231,12 +235,14 @@ export const useClientConsultationStore = create<
         })),
       removeFeature: (id) =>
         set((state) => ({ features: state.features.filter((feature) => feature.id !== id) })),
-      applyEstimateResult: ({ estimate, featureBreakdown }) =>
+      applyEstimateResult: ({ estimate, featureBreakdown, techStack, pricing }) =>
         set({
           estimate,
           timeline: `${estimate.estimatedWeeks} week${estimate.estimatedWeeks === 1 ? "" : "s"}`,
           complexity: estimate.complexity,
           recommendedTeam: estimate.teamSize,
+          techStack,
+          pricing,
           featureBreakdown,
         }),
       toggleFeatureIncluded: (featureId) =>

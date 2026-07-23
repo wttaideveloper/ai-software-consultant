@@ -28,4 +28,8 @@ exports.aiEstimationPayloadSchema = zod_1.z.object({
     assumptions: zod_1.z.array(zod_1.z.string().min(1)).min(1),
     risks: zod_1.z.array(zod_1.z.string().min(1)).min(1),
     breakdown: zod_1.z.array(breakdownItemSchema).min(1),
+    // Optional so responses from a model that omits it (or older cached ones) still
+    // validate. The admin pipeline parses but does not persist it; the Client Portal
+    // estimate surfaces it as the recommended technology stack.
+    techStack: zod_1.z.array(zod_1.z.string().trim().min(1)).optional(),
 });

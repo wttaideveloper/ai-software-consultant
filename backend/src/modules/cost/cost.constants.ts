@@ -88,6 +88,7 @@ export const PLATFORM_LABEL_ALIASES: Record<string, CostPlatform> = {
   "ios app": "IOS",
   mobile: "ANDROID",
   desktop: "DESKTOP",
+  "desktop app": "DESKTOP",
   windows: "DESKTOP",
   macos: "DESKTOP",
   "admin panel": "ADMIN_PANEL",

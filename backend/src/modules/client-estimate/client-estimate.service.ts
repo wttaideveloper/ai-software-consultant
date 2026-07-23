@@ -2,8 +2,11 @@ import { HTTP_STATUS } from "../../shared/constants/http-status.js";
 import { AppError } from "../../shared/errors/app-error.js";
 import { logger } from "../../shared/logger/logger.js";
 import { aiOrchestrator } from "../ai/ai.orchestrator.js";
+import type { CostPreviewDto } from "../cost/cost.dto.js";
+import { costSettingsService } from "../cost/cost.service.js";
 import { aiEstimationPayloadSchema } from "../estimation/estimation.validation.js";
 import { PROMPT_TYPES } from "../prompts/prompt.constants.js";
+import { clientEstimateRepository } from "./client-estimate.repository.js";
 import type { ClientEstimateResponseDto } from "./client-estimate.dto.js";
 import type { GenerateClientEstimateInput } from "./client-estimate.validation.js";
 
@@ -88,6 +91,12 @@ export class ClientEstimateService {
         );
       }
 
+      const pricing = await this.priceEstimate({
+        estimatedHours: validated.data.estimatedHours,
+        complexity: validated.data.complexity,
+        platformLabels: input.platforms ?? [],
+      });
+
       return {
         estimatedHours: validated.data.estimatedHours,
         estimatedWeeks: validated.data.estimatedWeeks,
@@ -97,12 +106,49 @@ export class ClientEstimateService {
         assumptions: validated.data.assumptions,
         risks: validated.data.risks,
         breakdown: validated.data.breakdown,
+        techStack: validated.data.techStack ?? null,
+        pricing,
       };
     } catch (error) {
       logger.error(`Client estimation failed: ${resolveSafeErrorMessage(error)}`);
       throw error instanceof AppError
         ? error
         : new AppError("Failed to generate the estimate", HTTP_STATUS.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  /**
+   * Prices the AI's effort through the Cost Management engine — the same engine
+   * and org rate card the admin estimation uses (costSettingsService.priceAiEstimate),
+   * never a second pricing implementation. The AI supplies effort only; the price
+   * is derived here from configured rates.
+   *
+   * Deliberately never throws: a pricing failure (no organization provisioned yet,
+   * or a misconfigured rate card) is logged and yields null so the estimate still
+   * renders — the same swallow-and-null policy estimation.service.ts applies.
+   */
+  private async priceEstimate(input: {
+    estimatedHours: number;
+    complexity: "LOW" | "MEDIUM" | "HIGH";
+    platformLabels: string[];
+  }): Promise<CostPreviewDto | null> {
+    try {
+      const organizationId =
+        await clientEstimateRepository.findPortalOrganizationId();
+
+      if (!organizationId) {
+        logger.error("Client estimate pricing skipped: no organization provisioned");
+        return null;
+      }
+
+      return await costSettingsService.priceAiEstimate(organizationId, {
+        estimatedHours: input.estimatedHours,
+        complexity: input.complexity,
+        platformLabels: input.platformLabels,
+      });
+    } catch (error) {
+      logger.error(`Client estimate pricing failed: ${resolveSafeErrorMessage(error)}`);
+      return null;
     }
   }
 }
