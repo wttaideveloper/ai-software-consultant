@@ -2,6 +2,12 @@ export {
   aiGenerationStatusEnum,
   clientLeadStatusEnum,
   clientPreferredContactMethodEnum,
+  costComplexityLevelEnum,
+  costCurrencyEnum,
+  costDiscountTypeEnum,
+  costPlatformEnum,
+  costRoleEnum,
+  costTaxTypeEnum,
   featureComplexityEnum,
   featurePriorityEnum,
   leadProposalStatusEnum,
@@ -20,6 +26,12 @@ export type {
   ClientLeadEstimateBreakdownItem,
   ClientLeadFeature,
 } from "./client-leads.js";
+export {
+  costComplexityMultipliers,
+  costHourlyRates,
+  costPlatformMultipliers,
+  costSettings,
+} from "./cost-settings.js";
 export { leadProposals } from "./lead-proposals.js";
 export type { LeadProposalContent } from "./lead-proposals.js";
 export { users } from "./users.js";

@@ -31,6 +31,14 @@ export const PERMISSIONS = {
   SETTINGS_READ: "SETTINGS_READ",
   SETTINGS_UPDATE: "SETTINGS_UPDATE",
 
+  /**
+   * Separate from SETTINGS_* on purpose: the rate card is what the company
+   * charges, so viewing a quote's basis and being able to change pricing are
+   * different privileges.
+   */
+  COST_SETTINGS_VIEW: "COST_SETTINGS_VIEW",
+  COST_SETTINGS_EDIT: "COST_SETTINGS_EDIT",
+
   DASHBOARD_VIEW: "DASHBOARD_VIEW",
 } as const;
 
@@ -164,6 +172,16 @@ export const SYSTEM_PERMISSION_DEFINITIONS: readonly SystemPermissionDefinition[
       code: PERMISSIONS.SETTINGS_UPDATE,
       module: "settings",
       description: "Update settings",
+    },
+    {
+      code: PERMISSIONS.COST_SETTINGS_VIEW,
+      module: "cost-settings",
+      description: "View pricing rates and multipliers",
+    },
+    {
+      code: PERMISSIONS.COST_SETTINGS_EDIT,
+      module: "cost-settings",
+      description: "Edit pricing rates and multipliers",
     },
     {
       code: PERMISSIONS.DASHBOARD_VIEW,

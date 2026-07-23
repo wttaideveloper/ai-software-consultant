@@ -26,6 +26,13 @@ exports.PERMISSIONS = {
     CRM_UPDATE: "CRM_UPDATE",
     SETTINGS_READ: "SETTINGS_READ",
     SETTINGS_UPDATE: "SETTINGS_UPDATE",
+    /**
+     * Separate from SETTINGS_* on purpose: the rate card is what the company
+     * charges, so viewing a quote's basis and being able to change pricing are
+     * different privileges.
+     */
+    COST_SETTINGS_VIEW: "COST_SETTINGS_VIEW",
+    COST_SETTINGS_EDIT: "COST_SETTINGS_EDIT",
     DASHBOARD_VIEW: "DASHBOARD_VIEW",
 };
 exports.SYSTEM_PERMISSION_DEFINITIONS = [
@@ -148,6 +155,16 @@ exports.SYSTEM_PERMISSION_DEFINITIONS = [
         code: exports.PERMISSIONS.SETTINGS_UPDATE,
         module: "settings",
         description: "Update settings",
+    },
+    {
+        code: exports.PERMISSIONS.COST_SETTINGS_VIEW,
+        module: "cost-settings",
+        description: "View pricing rates and multipliers",
+    },
+    {
+        code: exports.PERMISSIONS.COST_SETTINGS_EDIT,
+        module: "cost-settings",
+        description: "Edit pricing rates and multipliers",
     },
     {
         code: exports.PERMISSIONS.DASHBOARD_VIEW,

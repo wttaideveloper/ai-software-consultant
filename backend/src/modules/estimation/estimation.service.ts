@@ -5,6 +5,7 @@ import { logger } from "../../shared/logger/logger.js";
 import { AI_PROVIDERS } from "../ai/ai.constants.js";
 import { aiOrchestrator } from "../ai/ai.orchestrator.js";
 import type { AIResponse } from "../ai/ai.types.js";
+import { costSettingsService } from "../cost/cost.service.js";
 import { PROMPT_TYPES } from "../prompts/prompt.constants.js";
 import type { EstimationDto } from "./estimation.dto.js";
 import {
@@ -20,8 +21,12 @@ import {
 
 const PROMPT_VERSION = "1.0.0";
 
-function toEstimationDto(estimation: ProjectEstimationRecord): EstimationDto {
+function toEstimationDto(
+  estimation: ProjectEstimationRecord,
+  pricing: EstimationDto["pricing"] = null,
+): EstimationDto {
   return {
+    pricing,
     id: estimation.id,
     organizationId: estimation.organizationId,
     consultationId: estimation.consultationId,
@@ -39,6 +44,40 @@ function toEstimationDto(estimation: ProjectEstimationRecord): EstimationDto {
     createdAt: estimation.createdAt,
     updatedAt: estimation.updatedAt,
   };
+}
+
+/**
+ * Prices an estimate through the Cost Management engine.
+ *
+ * The AI is deliberately never asked for a cost — it produces hours, complexity
+ * and a breakdown, and the price is derived from the organization's rate card so
+ * pricing policy stays configurable and consistent across every estimate.
+ *
+ * `projectType` is passed as a platform label (resolved via the alias table);
+ * consultations carry no explicit platform list, so anything unrecognised is
+ * reported as unpriced rather than guessed at.
+ *
+ * A pricing failure is logged and swallowed: an estimate is still useful without
+ * a price, and a misconfigured rate card must not make the estimate unreadable.
+ */
+async function priceEstimation(
+  estimation: ProjectEstimationRecord,
+  projectType: string | null,
+): Promise<EstimationDto["pricing"]> {
+  try {
+    return await costSettingsService.priceAiEstimate(estimation.organizationId, {
+      estimatedHours: estimation.estimatedHours,
+      complexity: estimation.complexity,
+      platformLabels: projectType ? [projectType] : [],
+    });
+  } catch (error) {
+    logger.error(
+      `Failed to price estimation ${estimation.id}: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    );
+    return null;
+  }
 }
 
 function formatAssumptions(assumptions: string[]): string {
@@ -146,7 +185,10 @@ export class EstimationService {
       throw new AppError("Estimation not found", HTTP_STATUS.NOT_FOUND);
     }
 
-    return toEstimationDto(estimation);
+    return toEstimationDto(
+      estimation,
+      await priceEstimation(estimation, consultation.projectType),
+    );
   }
 
   async generate(
@@ -346,7 +388,11 @@ export class EstimationService {
       `Estimation generated for consultation=${consultationId} version=${savedEstimation.version}`,
     );
 
-    return toEstimationDto(savedEstimation);
+    // Cost is calculated here, from the rate card — the AI returned effort only.
+    return toEstimationDto(
+      savedEstimation,
+      await priceEstimation(savedEstimation, consultation.projectType),
+    );
   }
 
   async update(
@@ -392,7 +438,12 @@ export class EstimationService {
       `Estimation updated for consultation=${consultationId} version=${updated.version}`,
     );
 
-    return toEstimationDto(updated);
+    // Re-priced after a manual hours/complexity edit, so the figure on screen
+    // always matches the effort beside it.
+    return toEstimationDto(
+      updated,
+      await priceEstimation(updated, consultation.projectType),
+    );
   }
 }
 

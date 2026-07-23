@@ -16,6 +16,12 @@ import { clientRequirementSummaryRouter } from "./modules/client-requirement-sum
 import { clientRequirementsRouter } from "./modules/client-requirements/client-requirements.route.js";
 import { consultationsRouter } from "./modules/consultations/consultations.route.js";
 import {
+  complexityMultipliersRouter,
+  costSettingsRouter,
+  hourlyRatesRouter,
+  platformMultipliersRouter,
+} from "./modules/cost/cost.route.js";
+import {
   consultationMessagesRouter,
   messagesRouter,
 } from "./modules/conversations/conversations.route.js";
@@ -103,6 +109,12 @@ app.use(`${API_PREFIX}/features`, featuresRouter);
 app.use(`${API_PREFIX}/feature-library`, featureLibraryRouter);
 app.use(`${API_PREFIX}/messages`, messagesRouter);
 app.use(`${API_PREFIX}/settings`, settingsRouter);
+
+// Cost Management — the pricing engine's configuration.
+app.use(`${API_PREFIX}/cost-settings`, costSettingsRouter);
+app.use(`${API_PREFIX}/hourly-rates`, hourlyRatesRouter);
+app.use(`${API_PREFIX}/complexity-multipliers`, complexityMultipliersRouter);
+app.use(`${API_PREFIX}/platform-multipliers`, platformMultipliersRouter);
 
 app.use(notFound);
 app.use(errorHandler);

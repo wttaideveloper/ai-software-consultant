@@ -70,6 +70,59 @@ export const clientLeadStatusEnum = pgEnum("client_lead_status", [
   "CLOSED",
 ]);
 
+/**
+ * Cost engine enumerations.
+ *
+ * `cost_complexity_level` has four members and is deliberately NOT
+ * `feature_complexity` (LOW/MEDIUM/HIGH): pricing tiers and the AI's complexity
+ * signal are different vocabularies, and ENTERPRISE has no AI counterpart. The
+ * mapping between them lives in cost.constants.ts.
+ */
+export const costRoleEnum = pgEnum("cost_role", [
+  "FRONTEND",
+  "BACKEND",
+  "UI_UX_DESIGN",
+  "QA_TESTING",
+  "DEVOPS",
+  "PROJECT_MANAGEMENT",
+  "AI_DEVELOPMENT",
+]);
+
+export const costComplexityLevelEnum = pgEnum("cost_complexity_level", [
+  "SIMPLE",
+  "MEDIUM",
+  "COMPLEX",
+  "ENTERPRISE",
+]);
+
+export const costPlatformEnum = pgEnum("cost_platform", [
+  "WEB",
+  "ANDROID",
+  "IOS",
+  "DESKTOP",
+  "ADMIN_PANEL",
+  "API",
+  "AI_INTEGRATION",
+]);
+
+export const costCurrencyEnum = pgEnum("cost_currency", [
+  "INR",
+  "USD",
+  "EUR",
+  "GBP",
+]);
+
+export const costTaxTypeEnum = pgEnum("cost_tax_type", [
+  "GST",
+  "VAT",
+  "SERVICE_TAX",
+]);
+
+export const costDiscountTypeEnum = pgEnum("cost_discount_type", [
+  "PERCENTAGE",
+  "FIXED",
+]);
+
 export const clientPreferredContactMethodEnum = pgEnum(
   "client_preferred_contact_method",
   ["EMAIL", "PHONE", "WHATSAPP"],

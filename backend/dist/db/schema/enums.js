@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.clientPreferredContactMethodEnum = exports.clientLeadStatusEnum = exports.leadProposalStatusEnum = exports.proposalStatusEnum = exports.featureComplexityEnum = exports.featurePriorityEnum = exports.requirementSummaryGeneratedByEnum = exports.requirementSummaryStatusEnum = exports.aiGenerationStatusEnum = exports.messageSenderTypeEnum = exports.verificationTokenTypeEnum = void 0;
+exports.clientPreferredContactMethodEnum = exports.costDiscountTypeEnum = exports.costTaxTypeEnum = exports.costCurrencyEnum = exports.costPlatformEnum = exports.costComplexityLevelEnum = exports.costRoleEnum = exports.clientLeadStatusEnum = exports.leadProposalStatusEnum = exports.proposalStatusEnum = exports.featureComplexityEnum = exports.featurePriorityEnum = exports.requirementSummaryGeneratedByEnum = exports.requirementSummaryStatusEnum = exports.aiGenerationStatusEnum = exports.messageSenderTypeEnum = exports.verificationTokenTypeEnum = void 0;
 const pg_core_1 = require("drizzle-orm/pg-core");
 exports.verificationTokenTypeEnum = (0, pg_core_1.pgEnum)("verification_token_type", [
     "EMAIL_VERIFY",
@@ -55,5 +55,52 @@ exports.clientLeadStatusEnum = (0, pg_core_1.pgEnum)("client_lead_status", [
     "CONTACTED",
     "CONVERTED",
     "CLOSED",
+]);
+/**
+ * Cost engine enumerations.
+ *
+ * `cost_complexity_level` has four members and is deliberately NOT
+ * `feature_complexity` (LOW/MEDIUM/HIGH): pricing tiers and the AI's complexity
+ * signal are different vocabularies, and ENTERPRISE has no AI counterpart. The
+ * mapping between them lives in cost.constants.ts.
+ */
+exports.costRoleEnum = (0, pg_core_1.pgEnum)("cost_role", [
+    "FRONTEND",
+    "BACKEND",
+    "UI_UX_DESIGN",
+    "QA_TESTING",
+    "DEVOPS",
+    "PROJECT_MANAGEMENT",
+    "AI_DEVELOPMENT",
+]);
+exports.costComplexityLevelEnum = (0, pg_core_1.pgEnum)("cost_complexity_level", [
+    "SIMPLE",
+    "MEDIUM",
+    "COMPLEX",
+    "ENTERPRISE",
+]);
+exports.costPlatformEnum = (0, pg_core_1.pgEnum)("cost_platform", [
+    "WEB",
+    "ANDROID",
+    "IOS",
+    "DESKTOP",
+    "ADMIN_PANEL",
+    "API",
+    "AI_INTEGRATION",
+]);
+exports.costCurrencyEnum = (0, pg_core_1.pgEnum)("cost_currency", [
+    "INR",
+    "USD",
+    "EUR",
+    "GBP",
+]);
+exports.costTaxTypeEnum = (0, pg_core_1.pgEnum)("cost_tax_type", [
+    "GST",
+    "VAT",
+    "SERVICE_TAX",
+]);
+exports.costDiscountTypeEnum = (0, pg_core_1.pgEnum)("cost_discount_type", [
+    "PERCENTAGE",
+    "FIXED",
 ]);
 exports.clientPreferredContactMethodEnum = (0, pg_core_1.pgEnum)("client_preferred_contact_method", ["EMAIL", "PHONE", "WHATSAPP"]);

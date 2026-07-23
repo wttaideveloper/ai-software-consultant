@@ -20,6 +20,7 @@ const client_lead_route_js_1 = require("./modules/client-lead/client-lead.route.
 const client_requirement_summary_route_js_1 = require("./modules/client-requirement-summary/client-requirement-summary.route.js");
 const client_requirements_route_js_1 = require("./modules/client-requirements/client-requirements.route.js");
 const consultations_route_js_1 = require("./modules/consultations/consultations.route.js");
+const cost_route_js_1 = require("./modules/cost/cost.route.js");
 const conversations_route_js_1 = require("./modules/conversations/conversations.route.js");
 const estimation_route_js_1 = require("./modules/estimation/estimation.route.js");
 const feature_detection_route_js_1 = require("./modules/feature-detection/feature-detection.route.js");
@@ -71,6 +72,11 @@ app.use(`${app_js_1.API_PREFIX}/features`, feature_detection_route_js_1.features
 app.use(`${app_js_1.API_PREFIX}/feature-library`, feature_library_route_js_1.featureLibraryRouter);
 app.use(`${app_js_1.API_PREFIX}/messages`, conversations_route_js_1.messagesRouter);
 app.use(`${app_js_1.API_PREFIX}/settings`, settings_route_js_1.settingsRouter);
+// Cost Management — the pricing engine's configuration.
+app.use(`${app_js_1.API_PREFIX}/cost-settings`, cost_route_js_1.costSettingsRouter);
+app.use(`${app_js_1.API_PREFIX}/hourly-rates`, cost_route_js_1.hourlyRatesRouter);
+app.use(`${app_js_1.API_PREFIX}/complexity-multipliers`, cost_route_js_1.complexityMultipliersRouter);
+app.use(`${app_js_1.API_PREFIX}/platform-multipliers`, cost_route_js_1.platformMultipliersRouter);
 app.use(not_found_js_1.notFound);
 app.use(error_handler_js_1.errorHandler);
 async function verifyDatabaseConnection() {

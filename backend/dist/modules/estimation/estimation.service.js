@@ -7,12 +7,14 @@ const app_error_js_1 = require("../../shared/errors/app-error.js");
 const logger_js_1 = require("../../shared/logger/logger.js");
 const ai_constants_js_1 = require("../ai/ai.constants.js");
 const ai_orchestrator_js_1 = require("../ai/ai.orchestrator.js");
+const cost_service_js_1 = require("../cost/cost.service.js");
 const prompt_constants_js_1 = require("../prompts/prompt.constants.js");
 const estimation_repository_js_1 = require("./estimation.repository.js");
 const estimation_validation_js_1 = require("./estimation.validation.js");
 const PROMPT_VERSION = "1.0.0";
-function toEstimationDto(estimation) {
+function toEstimationDto(estimation, pricing = null) {
     return {
+        pricing,
         id: estimation.id,
         organizationId: estimation.organizationId,
         consultationId: estimation.consultationId,
@@ -30,6 +32,33 @@ function toEstimationDto(estimation) {
         createdAt: estimation.createdAt,
         updatedAt: estimation.updatedAt,
     };
+}
+/**
+ * Prices an estimate through the Cost Management engine.
+ *
+ * The AI is deliberately never asked for a cost — it produces hours, complexity
+ * and a breakdown, and the price is derived from the organization's rate card so
+ * pricing policy stays configurable and consistent across every estimate.
+ *
+ * `projectType` is passed as a platform label (resolved via the alias table);
+ * consultations carry no explicit platform list, so anything unrecognised is
+ * reported as unpriced rather than guessed at.
+ *
+ * A pricing failure is logged and swallowed: an estimate is still useful without
+ * a price, and a misconfigured rate card must not make the estimate unreadable.
+ */
+async function priceEstimation(estimation, projectType) {
+    try {
+        return await cost_service_js_1.costSettingsService.priceAiEstimate(estimation.organizationId, {
+            estimatedHours: estimation.estimatedHours,
+            complexity: estimation.complexity,
+            platformLabels: projectType ? [projectType] : [],
+        });
+    }
+    catch (error) {
+        logger_js_1.logger.error(`Failed to price estimation ${estimation.id}: ${error instanceof Error ? error.message : "Unknown error"}`);
+        return null;
+    }
 }
 function formatAssumptions(assumptions) {
     return assumptions.map((item) => item.trim()).join("\n");
@@ -102,7 +131,7 @@ class EstimationService {
         if (!estimation) {
             throw new app_error_js_1.AppError("Estimation not found", http_status_js_1.HTTP_STATUS.NOT_FOUND);
         }
-        return toEstimationDto(estimation);
+        return toEstimationDto(estimation, await priceEstimation(estimation, consultation.projectType));
     }
     async generate(organizationId, consultationId) {
         const consultation = await estimation_repository_js_1.estimationRepository.findConsultationByIdAndOrganization(consultationId, organizationId);
@@ -237,7 +266,8 @@ class EstimationService {
             return estimation;
         });
         logger_js_1.logger.info(`Estimation generated for consultation=${consultationId} version=${savedEstimation.version}`);
-        return toEstimationDto(savedEstimation);
+        // Cost is calculated here, from the rate card — the AI returned effort only.
+        return toEstimationDto(savedEstimation, await priceEstimation(savedEstimation, consultation.projectType));
     }
     async update(organizationId, consultationId, input) {
         const consultation = await estimation_repository_js_1.estimationRepository.findConsultationByIdAndOrganization(consultationId, organizationId);
@@ -259,7 +289,9 @@ class EstimationService {
             version: existing.version + 1,
         });
         logger_js_1.logger.info(`Estimation updated for consultation=${consultationId} version=${updated.version}`);
-        return toEstimationDto(updated);
+        // Re-priced after a manual hours/complexity edit, so the figure on screen
+        // always matches the effort beside it.
+        return toEstimationDto(updated, await priceEstimation(updated, consultation.projectType));
     }
 }
 exports.EstimationService = EstimationService;
