@@ -96,7 +96,8 @@ function toPublicOrganization(
   };
 }
 
-function slugify(value: string): string {
+/** Exported for the admin bootstrap seed, which creates an organization the same way this module does. */
+export function slugify(value: string): string {
   const slug = value
     .toLowerCase()
     .trim()

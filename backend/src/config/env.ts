@@ -16,6 +16,20 @@ export type EnvConfig = {
   APP_NAME: string;
   APP_VERSION: string;
   DISCOVERY_MAX_CLARIFICATION_QUESTIONS: number;
+  /**
+   * Bootstrap admin, used by db/seeds/admin.seed.ts. Public registration is
+   * disabled, so this is how the first login account comes into existence.
+   *
+   * EMAIL and PASSWORD intentionally default to "" rather than to a well-known
+   * credential: an unconfigured deployment must end up with *no* admin, never
+   * with an admin whose password is published in this repository. The seed logs
+   * loudly and does nothing when they are blank.
+   */
+  DEFAULT_ADMIN_NAME: string;
+  DEFAULT_ADMIN_EMAIL: string;
+  DEFAULT_ADMIN_PASSWORD: string;
+  /** Organization to attach the bootstrap admin to. Only used when the database has no organization yet. */
+  DEFAULT_ADMIN_ORGANIZATION: string;
 };
 
 function resolveNodeEnv(value: string | undefined): NodeEnv {
@@ -43,6 +57,10 @@ function loadEnv(): EnvConfig {
     APP_VERSION: process.env.APP_VERSION ?? "1.0.0",
     DISCOVERY_MAX_CLARIFICATION_QUESTIONS:
       Number(process.env.DISCOVERY_MAX_CLARIFICATION_QUESTIONS) || 8,
+    DEFAULT_ADMIN_NAME: process.env.DEFAULT_ADMIN_NAME ?? "Administrator",
+    DEFAULT_ADMIN_EMAIL: process.env.DEFAULT_ADMIN_EMAIL ?? "",
+    DEFAULT_ADMIN_PASSWORD: process.env.DEFAULT_ADMIN_PASSWORD ?? "",
+    DEFAULT_ADMIN_ORGANIZATION: process.env.DEFAULT_ADMIN_ORGANIZATION ?? "",
   };
 }
 

@@ -50,13 +50,6 @@ export type ApiErrorResponse = {
   timestamp: string;
 };
 
-export type RegisterPayload = {
-  organizationName: string;
-  fullName: string;
-  email: string;
-  password: string;
-};
-
 export type LoginPayload = {
   email: string;
   password: string;

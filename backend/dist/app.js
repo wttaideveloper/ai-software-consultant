@@ -8,6 +8,7 @@ const cors_1 = __importDefault(require("cors"));
 const express_1 = __importDefault(require("express"));
 const env_js_1 = require("./config/env.js");
 const index_js_1 = require("./db/index.js");
+const admin_seed_js_1 = require("./db/seeds/admin.seed.js");
 const error_handler_js_1 = require("./middleware/error-handler.js");
 const not_found_js_1 = require("./middleware/not-found.js");
 const auth_route_js_1 = require("./modules/auth/auth.route.js");
@@ -71,13 +72,35 @@ async function verifyDatabaseConnection() {
         const currentTime = result.rows[0]?.current_time;
         console.log("✅ Connected to Neon PostgreSQL");
         console.log(`Database Time: ${currentTime?.toISOString?.() ?? String(currentTime)}`);
+        return true;
     }
     catch (error) {
         console.error("❌ Failed to connect to Neon PostgreSQL");
+        console.error(error);
+        return false;
+    }
+}
+/**
+ * Public registration is disabled, so the admin account has to come from
+ * somewhere: this creates it on boot when it is missing. Idempotent — see
+ * db/seeds/admin.seed.ts. A failure is logged but never takes the server down;
+ * the API is still useful (and the seed is re-runnable via db:seed:admin).
+ */
+async function bootstrap() {
+    const isDatabaseReachable = await verifyDatabaseConnection();
+    if (!isDatabaseReachable) {
+        console.warn("⚠️  Skipping admin bootstrap — database is unreachable.");
+        return;
+    }
+    try {
+        await (0, admin_seed_js_1.ensureDefaultAdmin)();
+    }
+    catch (error) {
+        console.error("❌ Admin bootstrap failed");
         console.error(error);
     }
 }
 app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
-    void verifyDatabaseConnection();
+    void bootstrap();
 });

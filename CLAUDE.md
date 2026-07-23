@@ -147,7 +147,7 @@ Three tiers:
 
 ### Routing
 
-`react-router-dom` v7, plain `<Routes>/<Route>` (no data router/loaders), declared in `router.tsx`. Three route trees: the **public Client Portal** (`/`, `/requirements/*`, `/summary`, `/features`, `/estimate`, `/request-proposal`, `/gift`), the **public auth routes** behind `PublicRoute` (`/admin-login`, `/register`), and the **protected Admin Portal** behind `ProtectedRoute` → `AppLayout` (`/dashboard`, `/consultations`, …). Unmatched paths redirect to `/`.
+`react-router-dom` v7, plain `<Routes>/<Route>` (no data router/loaders), declared in `router.tsx`. Three route trees: the **public Client Portal** (`/`, `/requirements/*`, `/summary`, `/features`, `/estimate`, `/request-proposal`, `/gift`), the **public auth route** behind `PublicRoute` (`/admin-login` only — there is no register page or route), and the **protected Admin Portal** behind `ProtectedRoute` → `AppLayout` (`/dashboard`, `/consultations`, …). Unmatched paths redirect to `/`.
 
 ### Forms & Validation
 
@@ -242,7 +242,9 @@ Thin HTTP adapters: `safeParse` params/query/body → `AppError(400)` on failure
 
 JWTs signed with **separate secrets** (`JWT_SECRET` / `JWT_REFRESH_SECRET`) and a `type: "access" | "refresh"` claim checked on verify, so a token can't be used as the wrong kind.
 
-- **Register**: one transaction — create org (slug uniquified), create user (bcrypt, `BCRYPT_SALT_ROUNDS = 12`), bootstrap an "Admin" role with every permission if the org has no roles yet, assign it, seed default org/user settings, issue + store tokens.
+- **Register**: **disabled — the route is not mounted.** This is an internal platform with no self-service signup. `authController.register` / `authService.register` / `registerSchema` are all intentionally kept intact and reachable in code (`admin.seed.ts` reuses `registerSchema` for its password policy); only the `authRouter.post("/register", …)` line is gone, and re-adding it is the whole opt-in. The implementation, if re-enabled: one transaction — create org (slug uniquified), create user (bcrypt, `BCRYPT_SALT_ROUNDS = 12`), bootstrap an "Admin" role with every permission if the org has no roles yet, assign it, seed default org/user settings, issue + store tokens.
+- **Account provisioning** replaces it: the first admin comes from `db/seeds/admin.seed.ts` (`ensureDefaultAdmin()`, run on every boot from `app.ts` and via `npm run db:seed:admin`); further staff accounts come from the authenticated `POST /api/users`. The seed is idempotent on `DEFAULT_ADMIN_EMAIL` — if a non-deleted user holds that address it does nothing, never rewriting a password or re-granting a role. With `DEFAULT_ADMIN_EMAIL`/`DEFAULT_ADMIN_PASSWORD` unset it creates nothing and warns; there is deliberately no fallback credential in code.
+- **There is no "Super Admin" role.** Roles are org-scoped; the full-permission role both registration and the admin seed use is `slug: "admin"` (`isSystem: true`, every permission granted). `permissions.seed.ts` tops up every role with that slug.
 - **Login**: verify email/password/status → update `lastLoginAt` → delete all of the user's existing refresh tokens → store a new one (SHA-256 hash, never the raw token). One valid refresh token per user at a time.
 - `GET /auth/me` returns the current user + organization.
 - No `/auth/refresh` or `/auth/logout` endpoint exists, despite refresh-token infrastructure being fully built (see Common Pitfalls).
@@ -257,8 +259,7 @@ Base prefix: **`/api`** (`API_PREFIX` in `shared/constants/app.ts` — no `/v1`)
 
 ```
 GET  /api/health                                          no auth
-POST /api/auth/register
-POST /api/auth/login
+POST /api/auth/login                                       (no /register — not mounted)
 GET  /api/auth/me                                          authenticate
 
 GET|POST    /api/users, /api/users/:id                     authorize(USER_*)
@@ -337,6 +338,7 @@ npm run dev                  tsx watch src/app.ts       dev server, hot reload, 
 npm run build                tsc                        type-check + emit to dist/
 npm run start                node dist/app.js
 npm run db:seed:permissions  tsx src/db/seeds/permissions.seed.ts
+npm run db:seed:admin        tsx src/db/seeds/admin.seed.ts        idempotent bootstrap admin; also runs on every boot
 ```
 
 ### Frontend (`frontend/`)
@@ -370,7 +372,7 @@ npm run preview     vite preview
 
 1. **Backend imports need explicit `.js` extensions** (NodeNext ESM) — omitting it breaks the build even though the source is `.ts`.
 2. **`API_PREFIX` is `/api`** — there is no `/v1` segment; don't assume API versioning.
-3. **`backend/.env` is committed to git** with real-looking secrets (`DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `OPENAI_API_KEY`), and there's no `.gitignore` for `backend/`. Never add further secrets to tracked files.
+3. **`backend/.env` is gitignored and untracked** (root `.gitignore` covers `backend/.env`, `backend/dist/`, `.env`) — it holds the real `DATABASE_URL`, JWT secrets, `OPENAI_API_KEY` and `DEFAULT_ADMIN_PASSWORD`. `backend/.env.example` is the tracked, value-free counterpart: add new keys there, never real secrets.
 4. **`node_modules/` (both apps) and `frontend/dist/` are committed.** A broad `git add -A`/`git add .` will re-stage huge trees — always stage specific files.
 5. **JWT secrets aren't validated at boot.** `config/env.ts` defaults `JWT_SECRET`/`JWT_REFRESH_SECRET`/`DATABASE_URL` to `""` instead of throwing — a blank `.env` value won't be caught, it'll silently sign tokens with an empty key.
 6. **The five `extractJsonPayload` implementations are duplicated verbatim** across `feature-detection`, `estimation`, `proposal`, `requirement-summary`, `feature-library` services. A bugfix in one likely needs applying to all five.

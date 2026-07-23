@@ -4,6 +4,20 @@ import { authenticate } from "./auth.middleware.js";
 
 export const authRouter = Router();
 
-authRouter.post("/register", authController.register);
+/**
+ * POST /register is deliberately NOT mounted.
+ *
+ * This is an internal consulting platform — accounts are provisioned, never
+ * self-served. The implementation is intentionally kept intact and untouched
+ * (authController.register → authService.register → registerSchema) so it can be
+ * re-enabled or reused later; only the public entry point is gone, which is what
+ * actually closes the hole. Re-adding the line below is the entire opt-in:
+ *
+ *   authRouter.post("/register", authController.register);
+ *
+ * The account that logs in instead comes from db/seeds/admin.seed.ts, and
+ * further staff accounts from the authenticated POST /api/users endpoint
+ * (requires the user:create permission).
+ */
 authRouter.post("/login", authController.login);
 authRouter.get("/me", authenticate, authController.me);

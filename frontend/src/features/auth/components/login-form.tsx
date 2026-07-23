@@ -1,6 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -55,15 +54,9 @@ export function LoginForm() {
           {...register("password")}
         />
 
-        <div className="flex items-center justify-between">
-          <Checkbox label="Remember me" {...register("rememberMe")} />
-          <Link
-            to="/register"
-            className="rounded-sm text-sm font-medium text-accent-text transition-colors hover:text-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-          >
-            Need an account?
-          </Link>
-        </div>
+        {/* No "need an account?" link by design — accounts are provisioned by
+            an administrator, not self-served. */}
+        <Checkbox label="Remember me" {...register("rememberMe")} />
 
         <Button
           type="submit"

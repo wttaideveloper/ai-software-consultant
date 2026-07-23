@@ -23,6 +23,10 @@ function loadEnv() {
         APP_NAME: process.env.APP_NAME ?? "AI Software Consultant",
         APP_VERSION: process.env.APP_VERSION ?? "1.0.0",
         DISCOVERY_MAX_CLARIFICATION_QUESTIONS: Number(process.env.DISCOVERY_MAX_CLARIFICATION_QUESTIONS) || 8,
+        DEFAULT_ADMIN_NAME: process.env.DEFAULT_ADMIN_NAME ?? "Administrator",
+        DEFAULT_ADMIN_EMAIL: process.env.DEFAULT_ADMIN_EMAIL ?? "",
+        DEFAULT_ADMIN_PASSWORD: process.env.DEFAULT_ADMIN_PASSWORD ?? "",
+        DEFAULT_ADMIN_ORGANIZATION: process.env.DEFAULT_ADMIN_ORGANIZATION ?? "",
     };
 }
 exports.config = loadEnv();

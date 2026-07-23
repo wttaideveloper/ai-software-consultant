@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.authService = exports.AuthService = void 0;
+exports.slugify = slugify;
 const node_crypto_1 = require("node:crypto");
 const env_js_1 = require("../../config/env.js");
 const app_js_1 = require("../../shared/constants/app.js");
@@ -38,6 +39,7 @@ function toPublicOrganization(organization) {
         updatedAt: organization.updatedAt,
     };
 }
+/** Exported for the admin bootstrap seed, which creates an organization the same way this module does. */
 function slugify(value) {
     const slug = value
         .toLowerCase()

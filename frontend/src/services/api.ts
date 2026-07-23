@@ -19,9 +19,10 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config;
 });
 
+/** Login is the only auth entry point — a 401 from it is bad credentials, not an expired session. */
 function isAuthEntryRequest(url: string | undefined): boolean {
   if (!url) return false;
-  return url.includes("/auth/login") || url.includes("/auth/register");
+  return url.includes("/auth/login");
 }
 
 api.interceptors.response.use(

@@ -73,11 +73,6 @@ const ClientGiftPage = lazy(() =>
 const LoginPage = lazy(() =>
   import("@/features/auth/login-page").then((m) => ({ default: m.LoginPage })),
 );
-const RegisterPage = lazy(() =>
-  import("@/features/auth/register-page").then((m) => ({
-    default: m.RegisterPage,
-  })),
-);
 
 // Admin Portal
 const DashboardPage = lazy(() =>
@@ -168,10 +163,14 @@ export function AppRouter() {
         <Route path="/request-proposal" element={<ClientRequestProposalPage />} />
         <Route path="/gift" element={<ClientGiftPage />} />
 
-        {/* Public Admin Login — dedicated URL, kept separate from the Client Portal above. */}
+        {/*
+          Public Admin Login — dedicated URL, kept separate from the Client Portal
+          above. Login is the only public admin surface: there is no /register
+          route, because this is an internal platform where accounts are
+          provisioned (backend admin seed, then Users) rather than self-served.
+        */}
         <Route element={<PublicRoute />}>
           <Route path="/admin-login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
         </Route>
 
         {/* Protected Admin Portal — unchanged behavior, now rooted at /dashboard since / belongs to the Client Portal. */}
