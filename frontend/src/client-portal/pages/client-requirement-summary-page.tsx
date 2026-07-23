@@ -149,11 +149,15 @@ export function ClientRequirementSummaryPage() {
   };
 
   const isLoading = generateSummary.isPending && !summary;
-  // Dim the existing summary only for an explicit, user-requested regenerate —
-  // never during the initial generation's success handoff, where onSuccess sets
-  // `summary` before the mutation flips isPending to false, which would otherwise
-  // commit a render with the freshly generated summary shown dimmed. Gated by
-  // isPending so it always clears when the request settles.
+  // Single "busy over an existing summary" signal — drives the dim overlay and the
+  // disabled state of Continue / Regenerate. Deliberately NOT raw
+  // `generateSummary.isPending`: the first summary is generated from a mount
+  // effect, and under StrictMode (dev) that mutation's observer can keep reporting
+  // isPending=true after it has actually resolved and set `summary`, which would
+  // strand every isPending-gated control disabled until a page refresh. Keying off
+  // an explicit regenerate request — which the initial generation never sets — and
+  // still AND-ing with isPending (so it clears the instant a real regenerate,
+  // fired from a click and thus unaffected, settles) is immune to that artifact.
   const isRegenerating = regenerateRequested && generateSummary.isPending;
 
   // ── No discovery answers yet ────────────────────────────────────────────
@@ -260,7 +264,7 @@ export function ClientRequirementSummaryPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setIsRegenerateConfirmOpen(true)}
-                disabled={generateSummary.isPending}
+                disabled={isRegenerating}
               >
                 <RotateCcw className="h-3.5 w-3.5" />
                 Regenerate
@@ -397,7 +401,7 @@ export function ClientRequirementSummaryPage() {
           <Button
             type="button"
             onClick={handleContinue}
-            disabled={!summary || generateSummary.isPending}
+            disabled={!summary || isRegenerating}
           >
             No, I'm good to go!
             <ArrowRight className="h-4 w-4" />
@@ -413,7 +417,7 @@ export function ClientRequirementSummaryPage() {
         description="This replaces the current summary with a fresh one from the AI, discarding any edits you've made."
         confirmLabel="Regenerate"
         tone="primary"
-        isLoading={generateSummary.isPending}
+        isLoading={isRegenerating}
       />
     </ClientLayout>
   );
