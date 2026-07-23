@@ -12,6 +12,13 @@ exports.PROMPT_TYPES = {
     EMAIL: "EMAIL",
     MEETING_SUMMARY: "MEETING_SUMMARY",
     CLIENT_REQUIREMENT_DISCOVERY: "CLIENT_REQUIREMENT_DISCOVERY",
+    /**
+     * Plans which screens a concept-mockup batch should contain. A *text* call:
+     * the image model renders one screen at a time and is never asked to decide
+     * what the screens are, because naming and describing a coherent user journey
+     * is a reasoning task it does poorly and cannot return as structured data.
+     */
+    CONCEPT_SCREENS: "CONCEPT_SCREENS",
 };
 exports.PROMPT_DEFAULTS = {
     MAX_CONVERSATION_HISTORY: 20,

@@ -1,6 +1,7 @@
 export {
   aiGenerationStatusEnum,
   clientLeadStatusEnum,
+  clientMockupSetStatusEnum,
   clientPreferredContactMethodEnum,
   costComplexityLevelEnum,
   costCurrencyEnum,
@@ -32,6 +33,8 @@ export {
   costPlatformMultipliers,
   costSettings,
 } from "./cost-settings.js";
+export { clientMockupSets } from "./client-mockup-sets.js";
+export { clientMockupImages } from "./client-mockup-images.js";
 export { leadProposals } from "./lead-proposals.js";
 export type { LeadProposalContent } from "./lead-proposals.js";
 export { users } from "./users.js";
@@ -84,4 +87,6 @@ export {
   projectProposalsRelations,
   featureLibraryRelations,
   structuredRequirementsRelations,
+  clientMockupSetsRelations,
+  clientMockupImagesRelations,
 } from "./relations.js";

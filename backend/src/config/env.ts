@@ -13,6 +13,28 @@ export type EnvConfig = {
   OPENAI_API_KEY: string;
   OPENAI_DEFAULT_MODEL: string;
   OPENAI_TIMEOUT: number;
+  /**
+   * Concept-mockup generation (Client Portal). Image calls cost orders of
+   * magnitude more than the text calls on a public, unauthenticated endpoint, so
+   * every knob here is a spend control, not a preference.
+   *
+   * MOCKUPS_ENABLED is the kill switch: with it off the portal simply omits the
+   * section rather than erroring, which is also the correct state for any
+   * deployment that has not thought about the budget yet.
+   */
+  MOCKUPS_ENABLED: boolean;
+  OPENAI_IMAGE_MODEL: string;
+  OPENAI_IMAGE_SIZE: string;
+  OPENAI_IMAGE_QUALITY: string;
+  MOCKUP_STORAGE_DIR: string;
+  /** Screens per batch — each one is a separate billable image call. */
+  MOCKUP_SCREEN_COUNT: number;
+  /** Total regenerations allowed for one consultation key, on top of the first batch. */
+  MOCKUP_MAX_REGENERATIONS: number;
+  /** Batches one IP may start per hour. */
+  MOCKUP_RATE_LIMIT_PER_HOUR: number;
+  /** Hard ceiling on batches generated per rolling day, across all visitors. */
+  MOCKUP_DAILY_BATCH_BUDGET: number;
   APP_NAME: string;
   APP_VERSION: string;
   DISCOVERY_MAX_CLARIFICATION_QUESTIONS: number;
@@ -53,6 +75,17 @@ function loadEnv(): EnvConfig {
     OPENAI_DEFAULT_MODEL:
       process.env.OPENAI_DEFAULT_MODEL ?? "gpt-4o-mini",
     OPENAI_TIMEOUT: Number(process.env.OPENAI_TIMEOUT) || 60_000,
+    // Opt-in, not opt-out: an unconfigured deployment must not start billing for
+    // image generation just because the code shipped.
+    MOCKUPS_ENABLED: process.env.MOCKUPS_ENABLED === "true",
+    OPENAI_IMAGE_MODEL: process.env.OPENAI_IMAGE_MODEL ?? "gpt-image-1",
+    OPENAI_IMAGE_SIZE: process.env.OPENAI_IMAGE_SIZE ?? "1024x1024",
+    OPENAI_IMAGE_QUALITY: process.env.OPENAI_IMAGE_QUALITY ?? "low",
+    MOCKUP_STORAGE_DIR: process.env.MOCKUP_STORAGE_DIR ?? "storage/mockups",
+    MOCKUP_SCREEN_COUNT: Number(process.env.MOCKUP_SCREEN_COUNT) || 5,
+    MOCKUP_MAX_REGENERATIONS: Number(process.env.MOCKUP_MAX_REGENERATIONS) || 2,
+    MOCKUP_RATE_LIMIT_PER_HOUR: Number(process.env.MOCKUP_RATE_LIMIT_PER_HOUR) || 3,
+    MOCKUP_DAILY_BATCH_BUDGET: Number(process.env.MOCKUP_DAILY_BATCH_BUDGET) || 50,
     APP_NAME: process.env.APP_NAME ?? "AI Software Consultant",
     APP_VERSION: process.env.APP_VERSION ?? "1.0.0",
     DISCOVERY_MAX_CLARIFICATION_QUESTIONS:

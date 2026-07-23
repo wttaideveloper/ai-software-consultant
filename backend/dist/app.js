@@ -17,6 +17,7 @@ const client_estimate_route_js_1 = require("./modules/client-estimate/client-est
 const client_features_route_js_1 = require("./modules/client-features/client-features.route.js");
 const client_lead_admin_route_js_1 = require("./modules/client-lead/client-lead.admin.route.js");
 const client_lead_route_js_1 = require("./modules/client-lead/client-lead.route.js");
+const client_mockups_route_js_1 = require("./modules/client-mockups/client-mockups.route.js");
 const client_requirement_summary_route_js_1 = require("./modules/client-requirement-summary/client-requirement-summary.route.js");
 const client_requirements_route_js_1 = require("./modules/client-requirements/client-requirements.route.js");
 const consultations_route_js_1 = require("./modules/consultations/consultations.route.js");
@@ -47,6 +48,7 @@ app.use(`${app_js_1.API_PREFIX}/client/questions`, client_requirements_route_js_
 app.use(`${app_js_1.API_PREFIX}/client/summary`, client_requirement_summary_route_js_1.clientRequirementSummaryRouter);
 app.use(`${app_js_1.API_PREFIX}/client/features`, client_features_route_js_1.clientFeaturesRouter);
 app.use(`${app_js_1.API_PREFIX}/client/estimate`, client_estimate_route_js_1.clientEstimateRouter);
+app.use(`${app_js_1.API_PREFIX}/client/mockups`, client_mockups_route_js_1.clientMockupsRouter);
 app.use(`${app_js_1.API_PREFIX}/client/request-proposal`, client_lead_route_js_1.clientLeadRouter);
 app.use(`${app_js_1.API_PREFIX}/auth`, auth_route_js_1.authRouter);
 // Admin lead inbox — same module as the public submit route above, but

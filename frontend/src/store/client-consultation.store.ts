@@ -102,6 +102,16 @@ export type ClientFeatureBreakdownItem = {
 };
 
 export type ClientConsultationState = {
+  /**
+   * Stable id for this consultation, minted once and kept for the whole visit.
+   *
+   * The portal is otherwise stateless server-side, so this is the only thing that
+   * lets the backend recognise a returning visitor — it is the cache key for the
+   * AI concept mockups, and what makes "generate once, never again on refresh"
+   * possible without accounts. Cleared with the rest of the wizard, so a new
+   * consultation gets a new key and its own mockups.
+   */
+  consultationKey: string;
   /** Id of the requirements-wizard step the visitor last viewed, so the flow can resume there. */
   currentStep: string | null;
   projectIdea: string;
@@ -169,7 +179,28 @@ type ClientConsultationActions = {
   reset: () => void;
 };
 
+/**
+ * Must be a real UUID, not an ad-hoc random string: the backend validates the
+ * consultation key as a uuid and stores it in a uuid column, so a `Date.now()`
+ * style fallback would be rejected on older browsers rather than degrading.
+ */
+function createConsultationKey(): string {
+  const uuid = globalThis.crypto?.randomUUID?.();
+  if (uuid) return uuid;
+
+  return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (char) => {
+    const digit = Number(char);
+    return (
+      digit ^
+      (globalThis.crypto?.getRandomValues?.(new Uint8Array(1))?.[0] ??
+        Math.floor(Math.random() * 256)) &
+        (15 >> (digit / 4))
+    ).toString(16);
+  });
+}
+
 const INITIAL_STATE: ClientConsultationState = {
+  consultationKey: createConsultationKey(),
   currentStep: null,
   projectIdea: "",
   consultationTime: null,
@@ -267,7 +298,9 @@ export const useClientConsultationStore = create<
         })),
       setContactInfo: (value) =>
         set((state) => ({ contactInfo: { ...state.contactInfo, ...value } })),
-      reset: () => set(INITIAL_STATE),
+      // A fresh key per consultation, so a new visit never inherits the previous
+      // one's cached mockups (which were generated from different requirements).
+      reset: () => set({ ...INITIAL_STATE, consultationKey: createConsultationKey() }),
     }),
     {
       name: CLIENT_CONSULTATION_STORAGE_KEY,

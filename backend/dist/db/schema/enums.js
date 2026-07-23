@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.clientPreferredContactMethodEnum = exports.costDiscountTypeEnum = exports.costTaxTypeEnum = exports.costCurrencyEnum = exports.costPlatformEnum = exports.costComplexityLevelEnum = exports.costRoleEnum = exports.clientLeadStatusEnum = exports.leadProposalStatusEnum = exports.proposalStatusEnum = exports.featureComplexityEnum = exports.featurePriorityEnum = exports.requirementSummaryGeneratedByEnum = exports.requirementSummaryStatusEnum = exports.aiGenerationStatusEnum = exports.messageSenderTypeEnum = exports.verificationTokenTypeEnum = void 0;
+exports.clientMockupSetStatusEnum = exports.clientPreferredContactMethodEnum = exports.costDiscountTypeEnum = exports.costTaxTypeEnum = exports.costCurrencyEnum = exports.costPlatformEnum = exports.costComplexityLevelEnum = exports.costRoleEnum = exports.clientLeadStatusEnum = exports.leadProposalStatusEnum = exports.proposalStatusEnum = exports.featureComplexityEnum = exports.featurePriorityEnum = exports.requirementSummaryGeneratedByEnum = exports.requirementSummaryStatusEnum = exports.aiGenerationStatusEnum = exports.messageSenderTypeEnum = exports.verificationTokenTypeEnum = void 0;
 const pg_core_1 = require("drizzle-orm/pg-core");
 exports.verificationTokenTypeEnum = (0, pg_core_1.pgEnum)("verification_token_type", [
     "EMAIL_VERIFY",
@@ -104,3 +104,13 @@ exports.costDiscountTypeEnum = (0, pg_core_1.pgEnum)("cost_discount_type", [
     "FIXED",
 ]);
 exports.clientPreferredContactMethodEnum = (0, pg_core_1.pgEnum)("client_preferred_contact_method", ["EMAIL", "PHONE", "WHATSAPP"]);
+/**
+ * Lifecycle of one AI concept-mockup batch. The row itself is the job record —
+ * there is no queue in this system, so PENDING doubles as "a worker is running"
+ * and is reclaimed by age if the process dies mid-generation.
+ */
+exports.clientMockupSetStatusEnum = (0, pg_core_1.pgEnum)("client_mockup_set_status", [
+    "PENDING",
+    "READY",
+    "FAILED",
+]);

@@ -1,9 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.structuredRequirementsRelations = exports.featureLibraryRelations = exports.projectProposalsRelations = exports.projectEstimationsRelations = exports.detectedFeaturesRelations = exports.requirementSummariesRelations = exports.aiGenerationsRelations = exports.conversationMessagesRelations = exports.consultationsRelations = exports.auditLogsRelations = exports.userSettingsRelations = exports.organizationSettingsRelations = exports.verificationTokensRelations = exports.refreshTokensRelations = exports.userRolesRelations = exports.rolePermissionsRelations = exports.permissionsRelations = exports.rolesRelations = exports.usersRelations = exports.organizationsRelations = void 0;
+exports.clientMockupImagesRelations = exports.clientMockupSetsRelations = exports.structuredRequirementsRelations = exports.featureLibraryRelations = exports.projectProposalsRelations = exports.projectEstimationsRelations = exports.detectedFeaturesRelations = exports.requirementSummariesRelations = exports.aiGenerationsRelations = exports.conversationMessagesRelations = exports.consultationsRelations = exports.auditLogsRelations = exports.userSettingsRelations = exports.organizationSettingsRelations = exports.verificationTokensRelations = exports.refreshTokensRelations = exports.userRolesRelations = exports.rolePermissionsRelations = exports.permissionsRelations = exports.rolesRelations = exports.usersRelations = exports.organizationsRelations = void 0;
 const drizzle_orm_1 = require("drizzle-orm");
 const ai_generations_js_1 = require("./ai-generations.js");
 const audit_logs_js_1 = require("./audit-logs.js");
+const client_mockup_images_js_1 = require("./client-mockup-images.js");
+const client_mockup_sets_js_1 = require("./client-mockup-sets.js");
 const consultations_js_1 = require("./consultations.js");
 const conversation_messages_js_1 = require("./conversation-messages.js");
 const detected_features_js_1 = require("./detected-features.js");
@@ -257,5 +259,18 @@ exports.structuredRequirementsRelations = (0, drizzle_orm_1.relations)(structure
     consultation: one(consultations_js_1.consultations, {
         fields: [structured_requirements_js_1.structuredRequirements.consultationId],
         references: [consultations_js_1.consultations.id],
+    }),
+}));
+/**
+ * Deliberately not related to organizations or consultations: like client_leads,
+ * a Client Portal mockup batch belongs to an anonymous public visit, not a tenant.
+ */
+exports.clientMockupSetsRelations = (0, drizzle_orm_1.relations)(client_mockup_sets_js_1.clientMockupSets, ({ many }) => ({
+    images: many(client_mockup_images_js_1.clientMockupImages),
+}));
+exports.clientMockupImagesRelations = (0, drizzle_orm_1.relations)(client_mockup_images_js_1.clientMockupImages, ({ one }) => ({
+    set: one(client_mockup_sets_js_1.clientMockupSets, {
+        fields: [client_mockup_images_js_1.clientMockupImages.setId],
+        references: [client_mockup_sets_js_1.clientMockupSets.id],
     }),
 }));

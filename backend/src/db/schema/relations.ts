@@ -1,6 +1,8 @@
 import { relations } from "drizzle-orm";
 import { aiGenerations } from "./ai-generations.js";
 import { auditLogs } from "./audit-logs.js";
+import { clientMockupImages } from "./client-mockup-images.js";
+import { clientMockupSets } from "./client-mockup-sets.js";
 import { consultations } from "./consultations.js";
 import { conversationMessages } from "./conversation-messages.js";
 import { detectedFeatures } from "./detected-features.js";
@@ -303,6 +305,27 @@ export const structuredRequirementsRelations = relations(
     consultation: one(consultations, {
       fields: [structuredRequirements.consultationId],
       references: [consultations.id],
+    }),
+  }),
+);
+
+/**
+ * Deliberately not related to organizations or consultations: like client_leads,
+ * a Client Portal mockup batch belongs to an anonymous public visit, not a tenant.
+ */
+export const clientMockupSetsRelations = relations(
+  clientMockupSets,
+  ({ many }) => ({
+    images: many(clientMockupImages),
+  }),
+);
+
+export const clientMockupImagesRelations = relations(
+  clientMockupImages,
+  ({ one }) => ({
+    set: one(clientMockupSets, {
+      fields: [clientMockupImages.setId],
+      references: [clientMockupSets.id],
     }),
   }),
 );

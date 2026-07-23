@@ -1,0 +1,1 @@
+ALTER TABLE "client_mockup_sets" ADD COLUMN "generation_count" integer DEFAULT 1 NOT NULL;

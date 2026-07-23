@@ -127,3 +127,14 @@ export const clientPreferredContactMethodEnum = pgEnum(
   "client_preferred_contact_method",
   ["EMAIL", "PHONE", "WHATSAPP"],
 );
+
+/**
+ * Lifecycle of one AI concept-mockup batch. The row itself is the job record —
+ * there is no queue in this system, so PENDING doubles as "a worker is running"
+ * and is reclaimed by age if the process dies mid-generation.
+ */
+export const clientMockupSetStatusEnum = pgEnum("client_mockup_set_status", [
+  "PENDING",
+  "READY",
+  "FAILED",
+]);

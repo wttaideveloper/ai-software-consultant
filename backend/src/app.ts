@@ -12,6 +12,7 @@ import { clientEstimateRouter } from "./modules/client-estimate/client-estimate.
 import { clientFeaturesRouter } from "./modules/client-features/client-features.route.js";
 import { clientLeadAdminRouter } from "./modules/client-lead/client-lead.admin.route.js";
 import { clientLeadRouter } from "./modules/client-lead/client-lead.route.js";
+import { clientMockupsRouter } from "./modules/client-mockups/client-mockups.route.js";
 import { clientRequirementSummaryRouter } from "./modules/client-requirement-summary/client-requirement-summary.route.js";
 import { clientRequirementsRouter } from "./modules/client-requirements/client-requirements.route.js";
 import { consultationsRouter } from "./modules/consultations/consultations.route.js";
@@ -60,6 +61,7 @@ app.use(`${API_PREFIX}/client/questions`, clientRequirementsRouter);
 app.use(`${API_PREFIX}/client/summary`, clientRequirementSummaryRouter);
 app.use(`${API_PREFIX}/client/features`, clientFeaturesRouter);
 app.use(`${API_PREFIX}/client/estimate`, clientEstimateRouter);
+app.use(`${API_PREFIX}/client/mockups`, clientMockupsRouter);
 app.use(`${API_PREFIX}/client/request-proposal`, clientLeadRouter);
 app.use(`${API_PREFIX}/auth`, authRouter);
 // Admin lead inbox — same module as the public submit route above, but

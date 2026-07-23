@@ -46,3 +46,29 @@ export interface AIProvider {
   readonly name: AIProviderName;
   generateResponse(request: AIRequest): Promise<AIResponse>;
 }
+
+export type AIImageRequest = {
+  prompt: string;
+  model?: string;
+  size?: string;
+  quality?: string;
+};
+
+export type AIImageResult = {
+  /** Raw bytes, already base64-decoded. Providers return base64, never a durable URL. */
+  body: Buffer;
+  mimeType: string;
+  metadata: GenerationMetadata;
+};
+
+/**
+ * Image generation is a **separate** capability from text, not extra methods on
+ * AIProvider: a provider that only does chat completions must stay a valid
+ * AIProvider. Anything that needs pictures depends on this interface instead, so
+ * the dependency is explicit and a text-only provider can never be passed in by
+ * mistake.
+ */
+export interface AIImageProvider {
+  readonly name: AIProviderName;
+  generateImage(request: AIImageRequest): Promise<AIImageResult>;
+}

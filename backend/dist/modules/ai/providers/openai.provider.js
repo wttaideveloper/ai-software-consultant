@@ -242,6 +242,48 @@ class OpenAIProvider {
             throw appError;
         }
     }
+    /**
+     * Renders one image and returns the decoded bytes.
+     *
+     * The image API answers with base64 (`b64_json`), and for the models that can
+     * return a hosted URL that URL expires within the hour — so bytes are the only
+     * thing worth handing back. Persisting a provider URL would be a guaranteed
+     * broken image later, which is why this signature has no `url` at all.
+     */
+    async generateImage(request) {
+        if (!env_js_1.config.OPENAI_API_KEY) {
+            throw new app_error_js_1.AppError("AI provider is not configured", http_status_js_1.HTTP_STATUS.INTERNAL_SERVER_ERROR);
+        }
+        const startedAt = Date.now();
+        const model = request.model ?? env_js_1.config.OPENAI_IMAGE_MODEL;
+        try {
+            const result = await this.getClient().images.generate({
+                model,
+                prompt: request.prompt,
+                n: 1,
+                size: (request.size ?? env_js_1.config.OPENAI_IMAGE_SIZE),
+                quality: (request.quality ?? env_js_1.config.OPENAI_IMAGE_QUALITY),
+            });
+            const encoded = result.data?.[0]?.b64_json;
+            if (!encoded) {
+                throw new app_error_js_1.AppError("AI provider returned an empty image", http_status_js_1.HTTP_STATUS.INTERNAL_SERVER_ERROR);
+            }
+            return {
+                body: Buffer.from(encoded, "base64"),
+                mimeType: "image/png",
+                metadata: {
+                    provider: this.name,
+                    model,
+                    latencyMs: Date.now() - startedAt,
+                },
+            };
+        }
+        catch (error) {
+            const appError = mapOpenAIError(error);
+            logger_js_1.logger.error(`OpenAIProvider generateImage failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+            throw appError;
+        }
+    }
 }
 exports.OpenAIProvider = OpenAIProvider;
 exports.openAIProvider = new OpenAIProvider();

@@ -9,6 +9,9 @@ import { AppError } from "../../../shared/errors/app-error.js";
 import { logger } from "../../../shared/logger/logger.js";
 import { AI_PROVIDERS, AI_ROLES } from "../ai.constants.js";
 import type {
+  AIImageProvider,
+  AIImageRequest,
+  AIImageResult,
   AIMessage,
   AIProvider,
   AIRequest,
@@ -193,7 +196,7 @@ function mapOpenAIError(error: unknown): AppError {
   );
 }
 
-export class OpenAIProvider implements AIProvider {
+export class OpenAIProvider implements AIProvider, AIImageProvider {
   readonly name = AI_PROVIDERS.OPENAI;
 
   private readonly injectedClient: OpenAI | undefined;
@@ -278,6 +281,63 @@ export class OpenAIProvider implements AIProvider {
       const appError = mapOpenAIError(error);
       logger.error(
         `OpenAIProvider generateResponse failed: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+      );
+      throw appError;
+    }
+  }
+
+  /**
+   * Renders one image and returns the decoded bytes.
+   *
+   * The image API answers with base64 (`b64_json`), and for the models that can
+   * return a hosted URL that URL expires within the hour — so bytes are the only
+   * thing worth handing back. Persisting a provider URL would be a guaranteed
+   * broken image later, which is why this signature has no `url` at all.
+   */
+  async generateImage(request: AIImageRequest): Promise<AIImageResult> {
+    if (!config.OPENAI_API_KEY) {
+      throw new AppError(
+        "AI provider is not configured",
+        HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    const startedAt = Date.now();
+    const model = request.model ?? config.OPENAI_IMAGE_MODEL;
+
+    try {
+      const result = await this.getClient().images.generate({
+        model,
+        prompt: request.prompt,
+        n: 1,
+        size: (request.size ?? config.OPENAI_IMAGE_SIZE) as "1024x1024",
+        quality: (request.quality ?? config.OPENAI_IMAGE_QUALITY) as "low",
+      });
+
+      const encoded = result.data?.[0]?.b64_json;
+
+      if (!encoded) {
+        throw new AppError(
+          "AI provider returned an empty image",
+          HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        );
+      }
+
+      return {
+        body: Buffer.from(encoded, "base64"),
+        mimeType: "image/png",
+        metadata: {
+          provider: this.name,
+          model,
+          latencyMs: Date.now() - startedAt,
+        },
+      };
+    } catch (error) {
+      const appError = mapOpenAIError(error);
+      logger.error(
+        `OpenAIProvider generateImage failed: ${
           error instanceof Error ? error.message : "Unknown error"
         }`,
       );

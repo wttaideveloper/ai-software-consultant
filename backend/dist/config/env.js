@@ -20,6 +20,17 @@ function loadEnv() {
         OPENAI_API_KEY: process.env.OPENAI_API_KEY ?? "",
         OPENAI_DEFAULT_MODEL: process.env.OPENAI_DEFAULT_MODEL ?? "gpt-4o-mini",
         OPENAI_TIMEOUT: Number(process.env.OPENAI_TIMEOUT) || 60_000,
+        // Opt-in, not opt-out: an unconfigured deployment must not start billing for
+        // image generation just because the code shipped.
+        MOCKUPS_ENABLED: process.env.MOCKUPS_ENABLED === "true",
+        OPENAI_IMAGE_MODEL: process.env.OPENAI_IMAGE_MODEL ?? "gpt-image-1",
+        OPENAI_IMAGE_SIZE: process.env.OPENAI_IMAGE_SIZE ?? "1024x1024",
+        OPENAI_IMAGE_QUALITY: process.env.OPENAI_IMAGE_QUALITY ?? "low",
+        MOCKUP_STORAGE_DIR: process.env.MOCKUP_STORAGE_DIR ?? "storage/mockups",
+        MOCKUP_SCREEN_COUNT: Number(process.env.MOCKUP_SCREEN_COUNT) || 5,
+        MOCKUP_MAX_REGENERATIONS: Number(process.env.MOCKUP_MAX_REGENERATIONS) || 2,
+        MOCKUP_RATE_LIMIT_PER_HOUR: Number(process.env.MOCKUP_RATE_LIMIT_PER_HOUR) || 3,
+        MOCKUP_DAILY_BATCH_BUDGET: Number(process.env.MOCKUP_DAILY_BATCH_BUDGET) || 50,
         APP_NAME: process.env.APP_NAME ?? "AI Software Consultant",
         APP_VERSION: process.env.APP_VERSION ?? "1.0.0",
         DISCOVERY_MAX_CLARIFICATION_QUESTIONS: Number(process.env.DISCOVERY_MAX_CLARIFICATION_QUESTIONS) || 8,

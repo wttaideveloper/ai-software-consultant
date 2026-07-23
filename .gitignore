@@ -1,3 +1,7 @@
 backend/.env
 backend/dist/
 .env
+
+# Generated concept-mockup images (MOCKUP_STORAGE_DIR). Regenerable artifacts,
+# and each batch is several MB — never commit them.
+backend/storage/

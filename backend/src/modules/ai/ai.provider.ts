@@ -1,4 +1,7 @@
 export type {
+  AIImageProvider,
+  AIImageRequest,
+  AIImageResult,
   AIMessage,
   AIModel,
   AIProvider,
