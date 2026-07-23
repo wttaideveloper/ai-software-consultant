@@ -92,7 +92,7 @@ export function ClientRequestProposalPage() {
           // done its job — drop it before this page unmounts. Navigating first
           // keeps both updates in one batch, so the guard below can't flash its
           // empty state on the way out. Only the wizard's own key is removed.
-          navigate("/gift");
+          navigate("/proposal-sent");
           clearClientConsultation();
         },
       },

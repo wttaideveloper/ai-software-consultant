@@ -63,6 +63,11 @@ const ClientRequestProposalPage = lazy(() =>
     default: m.ClientRequestProposalPage,
   })),
 );
+const ClientProposalSentPage = lazy(() =>
+  import("@/client-portal/pages/client-proposal-sent-page").then((m) => ({
+    default: m.ClientProposalSentPage,
+  })),
+);
 const ClientGiftPage = lazy(() =>
   import("@/client-portal/pages/client-gift-page").then((m) => ({
     default: m.ClientGiftPage,
@@ -166,6 +171,7 @@ export function AppRouter() {
         <Route path="/features" element={<ClientDetectedFeaturesPage />} />
         <Route path="/estimate" element={<ClientEstimatePage />} />
         <Route path="/request-proposal" element={<ClientRequestProposalPage />} />
+        <Route path="/proposal-sent" element={<ClientProposalSentPage />} />
         <Route path="/gift" element={<ClientGiftPage />} />
 
         {/*

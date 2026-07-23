@@ -2,7 +2,7 @@ import { useLocation } from "react-router-dom";
 import { CLIENT_PORTAL_STEPS } from "@/client-portal/client-nav-config";
 import { StepProgress } from "@/features/auth/components/step-progress";
 
-/** Renders nothing on pages outside the 5-step flow (Home, Gift). */
+/** Renders nothing on pages outside the 5-step flow (Home, Proposal sent, Gift). */
 export function ClientStepIndicator() {
   const location = useLocation();
   const activeIndex = CLIENT_PORTAL_STEPS.findIndex((step) => step.path === location.pathname);
