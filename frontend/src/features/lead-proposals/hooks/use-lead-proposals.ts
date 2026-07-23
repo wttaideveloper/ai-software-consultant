@@ -15,13 +15,31 @@ export function useLeadProposalVersions(leadId: string | undefined) {
 }
 
 /** Proposal library — every version across every lead. */
-export function useLeadProposalLibrary(params: ListLeadProposalsParams) {
+export function useLeadProposalLibrary(
+  params: ListLeadProposalsParams,
+  enabled = true,
+) {
   return useQuery({
     queryKey: [LEAD_PROPOSALS_QUERY_KEY, "library", params],
     queryFn: () => leadProposalsService.list(params),
+    enabled,
     staleTime: 15_000,
     // Keeps the previous page rendered while the next one loads, so paging and
     // filtering don't flash the skeleton on every keystroke.
+    placeholderData: keepPreviousData,
+  });
+}
+
+/** Proposal library grouped by client: latest / working draft / client version. */
+export function useLeadProposalClients(
+  params: ListLeadProposalsParams,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: [LEAD_PROPOSALS_QUERY_KEY, "library-clients", params],
+    queryFn: () => leadProposalsService.listByClient(params),
+    enabled,
+    staleTime: 15_000,
     placeholderData: keepPreviousData,
   });
 }

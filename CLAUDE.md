@@ -191,17 +191,30 @@ Animate `transform`/`opacity` only — they stay on the compositor. Any `layoutI
 
 `/dashboard` is a **sales** dashboard for the client-request workflow (Client Portal → Client Request → Lead Details → Proposal → Lead Status). Every widget reads `client_leads` through the existing `GET /api/client-leads`; there is no stats endpoint. The five KPI counts come from `?status=X&pageSize=1` → `meta.total` (one row per request, `countAll()` does the work), and "Total" plus Recent Requests plus Recent Activity all share one `pageSize=5` query via `useRecentClientRequests()`. It reuses the Client Requests feature's `useClientLeads` hook, so both screens share a cache.
 
-The old consultation widgets (status totals, recent consultations, AI progress, Create Consultation, Open AI Chat) were removed with the discovery pipeline's demotion — don't reintroduce consultation data here. **Recent Activity shows lead-created events only**: `audit_logs` exists but has no writers, proposal export is client-side, and `updatedAt` cannot distinguish a status change from a summary edit — see `dashboard-activity.ts` before adding event types.
+The old consultation widgets (status totals, recent consultations, AI progress, Create Consultation, Open AI Chat) were removed with the discovery pipeline's demotion — don't reintroduce consultation data here. **Recent Activity shows lead-created events only** (see `dashboard-activity.ts`). That is now extendable: `audit_logs` gained its first writer with proposal versioning (`LEAD_PROPOSAL_VERSION_CREATED`), so proposal events can be folded into the feed by reading that table — no new storage needed.
 
 ### Proposals
 
-A client lead has **many proposal versions** (`lead_proposals`), not one draft.
+A client lead has **many proposal versions** (`lead_proposals`), not one draft, and **versions are never overwritten or lost**.
 
-- **Lead Details → Proposal Versions** (`features/lead-proposals/components/lead-proposal-versions-section.tsx`) lists every version with Open / Duplicate / Delete (drafts only) / Export, above a Current Active / Latest / Total roll-up. "Current active" = highest-precedence status (accepted > sent > ready), newest version winning ties; a lead whose versions are all drafts has none.
-- **Proposal Management** (`/proposals`) is the cross-lead library — search, status/client filter, sort.
-- **Proposal Editor** (`/client-requests/:leadId/proposals/:proposalId`) edits **one version**. There is exactly one editor: the page, its section components and the PDF/DOCX export pipeline are unchanged from the localStorage era — only its storage seam (`use-proposal-editor-draft.ts`) was rewritten. Do not fork it.
-- **Proposal status is independent of lead status.** Saving the body never changes status; status moves through `PATCH /lead-proposals/:id/status` with a transition map defined in `lead-proposal.service.ts` and mirrored (for UI affordances only) in `lead-proposal-status.ts`. The server is the authority.
-- New versions are prefilled by `buildProposalDraft(lead)` on the client and POSTed as `content`; "Duplicate" instead sends `sourceProposalId` and the server copies the body inside the version-numbering transaction. The generator is deliberately not duplicated server-side.
+**Only DRAFT is mutable.** `PATCH /lead-proposals/:id` returns 409 for any other status — that server-side check, not the UI, is what makes history immutable. The editing rules:
+
+| Status | Editing it does |
+|---|---|
+| DRAFT | edits in place, same version (Rule 1) |
+| READY | forks a new DRAFT copy, reason `EDIT_READY` (Rule 2) |
+| SENT / ACCEPTED / REJECTED / ARCHIVED | forks a new DRAFT copy, reason `EDIT_LOCKED` (Rule 3) |
+
+`POST /lead-proposals/:id/edit` (`openForEditing`) applies those rules **server-side** and returns `{ proposal, created, source }`; the UI reads `created` to raise the "V6 is locked. A new Draft V7 has been created." toast. The client never picks the reason — it is derived from the real status, so no caller can mislabel a fork.
+
+- **`writeVersion()` is the single writer** for the table. Manual create, Duplicate, both edit-forks, Regenerate and the localStorage import all funnel through it, so version numbering, the DRAFT default and the audit row can't diverge. `createNextVersionFromExisting(sourceId, reason, actor)` is the copy helper every automatic fork uses.
+- **Regenerate** (`POST /lead-proposals/:id/regenerate`) always creates a new version — it never overwrites, whatever the source status.
+- **Audit** goes to the existing `audit_logs` table (no new table): `action: LEAD_PROPOSAL_VERSION_CREATED`, `before` = source version, `after` = destination + reason. This is the first writer that table has ever had; a future activity feed (see the Dashboard note) should read from here.
+- **Lead Details → Proposal Versions** shows Latest / Current Draft / Latest Sent / Latest Accepted; the **library** (`/proposals`) has two grains over the same filters — "All versions" and "By client" (Latest / Working Draft / Client Version) via `?groupBy=clients`. All of them are built by one `buildSummary()` in the service, so "working draft" and "client version" are defined exactly once.
+- **Proposal Editor** (`/client-requests/:leadId/proposals/:proposalId`) edits **one version**, with the full **Proposal History** panel beside it. A locked version renders read-only via a single `<fieldset disabled>` wrapper — no editor component takes a `disabled` prop, so a newly added control cannot miss the rule. There is exactly one editor; do not fork it. Selecting a version in history only navigates — **browsing must never create a version**.
+- **Version Compare** is not implemented. The architecture is ready for it: versions are immutable, the history panel already holds the full list and knows which is current, and `audit_logs` records what each fork came from.
+- **Proposal status is independent of lead status.** Status moves through `PATCH /lead-proposals/:id/status` with a transition map in `lead-proposal.service.ts`, mirrored (for UI affordances only) in `lead-proposal-status.ts`. The server is the authority.
+- New versions are prefilled by `buildProposalDraft(lead)` on the client and POSTed as `content`; the generator is deliberately not duplicated server-side.
 
 ### Navigation
 
@@ -297,8 +310,10 @@ POST         /api/features/match
 
 # Lead proposals — versioned proposals for a client lead (authorize(PROPOSAL_*)):
 GET|POST     /api/client-leads/:leadId/proposals         list versions (+summary) / create version
-GET          /api/lead-proposals                          library: search, status, leadId, sortBy, sortDir
-GET|PATCH    /api/lead-proposals/:id                      full version / edit title+body+notes
+GET          /api/lead-proposals                          library: search, status, leadId, sortBy, sortDir, groupBy
+GET|PATCH    /api/lead-proposals/:id                      full version / edit body — DRAFT only, else 409
+POST         /api/lead-proposals/:id/edit                 applies the editing rules; may fork a new draft
+POST         /api/lead-proposals/:id/regenerate           always a new version, never an overwrite
 PATCH        /api/lead-proposals/:id/status               Mark Ready|Sent|Accepted|Rejected|Archive
 DELETE       /api/lead-proposals/:id                      drafts only, soft delete
 ```

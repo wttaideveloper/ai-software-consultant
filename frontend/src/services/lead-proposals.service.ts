@@ -4,10 +4,13 @@ import type {
   CreateLeadProposalPayload,
   LeadProposal,
   LeadProposalDetail,
+  LeadProposalEditSession,
+  LeadProposalLeadRollup,
   LeadProposalStatus,
   LeadProposalVersions,
   ListLeadProposalsParams,
   Paginated,
+  RegenerateLeadProposalPayload,
   UpdateLeadProposalPayload,
 } from "@/types";
 
@@ -31,6 +34,40 @@ export const leadProposalsService = {
     const response = await api.get<ApiSuccessResponse<Paginated<LeadProposal>>>(
       LIBRARY_ENDPOINT,
       { params },
+    );
+    return response.data.data;
+  },
+
+  /** Same endpoint and filters as list(), grouped by client instead of version. */
+  async listByClient(
+    params: ListLeadProposalsParams = {},
+  ): Promise<Paginated<LeadProposalLeadRollup>> {
+    const response = await api.get<
+      ApiSuccessResponse<Paginated<LeadProposalLeadRollup>>
+    >(LIBRARY_ENDPOINT, { params: { ...params, groupBy: "clients" } });
+    return response.data.data;
+  },
+
+  /**
+   * Asks the server to open a version for editing. Returns that version when it
+   * is a draft, or a new draft forked from it when it is locked — the server
+   * applies the rules, the client just follows the answer.
+   */
+  async openForEditing(proposalId: string): Promise<LeadProposalEditSession> {
+    const response = await api.post<ApiSuccessResponse<LeadProposalEditSession>>(
+      `${LIBRARY_ENDPOINT}/${proposalId}/edit`,
+    );
+    return response.data.data;
+  },
+
+  /** Never overwrites — stores the regenerated body as a new draft version. */
+  async regenerate(
+    proposalId: string,
+    payload: RegenerateLeadProposalPayload,
+  ): Promise<LeadProposalDetail> {
+    const response = await api.post<ApiSuccessResponse<LeadProposalDetail>>(
+      `${LIBRARY_ENDPOINT}/${proposalId}/regenerate`,
+      payload,
     );
     return response.data.data;
   },

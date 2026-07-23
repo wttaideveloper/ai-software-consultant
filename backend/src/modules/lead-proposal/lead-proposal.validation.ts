@@ -4,6 +4,7 @@ import {
   DEFAULT_PAGE_SIZE,
   MAX_PAGE_SIZE,
 } from "../../shared/constants/app.js";
+import { VERSION_REASONS } from "./lead-proposal.constants.js";
 
 /**
  * Feature snapshot carried by a proposal version.
@@ -65,18 +66,40 @@ export const createLeadProposalSchema = z
     content: leadProposalContentSchema.optional(),
     sourceProposalId: z.string().uuid("Source proposal id must be a valid UUID").optional(),
     notes: z.string().trim().max(2000).optional(),
+    /**
+     * Provenance for the audit trail. Only the reasons a client can legitimately
+     * originate are accepted — EDIT_READY / EDIT_LOCKED are derived server-side
+     * from the real status in openForEditing(), never taken from a request.
+     */
+    reason: z
+      .enum([
+        VERSION_REASONS.MANUAL,
+        VERSION_REASONS.DUPLICATED,
+        VERSION_REASONS.IMPORTED,
+      ])
+      .optional(),
   })
-  .refine(
-    (value) => Boolean(value.content) !== Boolean(value.sourceProposalId),
-    {
-      message: "Provide either content or sourceProposalId, not both",
-      path: ["content"],
-    },
-  )
+  .refine((value) => Boolean(value.content) || Boolean(value.sourceProposalId), {
+    message: "Provide either content or sourceProposalId",
+    path: ["content"],
+  })
   .refine((value) => Boolean(value.sourceProposalId) || Boolean(value.title), {
     message: "Proposal title is required",
     path: ["title"],
   });
+
+/**
+ * Regenerate carries the freshly generated body. The server decides the version
+ * number, the DRAFT status and the reason — the client only supplies content.
+ */
+export const regenerateLeadProposalSchema = z.object({
+  title: titleSchema,
+  content: leadProposalContentSchema,
+});
+
+export type RegenerateLeadProposalInput = z.infer<
+  typeof regenerateLeadProposalSchema
+>;
 
 export type CreateLeadProposalInput = z.infer<typeof createLeadProposalSchema>;
 
@@ -131,6 +154,12 @@ export const listLeadProposalsQuerySchema = z.object({
   leadId: z.string().uuid().optional(),
   sortBy: z.enum(["updatedAt", "createdAt", "title"]).default("updatedAt"),
   sortDir: z.enum(["asc", "desc"]).default("desc"),
+  /**
+   * "versions" (default) lists one row per proposal version; "clients" lists one
+   * row per client with its latest / working-draft / client-version roll-up.
+   * Same filters either way — only the grain differs.
+   */
+  groupBy: z.enum(["versions", "clients"]).default("versions"),
 });
 
 export type ListLeadProposalsQuery = z.infer<typeof listLeadProposalsQuerySchema>;

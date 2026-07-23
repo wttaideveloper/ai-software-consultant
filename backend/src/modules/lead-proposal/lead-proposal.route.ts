@@ -48,11 +48,35 @@ leadProposalRouter.get(
   leadProposalController.getById,
 );
 
+/**
+ * Body edits — DRAFT versions only. Any other status is immutable and the
+ * service returns 409; the client's route out is /edit below.
+ */
 leadProposalRouter.patch(
   "/:id",
   authenticate,
   authorize(PERMISSIONS.PROPOSAL_UPDATE),
   leadProposalController.update,
+);
+
+/**
+ * "I want to edit this version." The server applies the editing rules and
+ * returns either this version (already a draft) or a new draft forked from it.
+ * PROPOSAL_CREATE because it may create a version.
+ */
+leadProposalRouter.post(
+  "/:id/edit",
+  authenticate,
+  authorize(PERMISSIONS.PROPOSAL_CREATE),
+  leadProposalController.openForEditing,
+);
+
+/** Regenerate — always a new version, never an overwrite. */
+leadProposalRouter.post(
+  "/:id/regenerate",
+  authenticate,
+  authorize(PERMISSIONS.PROPOSAL_CREATE),
+  leadProposalController.regenerate,
 );
 
 /** Mark Ready / Sent / Accepted / Rejected / Archive all land here. */

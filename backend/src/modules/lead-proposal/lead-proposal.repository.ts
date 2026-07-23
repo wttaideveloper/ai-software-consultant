@@ -12,8 +12,18 @@ import {
   type SQL,
 } from "drizzle-orm";
 import { db, type DbExecutor } from "../../db/index.js";
-import { clientLeads, leadProposals, users } from "../../db/schema/index.js";
+import {
+  auditLogs,
+  clientLeads,
+  leadProposals,
+  users,
+} from "../../db/schema/index.js";
 import type { LeadProposalContent } from "../../db/schema/lead-proposals.js";
+import {
+  EDITABLE_STATUS,
+  LEAD_PROPOSAL_AUDIT,
+  type VersionReason,
+} from "./lead-proposal.constants.js";
 import type { ListLeadProposalsQuery } from "./lead-proposal.validation.js";
 
 export type LeadProposalRecord = typeof leadProposals.$inferSelect;
@@ -264,6 +274,128 @@ export class LeadProposalRepository {
       .returning({ id: leadProposals.id });
 
     return Boolean(proposal);
+  }
+
+  /**
+   * Records a version fork in `audit_logs`.
+   *
+   * `before` carries the source version, `after` the destination plus the
+   * reason — the shape a future activity feed or version-compare view needs,
+   * stored in the table the schema already provides for it. Writes go in the
+   * same transaction as the insert, so a version can never exist without its
+   * provenance.
+   */
+  async recordVersionCreated(
+    entry: {
+      organizationId: string;
+      actorId: string | null;
+      leadId: string;
+      source: {
+        id: string;
+        versionNumber: number;
+        status: LeadProposalStatus;
+      } | null;
+      destination: { id: string; versionNumber: number };
+      reason: VersionReason;
+    },
+    executor: DbExecutor = db,
+  ): Promise<void> {
+    await executor.insert(auditLogs).values({
+      organizationId: entry.organizationId,
+      actorId: entry.actorId,
+      action: LEAD_PROPOSAL_AUDIT.ACTION_VERSION_CREATED,
+      entityType: LEAD_PROPOSAL_AUDIT.ENTITY_TYPE,
+      entityId: entry.destination.id,
+      before: entry.source
+        ? {
+            proposalId: entry.source.id,
+            versionNumber: entry.source.versionNumber,
+            status: entry.source.status,
+          }
+        : null,
+      after: {
+        leadId: entry.leadId,
+        proposalId: entry.destination.id,
+        versionNumber: entry.destination.versionNumber,
+        status: EDITABLE_STATUS,
+        reason: entry.reason,
+      },
+    });
+  }
+
+  /**
+   * Every live version of the given leads, newest version first.
+   *
+   * Backs the library's per-client roll-up: the page of leads is resolved first,
+   * then their versions are fetched in this one query and reduced in the
+   * service by the same function that builds a single lead's summary.
+   */
+  async findManyByLeadIds(
+    leadIds: string[],
+    executor: DbExecutor = db,
+  ): Promise<LeadProposalWithContext[]> {
+    if (leadIds.length === 0) {
+      return [];
+    }
+
+    return executor
+      .select({
+        proposal: leadProposals,
+        leadName: clientLeads.name,
+        leadCompany: clientLeads.company,
+        createdByName: users.fullName,
+      })
+      .from(leadProposals)
+      .innerJoin(clientLeads, eq(leadProposals.leadId, clientLeads.id))
+      .leftJoin(users, eq(leadProposals.createdBy, users.id))
+      .where(
+        and(
+          isNull(leadProposals.deletedAt),
+          sql`${leadProposals.leadId} = ANY(${sql.param(leadIds)}::uuid[])`,
+        ),
+      )
+      .orderBy(desc(leadProposals.versionNumber));
+  }
+
+  /**
+   * One entry per lead that has at least one live proposal, most recently
+   * touched first — the page the library's "By client" view walks.
+   */
+  async findLeadPage(
+    filters: ListLeadProposalsFilters,
+    executor: DbExecutor = db,
+  ): Promise<string[]> {
+    const conditions = buildListConditions(filters);
+    const offset = (filters.page - 1) * filters.pageSize;
+
+    const rows = await executor
+      .select({
+        leadId: leadProposals.leadId,
+        lastTouched: max(leadProposals.updatedAt),
+      })
+      .from(leadProposals)
+      .innerJoin(clientLeads, eq(leadProposals.leadId, clientLeads.id))
+      .where(and(...conditions))
+      .groupBy(leadProposals.leadId)
+      .orderBy(desc(max(leadProposals.updatedAt)))
+      .limit(filters.pageSize)
+      .offset(offset);
+
+    return rows.map((row) => row.leadId);
+  }
+
+  /** Number of distinct leads matching the filters — the roll-up view's total. */
+  async countLeads(
+    filters: Omit<ListLeadProposalsFilters, "page" | "pageSize" | "sortBy" | "sortDir">,
+    executor: DbExecutor = db,
+  ): Promise<number> {
+    const rows = await executor
+      .selectDistinct({ leadId: leadProposals.leadId })
+      .from(leadProposals)
+      .innerJoin(clientLeads, eq(leadProposals.leadId, clientLeads.id))
+      .where(and(...buildListConditions(filters)));
+
+    return rows.length;
   }
 
   /**

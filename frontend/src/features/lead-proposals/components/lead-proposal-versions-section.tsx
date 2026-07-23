@@ -79,17 +79,21 @@ export function LeadProposalVersionsSection({ lead }: { lead: ClientLeadDetail }
   const createVersion = () => {
     const { title, content } = splitDraft(buildProposalDraft(lead));
     createProposal.mutate(
-      { title, content },
+      { title, content, reason: "MANUAL" },
       { onSuccess: (proposal) => openVersion(proposal.id) },
     );
   };
 
-  /** Duplicating copies server-side, so the body is taken atomically. */
+  /**
+   * Duplicating copies server-side through createNextVersionFromExisting, so the
+   * body is taken atomically and the fork is recorded like any other.
+   */
   const duplicateVersion = (proposal: LeadProposal) => {
     createProposal.mutate(
       {
         sourceProposalId: proposal.id,
         title: `${proposal.title} (copy)`,
+        reason: "DUPLICATED",
       },
       { onSuccess: (created) => openVersion(created.id) },
     );
@@ -147,35 +151,52 @@ export function LeadProposalVersionsSection({ lead }: { lead: ClientLeadDetail }
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <SummaryTile
-              label="Current Active Proposal"
-              value={
-                summary?.active
-                  ? `V${summary.active.versionNumber}`
-                  : "None active"
-              }
-              hint={
-                summary?.active
-                  ? `${summary.active.status.toLowerCase()} · ${summary.active.title}`
-                  : "No version is with the client yet"
-              }
-            />
-            <SummaryTile
-              label="Latest Proposal"
-              value={
-                summary?.latest ? `V${summary.latest.versionNumber}` : "—"
-              }
+              label="Latest Version"
+              value={summary?.latest ? `V${summary.latest.versionNumber}` : "—"}
               hint={
                 summary?.latest
-                  ? `updated ${formatRelativeTime(summary.latest.updatedAt)}`
+                  ? `${summary.latest.status.toLowerCase()} · updated ${formatRelativeTime(summary.latest.updatedAt)}`
                   : "Nothing drafted yet"
               }
             />
             <SummaryTile
-              label="Total Versions"
-              value={String(summary?.total ?? 0)}
-              hint={summary?.total === 1 ? "1 version" : `${summary?.total ?? 0} versions`}
+              label="Current Draft"
+              value={
+                summary?.workingDraft
+                  ? `V${summary.workingDraft.versionNumber}`
+                  : "None open"
+              }
+              hint={
+                summary?.workingDraft
+                  ? `updated ${formatRelativeTime(summary.workingDraft.updatedAt)}`
+                  : "No draft in progress"
+              }
+            />
+            <SummaryTile
+              label="Latest Sent"
+              value={
+                summary?.latestSent ? `V${summary.latestSent.versionNumber}` : "—"
+              }
+              hint={
+                summary?.latestSent
+                  ? `sent ${formatRelativeTime(summary.latestSent.updatedAt)}`
+                  : "Nothing sent yet"
+              }
+            />
+            <SummaryTile
+              label="Latest Accepted"
+              value={
+                summary?.latestAccepted
+                  ? `V${summary.latestAccepted.versionNumber}`
+                  : "—"
+              }
+              hint={
+                summary?.latestAccepted
+                  ? `accepted ${formatRelativeTime(summary.latestAccepted.updatedAt)}`
+                  : `${summary?.total ?? 0} version${summary?.total === 1 ? "" : "s"} in total`
+              }
             />
           </div>
 
@@ -247,12 +268,17 @@ export function LeadProposalVersionsSection({ lead }: { lead: ClientLeadDetail }
                         Delete
                       </Button>
                     ) : null}
+                    {/*
+                      Open always just opens — browsing history must never fork a
+                      version. A locked version opens read-only, where "Edit as
+                      new draft" performs the fork.
+                    */}
                     <Button
                       variant="secondary"
                       size="sm"
                       onClick={() => openVersion(version.id)}
                     >
-                      Open
+                      {version.status === "DRAFT" ? "Open" : "View"}
                       <ArrowRight className="h-3.5 w-3.5" />
                     </Button>
                   </div>

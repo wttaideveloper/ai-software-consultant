@@ -41,6 +41,9 @@ export function useMigrateLocalProposalDraft(
         title: input.title,
         content: input.content,
         notes: "Migrated from a locally saved draft.",
+        // Recorded in the audit trail, so an imported V1 is distinguishable
+        // from one an admin created from the client request.
+        reason: "IMPORTED",
       }),
     onSuccess: (proposal, input) => {
       clearDraft(input.leadId);

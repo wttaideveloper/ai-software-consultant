@@ -121,7 +121,9 @@ export function ClientRequestDetailsPage() {
    * client, else the newest draft, else a prefill built from the request.
    */
   const exportHeadlineProposal = async (format: "pdf" | "docx") => {
-    const headline = versions?.summary.active ?? versions?.summary.latest ?? null;
+    // What the client last saw, else the newest version, else a fresh prefill.
+    const headline =
+      versions?.summary.clientVersion ?? versions?.summary.latest ?? null;
 
     if (!headline) {
       await runExport(format, { draft: buildProposalDraft(lead), lead });

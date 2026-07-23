@@ -61,14 +61,20 @@ export type LeadProposalDetail = LeadProposal & {
 };
 
 /**
- * Roll-up shown above the version list. `active` is the version currently
- * representing the live offer (accepted > sent > ready, newest wins ties), or
- * null when every version is still a draft.
+ * Roll-up shared by the Lead Details tiles, the editor's history panel and the
+ * library's per-client view. Each field is "the newest version that is X", so
+ * they can point at the same version or at nothing.
  */
 export type LeadProposalSummary = {
   total: number;
+  /** Highest version number, whatever its status. */
   latest: LeadProposal | null;
-  active: LeadProposal | null;
+  /** Newest DRAFT — the version currently being worked on. */
+  workingDraft: LeadProposal | null;
+  /** Newest version the client has seen (sent, accepted or rejected). */
+  clientVersion: LeadProposal | null;
+  latestSent: LeadProposal | null;
+  latestAccepted: LeadProposal | null;
 };
 
 export type LeadProposalVersions = {
@@ -76,12 +82,47 @@ export type LeadProposalVersions = {
   summary: LeadProposalSummary;
 };
 
+/** One library row when the library is grouped by client. */
+export type LeadProposalLeadRollup = {
+  leadId: string;
+  leadName: string;
+  leadCompany: string | null;
+  summary: LeadProposalSummary;
+};
+
+/**
+ * Result of asking the server to open a version for editing.
+ *
+ * `created` is false when the version was already a draft (Rule 1) and true
+ * when the server forked a new draft because the version was locked (Rules 2
+ * and 3) — the UI reads this flag rather than re-deriving the rule.
+ */
+export type LeadProposalEditSession = {
+  proposal: LeadProposalDetail;
+  created: boolean;
+  source: {
+    id: string;
+    versionNumber: number;
+    status: LeadProposalStatus;
+  } | null;
+};
+
+/** Only the reasons a client may originate; edit-forks are decided server-side. */
+export type LeadProposalCreateReason = "MANUAL" | "DUPLICATED" | "IMPORTED";
+
 /** Send `content` to create from a prefill, or `sourceProposalId` to duplicate. */
 export type CreateLeadProposalPayload = {
   title?: string;
   content?: LeadProposalContent;
   sourceProposalId?: string;
   notes?: string;
+  reason?: LeadProposalCreateReason;
+};
+
+/** Regenerate carries only the new body; the server owns version and status. */
+export type RegenerateLeadProposalPayload = {
+  title: string;
+  content: LeadProposalContent;
 };
 
 export type UpdateLeadProposalPayload = {
@@ -98,4 +139,6 @@ export type ListLeadProposalsParams = {
   leadId?: string;
   sortBy?: "updatedAt" | "createdAt" | "title";
   sortDir?: "asc" | "desc";
+  /** "versions" (default) = one row per version; "clients" = one row per client. */
+  groupBy?: "versions" | "clients";
 };

@@ -1,18 +1,29 @@
 import { and, eq, isNull } from "drizzle-orm";
-import { db } from "../../db/index.js";
+import { db, type DbExecutor } from "../../db/index.js";
 import { clientLeads } from "../../db/schema/index.js";
+import type { LeadProposalContent } from "../../db/schema/lead-proposals.js";
 import { HTTP_STATUS } from "../../shared/constants/http-status.js";
 import { AppError } from "../../shared/errors/app-error.js";
 import { logger } from "../../shared/logger/logger.js";
+import {
+  CLIENT_FACING_STATUSES,
+  EDITABLE_STATUS,
+  VERSION_REASONS,
+  type VersionReason,
+} from "./lead-proposal.constants.js";
 import type {
   LeadProposalDetailDto,
   LeadProposalListItemDto,
   LeadProposalSummaryDto,
   LeadProposalVersionsDto,
+  LeadProposalEditSessionDto,
+  LeadProposalLeadRollupDto,
+  PaginatedLeadProposalRollupsDto,
   PaginatedLeadProposalsDto,
 } from "./lead-proposal.dto.js";
 import {
   leadProposalRepository,
+  type LeadProposalRecord,
   type LeadProposalStatus,
   type LeadProposalWithContext,
 } from "./lead-proposal.repository.js";
@@ -21,6 +32,12 @@ import type {
   ListLeadProposalsQuery,
   UpdateLeadProposalInput,
 } from "./lead-proposal.validation.js";
+
+/** Who is performing the action — needed for `createdBy` and the audit row. */
+export type ProposalActor = {
+  id: string;
+  organizationId: string;
+};
 
 function toListItemDto(row: LeadProposalWithContext): LeadProposalListItemDto {
   const { proposal } = row;
@@ -51,42 +68,36 @@ function toDetailDto(row: LeadProposalWithContext): LeadProposalDetailDto {
 }
 
 /**
- * Which statuses count as "with the client", and in what order of authority.
- * Absent statuses (DRAFT, REJECTED, ARCHIVED) can never be the active proposal.
+ * Builds the roll-up every surface shares.
+ *
+ * `items` must arrive newest-version-first, so the first match in each scan is
+ * by definition the newest of its kind. One function serves the Lead Details
+ * tiles, the editor's history panel and the library's per-client view — the
+ * definitions of "working draft" and "client version" exist exactly once.
  */
-const ACTIVE_STATUS_PRECEDENCE: Partial<Record<LeadProposalStatus, number>> = {
-  ACCEPTED: 3,
-  SENT: 2,
-  READY: 1,
-};
-
-function resolveActive(
-  items: LeadProposalListItemDto[],
-): LeadProposalListItemDto | null {
-  let active: LeadProposalListItemDto | null = null;
-  let bestRank = 0;
-
-  for (const item of items) {
-    const rank = ACTIVE_STATUS_PRECEDENCE[item.status] ?? 0;
-    if (rank === 0) continue;
-
-    // items arrive newest-version-first, so a strict > keeps the newest version
-    // when two share the same status.
-    if (rank > bestRank) {
-      bestRank = rank;
-      active = item;
-    }
-  }
-
-  return active;
-}
-
 function buildSummary(items: LeadProposalListItemDto[]): LeadProposalSummaryDto {
+  const newestWith = (predicate: (item: LeadProposalListItemDto) => boolean) =>
+    items.find(predicate) ?? null;
+
   return {
     total: items.length,
     latest: items[0] ?? null,
-    active: resolveActive(items),
+    /** The version an admin is currently working on, if any. */
+    workingDraft: newestWith((item) => item.status === EDITABLE_STATUS),
+    /** The newest version the client has actually seen. */
+    clientVersion: newestWith((item) =>
+      CLIENT_FACING_STATUSES.includes(item.status),
+    ),
+    latestSent: newestWith((item) => item.status === "SENT"),
+    latestAccepted: newestWith((item) => item.status === "ACCEPTED"),
   };
+}
+
+/** Rule 2 vs Rule 3 — both fork, but the history should say which happened. */
+function reasonForEditing(status: LeadProposalStatus): VersionReason {
+  return status === "READY"
+    ? VERSION_REASONS.EDIT_READY
+    : VERSION_REASONS.EDIT_LOCKED;
 }
 
 /**
@@ -136,74 +147,250 @@ export class LeadProposalService {
   }
 
   /**
-   * Creates the next version for a lead.
+   * THE single writer for `lead_proposals`. Every version in the system — manual,
+   * duplicated, forked by an edit, regenerated or imported — is created here and
+   * nowhere else, so version numbering, the DRAFT default and the audit row can
+   * never diverge between call sites.
    *
    * The version number is read and written inside one transaction, and the
    * unique index on (lead_id, version_number) is the real guard: if two admins
-   * click "Create New Version" at the same moment, one transaction wins and the
+   * fork the same proposal at the same moment, one transaction wins and the
    * other fails its insert rather than both writing V3.
    */
-  async createVersion(
-    leadId: string,
-    input: CreateLeadProposalInput,
-    userId: string,
-  ): Promise<LeadProposalDetailDto> {
-    await this.assertLeadExists(leadId);
-
-    const created = await leadProposalRepository.runInTransaction(async (tx) => {
-      let title = input.title?.trim() ?? "";
-      let content = input.content;
-
-      if (input.sourceProposalId) {
-        const source = await leadProposalRepository.findById(
-          input.sourceProposalId,
-          tx,
-        );
-
-        if (!source) {
-          throw new AppError(
-            "The proposal being duplicated no longer exists.",
-            HTTP_STATUS.NOT_FOUND,
-          );
-        }
-
-        if (source.leadId !== leadId) {
-          throw new AppError(
-            "A proposal can only be duplicated within the same client request.",
-            HTTP_STATUS.BAD_REQUEST,
-          );
-        }
-
-        content = source.proposalJson;
-        title = title || source.title;
-      }
-
-      if (!content) {
-        throw new AppError(
-          "Proposal content is required.",
-          HTTP_STATUS.BAD_REQUEST,
-        );
-      }
-
+  private async writeVersion(
+    params: {
+      leadId: string;
+      title: string;
+      content: LeadProposalContent;
+      notes: string | null;
+      source: LeadProposalRecord | null;
+      reason: VersionReason;
+      actor: ProposalActor;
+    },
+    executor?: DbExecutor,
+  ): Promise<LeadProposalRecord> {
+    const run = async (tx: DbExecutor) => {
       const versionNumber =
-        (await leadProposalRepository.findMaxVersionNumber(leadId, tx)) + 1;
+        (await leadProposalRepository.findMaxVersionNumber(params.leadId, tx)) + 1;
 
-      return leadProposalRepository.create(
+      const created = await leadProposalRepository.create(
         {
-          leadId,
+          leadId: params.leadId,
           versionNumber,
-          title,
-          proposalJson: content,
-          notes: input.notes ?? null,
-          createdBy: userId,
+          title: params.title,
+          // Always DRAFT. A new version is by definition unpublished work; the
+          // status column is moved only through the status endpoint.
+          proposalJson: params.content,
+          notes: params.notes,
+          createdBy: params.actor.id,
+        },
+        tx,
+      );
+
+      await leadProposalRepository.recordVersionCreated(
+        {
+          organizationId: params.actor.organizationId,
+          actorId: params.actor.id,
+          leadId: params.leadId,
+          source: params.source
+            ? {
+                id: params.source.id,
+                versionNumber: params.source.versionNumber,
+                status: params.source.status,
+              }
+            : null,
+          destination: { id: created.id, versionNumber: created.versionNumber },
+          reason: params.reason,
+        },
+        tx,
+      );
+
+      logger.info(
+        `Lead proposal version created: lead=${params.leadId} v${created.versionNumber} reason=${params.reason}` +
+          (params.source ? ` from v${params.source.versionNumber}` : ""),
+      );
+
+      return created;
+    };
+
+    return executor
+      ? run(executor)
+      : leadProposalRepository.runInTransaction(run);
+  }
+
+  /**
+   * The helper every automatic fork goes through: copies an existing version's
+   * title and body into a new DRAFT at the next version number, leaving the
+   * source untouched.
+   *
+   * Used by Rule 2 (editing a READY proposal), Rule 3 (editing a locked one) and
+   * the explicit Duplicate action. The caller supplies the reason; it never
+   * supplies the version number, the status or the content.
+   */
+  async createNextVersionFromExisting(
+    sourceProposalId: string,
+    reason: VersionReason,
+    actor: ProposalActor,
+    options: { title?: string } = {},
+  ): Promise<LeadProposalDetailDto> {
+    const created = await leadProposalRepository.runInTransaction(async (tx) => {
+      const source = await leadProposalRepository.findById(sourceProposalId, tx);
+
+      if (!source) {
+        throw new AppError(
+          "The proposal being copied no longer exists.",
+          HTTP_STATUS.NOT_FOUND,
+        );
+      }
+
+      return this.writeVersion(
+        {
+          leadId: source.leadId,
+          title: options.title?.trim() || source.title,
+          content: source.proposalJson,
+          notes: source.notes,
+          source,
+          reason,
+          actor,
         },
         tx,
       );
     });
 
-    logger.info(
-      `Lead proposal created: lead=${leadId} version=${created.versionNumber} id=${created.id}`,
+    return this.getById(created.id);
+  }
+
+  /**
+   * Creating a version from supplied content: "Create New Version" (prefilled
+   * from the lead), the localStorage import, or an explicit Duplicate — which
+   * delegates to createNextVersionFromExisting so copying lives in one place.
+   */
+  async createVersion(
+    leadId: string,
+    input: CreateLeadProposalInput,
+    actor: ProposalActor,
+  ): Promise<LeadProposalDetailDto> {
+    await this.assertLeadExists(leadId);
+
+    if (input.sourceProposalId && !input.content) {
+      const source = await leadProposalRepository.findById(input.sourceProposalId);
+
+      if (source && source.leadId !== leadId) {
+        throw new AppError(
+          "A proposal can only be duplicated within the same client request.",
+          HTTP_STATUS.BAD_REQUEST,
+        );
+      }
+
+      return this.createNextVersionFromExisting(
+        input.sourceProposalId,
+        input.reason ?? VERSION_REASONS.DUPLICATED,
+        actor,
+        { title: input.title },
+      );
+    }
+
+    if (!input.content || !input.title) {
+      throw new AppError(
+        "Proposal title and content are required.",
+        HTTP_STATUS.BAD_REQUEST,
+      );
+    }
+
+    const source = input.sourceProposalId
+      ? await leadProposalRepository.findById(input.sourceProposalId)
+      : null;
+
+    const created = await this.writeVersion({
+      leadId,
+      title: input.title.trim(),
+      content: input.content,
+      notes: input.notes ?? null,
+      source,
+      reason: input.reason ?? VERSION_REASONS.MANUAL,
+      actor,
+    });
+
+    return this.getById(created.id);
+  }
+
+  /**
+   * Applies the editing rules and hands back the version the admin should
+   * actually be editing.
+   *
+   * The client says "I want to edit this"; the server decides what that means:
+   *  - Rule 1, DRAFT → the same version, untouched (`created: false`)
+   *  - Rule 2, READY → a new DRAFT copy
+   *  - Rule 3, SENT/ACCEPTED/REJECTED/ARCHIVED → a new DRAFT copy
+   *
+   * Deciding here rather than in the UI is the point: no caller can edit a
+   * locked version by skipping a check, and the reason recorded in the audit
+   * trail is derived from the real status rather than trusted from the client.
+   */
+  async openForEditing(
+    proposalId: string,
+    actor: ProposalActor,
+  ): Promise<LeadProposalEditSessionDto> {
+    const { proposal } = await this.getRowOr404(proposalId);
+
+    if (proposal.status === EDITABLE_STATUS) {
+      return {
+        proposal: await this.getById(proposalId),
+        created: false,
+        source: null,
+      };
+    }
+
+    const created = await this.createNextVersionFromExisting(
+      proposalId,
+      reasonForEditing(proposal.status),
+      actor,
     );
+
+    return {
+      proposal: created,
+      created: true,
+      source: {
+        id: proposal.id,
+        versionNumber: proposal.versionNumber,
+        status: proposal.status,
+      },
+    };
+  }
+
+  /**
+   * Regenerate — always forks, never overwrites, whatever the source status is.
+   *
+   * The replacement body is built client-side by buildProposalDraft() from the
+   * lead's current summary, features and estimate (the same pure generator the
+   * editor uses); this method is what makes the result a new version rather than
+   * an overwrite of the one on screen.
+   */
+  async regenerate(
+    proposalId: string,
+    input: { title: string; content: LeadProposalContent },
+    actor: ProposalActor,
+  ): Promise<LeadProposalDetailDto> {
+    const created = await leadProposalRepository.runInTransaction(async (tx) => {
+      const source = await leadProposalRepository.findById(proposalId, tx);
+
+      if (!source) {
+        throw new AppError("Proposal not found.", HTTP_STATUS.NOT_FOUND);
+      }
+
+      return this.writeVersion(
+        {
+          leadId: source.leadId,
+          title: input.title.trim() || source.title,
+          content: input.content,
+          notes: source.notes,
+          source,
+          reason: VERSION_REASONS.REGENERATED,
+          actor,
+        },
+        tx,
+      );
+    });
 
     return this.getById(created.id);
   }
@@ -245,20 +432,92 @@ export class LeadProposalService {
     };
   }
 
+  /**
+   * Library, grouped by client: one row per lead with its latest version,
+   * current working draft and current client version.
+   *
+   * Three queries, not N+1 — the page of leads is resolved first, then all their
+   * versions come back in one call and are reduced by buildSummary(), the same
+   * function the per-lead view uses.
+   */
+  async listLeadRollups(
+    query: ListLeadProposalsQuery,
+  ): Promise<PaginatedLeadProposalRollupsDto> {
+    const filters = {
+      search: query.search,
+      status: query.status,
+      leadId: query.leadId,
+      page: query.page,
+      pageSize: query.pageSize,
+      sortBy: query.sortBy,
+      sortDir: query.sortDir,
+    };
+
+    const [total, leadIds] = await Promise.all([
+      leadProposalRepository.countLeads(filters),
+      leadProposalRepository.findLeadPage(filters),
+    ]);
+
+    const rows = await leadProposalRepository.findManyByLeadIds(leadIds);
+    const byLead = new Map<string, LeadProposalListItemDto[]>();
+
+    for (const row of rows) {
+      const items = byLead.get(row.proposal.leadId) ?? [];
+      items.push(toListItemDto(row));
+      byLead.set(row.proposal.leadId, items);
+    }
+
+    // Ordered by the lead page, which already carries "most recently touched".
+    const items: LeadProposalLeadRollupDto[] = leadIds.flatMap((leadId) => {
+      const versions = byLead.get(leadId);
+      if (!versions || versions.length === 0) return [];
+
+      const first = versions[0]!;
+      return [
+        {
+          leadId,
+          leadName: first.leadName,
+          leadCompany: first.leadCompany,
+          summary: buildSummary(versions),
+        },
+      ];
+    });
+
+    return {
+      items,
+      meta: {
+        page: query.page,
+        pageSize: query.pageSize,
+        total,
+        totalPages: total === 0 ? 0 : Math.ceil(total / query.pageSize),
+      },
+    };
+  }
+
   async getById(proposalId: string): Promise<LeadProposalDetailDto> {
     return toDetailDto(await this.getRowOr404(proposalId));
   }
 
   /**
-   * Body edit. Any version stays editable, including one already sent — the
-   * spec is explicit that admins can edit any version, and a version's number
-   * and history are what carry the audit story, not immutability of the body.
+   * Body edit — DRAFT only.
+   *
+   * Every other status is immutable: a sent proposal is the record of what the
+   * client received, and an archived one is history. Callers that want to change
+   * a locked version go through openForEditing(), which forks it. This is the
+   * backstop that makes "old versions are never lost" true regardless of UI.
    */
   async update(
     proposalId: string,
     input: UpdateLeadProposalInput,
   ): Promise<LeadProposalDetailDto> {
-    await this.getRowOr404(proposalId);
+    const { proposal } = await this.getRowOr404(proposalId);
+
+    if (proposal.status !== EDITABLE_STATUS) {
+      throw new AppError(
+        `Proposal V${proposal.versionNumber} is ${proposal.status.toLowerCase()} and can no longer be edited. Open it to start a new draft.`,
+        HTTP_STATUS.CONFLICT,
+      );
+    }
 
     const updated = await leadProposalRepository.update(proposalId, {
       ...(input.title !== undefined ? { title: input.title.trim() } : {}),

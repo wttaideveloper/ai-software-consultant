@@ -5,7 +5,9 @@ import { leadProposalsService } from "@/services/lead-proposals.service";
 import type {
   CreateLeadProposalPayload,
   LeadProposalDetail,
+  LeadProposalEditSession,
   LeadProposalStatus,
+  RegenerateLeadProposalPayload,
   UpdateLeadProposalPayload,
 } from "@/types";
 import { getApiErrorMessage } from "@/utils/api-error";
@@ -35,6 +37,58 @@ export function useCreateLeadProposal(leadId: string | undefined) {
     },
     onError: (error) => {
       toast.error(getApiErrorMessage(error, "Couldn't create the proposal version."));
+    },
+  });
+}
+
+/**
+ * "Open this version for editing", with the automatic-versioning toast.
+ *
+ * The server decides whether a fork happens; this hook only reports it. The
+ * message is deliberately a toast and not a dialog — the fork is automatic and
+ * always safe (nothing is overwritten), so interrupting the admin to confirm it
+ * would add a click without adding a decision.
+ */
+export function useOpenProposalForEditing() {
+  const invalidate = useInvalidateProposals();
+
+  return useMutation({
+    mutationFn: (proposalId: string) =>
+      leadProposalsService.openForEditing(proposalId),
+    onSuccess: (session: LeadProposalEditSession) => {
+      if (!session.created) return;
+
+      void invalidate();
+      toast.success(
+        `Proposal V${session.source?.versionNumber} is locked. A new Draft V${session.proposal.versionNumber} has been created.`,
+      );
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Couldn't open this proposal for editing."));
+    },
+  });
+}
+
+/** Regenerate — always lands on a new draft, never overwrites the current one. */
+export function useRegenerateLeadProposal() {
+  const invalidate = useInvalidateProposals();
+
+  return useMutation({
+    mutationFn: ({
+      proposalId,
+      payload,
+    }: {
+      proposalId: string;
+      payload: RegenerateLeadProposalPayload;
+    }) => leadProposalsService.regenerate(proposalId, payload),
+    onSuccess: (proposal: LeadProposalDetail) => {
+      void invalidate();
+      toast.success(
+        `Regenerated from the client request as Draft V${proposal.versionNumber}. Earlier versions are unchanged.`,
+      );
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Couldn't regenerate the proposal."));
     },
   });
 }

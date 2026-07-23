@@ -8,6 +8,8 @@ import {
   FileSignature,
   Gauge,
   Lightbulb,
+  Lock,
+  PencilLine,
   RotateCcw,
   Save,
   ScrollText,
@@ -27,7 +29,17 @@ import { Input } from "@/components/ui/input";
 import { useClientLead } from "@/features/client-requests/hooks/use-client-lead";
 import { LeadProposalStatusActions } from "@/features/lead-proposals/components/lead-proposal-status-actions";
 import { LeadProposalStatusBadge } from "@/features/lead-proposals/components/lead-proposal-status-badge";
-import { useLeadProposal } from "@/features/lead-proposals/hooks/use-lead-proposals";
+import { ProposalVersionHistory } from "@/features/lead-proposals/components/proposal-version-history";
+import {
+  useOpenProposalForEditing,
+  useRegenerateLeadProposal,
+} from "@/features/lead-proposals/hooks/use-lead-proposal-mutations";
+import {
+  useLeadProposal,
+  useLeadProposalVersions,
+} from "@/features/lead-proposals/hooks/use-lead-proposals";
+import { buildProposalDraft } from "@/features/proposal-editor/build-proposal-draft";
+import { splitDraft } from "@/features/proposal-editor/lead-proposal.types";
 import { DownloadProposalMenu } from "@/features/proposal-editor/components/download-proposal-menu";
 import { ListField } from "@/features/proposal-editor/components/list-field";
 import { MarkdownField } from "@/features/proposal-editor/components/markdown-field";
@@ -66,23 +78,58 @@ export function ProposalEditorPage() {
     error: proposalError,
   } = useLeadProposal(proposalId);
 
-  const {
-    draft,
-    patch,
-    isDirty,
-    save,
-    isSaving,
-    savedAt,
-    reset,
-    regenerateFromLead,
-  } = useProposalEditorDraft(proposal, lead);
+  const { data: versions, isLoading: isLoadingVersions } =
+    useLeadProposalVersions(leadId);
+
+  const { draft, patch, isDirty, save, isSaving, savedAt, reset } =
+    useProposalEditorDraft(proposal, lead);
   const { runExport, exportingFormat } = useExportProposal();
+  const openForEditing = useOpenProposalForEditing();
+  const regenerate = useRegenerateLeadProposal();
 
   const isLoading = isLoadingLead || isLoadingProposal;
   const isError = isErrorLead || isErrorProposal;
   const error = leadError ?? proposalError;
 
   const backToLead = () => navigate(`/client-requests/${leadId}`);
+  const openVersion = (proposalId: string) =>
+    navigate(`/client-requests/${leadId}/proposals/${proposalId}`);
+
+  /**
+   * Only drafts are editable. Everything else is a record of what existed at
+   * that point, so the form renders read-only and the way forward is a fork.
+   */
+  const isLocked = Boolean(proposal) && proposal!.status !== "DRAFT";
+
+  /**
+   * Rule 1/2/3 in one action: the server returns this version if it is a draft,
+   * or a new draft forked from it if it is locked. No dialog — nothing is
+   * overwritten either way, so there is no decision to confirm.
+   */
+  const editThisVersion = () => {
+    if (!proposal) return;
+    openForEditing.mutate(proposal.id, {
+      onSuccess: (session) => {
+        if (session.proposal.id !== proposal.id) {
+          openVersion(session.proposal.id);
+        }
+      },
+    });
+  };
+
+  /**
+   * Regenerate never overwrites: the body is rebuilt from the lead's current
+   * summary/features/estimate by the same pure generator the prefill uses, and
+   * stored as a new version.
+   */
+  const regenerateAsNewVersion = () => {
+    if (!proposal || !lead) return;
+    const { title, content } = splitDraft(buildProposalDraft(lead));
+    regenerate.mutate(
+      { proposalId: proposal.id, payload: { title, content } },
+      { onSuccess: (created) => openVersion(created.id) },
+    );
+  };
 
   // Native guard against losing unsaved work on reload / tab close. Client-side
   // route changes aren't covered — react-router v7 without a data router has no
@@ -181,11 +228,12 @@ export function ProposalEditorPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={regenerateFromLead}
-              title="Rebuild every section from the request's summary, features and estimate"
+              onClick={regenerateAsNewVersion}
+              isLoading={regenerate.isPending}
+              title="Rebuild every section from the request's summary, features and estimate — always as a new version"
             >
               <Sparkles className="h-3.5 w-3.5" />
-              Rebuild from request
+              Regenerate
             </Button>
             {isDirty ? (
               <Button variant="ghost" size="sm" onClick={reset}>
@@ -199,33 +247,55 @@ export function ProposalEditorPage() {
               onSelect={(format) => void runExport(format, { draft, lead })}
               exportingFormat={exportingFormat}
             />
-            <Button size="sm" onClick={save} isLoading={isSaving} disabled={!isDirty}>
-              <Save className="h-3.5 w-3.5" />
-              Save proposal
-            </Button>
+            {isLocked ? (
+              <Button
+                size="sm"
+                onClick={editThisVersion}
+                isLoading={openForEditing.isPending}
+              >
+                <PencilLine className="h-3.5 w-3.5" />
+                Edit as new draft
+              </Button>
+            ) : (
+              <Button size="sm" onClick={save} isLoading={isSaving} disabled={!isDirty}>
+                <Save className="h-3.5 w-3.5" />
+                Save proposal
+              </Button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Editing a version the client has already seen is allowed, but an admin
-          should know that is what they are doing before they type. */}
-      {proposal.status !== "DRAFT" ? (
+      {/* A locked version is shown, not edited — the way forward is a fork. */}
+      {isLocked ? (
         <div
           role="note"
-          className="mb-5 rounded-xl border border-warning/25 bg-warning-subtle px-4 py-3 text-xs leading-relaxed text-warning"
+          className="mb-5 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-warning/25 bg-warning-subtle px-4 py-3 text-xs leading-relaxed text-warning"
         >
-          This version is marked <strong>{proposal.status.toLowerCase()}</strong>.
-          Editing it changes the record of what was shared with the client — create
-          a new version instead if you want to keep this one as it stands.
+          <Lock className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
+          <span>
+            V{proposal.versionNumber} is <strong>{proposal.status.toLowerCase()}</strong> and
+            read-only, so the record of what existed at this point is preserved.
+            Choose <strong>Edit as new draft</strong> to continue working — a copy
+            becomes V{(versions?.summary.latest?.versionNumber ?? proposal.versionNumber) + 1}.
+          </span>
         </div>
       ) : null}
 
-      <motion.div
-        variants={staggerContainer}
-        initial="hidden"
-        animate="visible"
-        className="flex flex-col gap-5"
-      >
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_18rem]">
+        <motion.div
+          variants={staggerContainer}
+          initial="hidden"
+          animate="visible"
+          className="flex flex-col gap-5"
+        >
+        {/*
+          One fieldset makes every control below read-only when the version is
+          locked — native, so no editor component needs a `disabled` prop and no
+          new control can accidentally miss the rule. `contents` keeps the flex
+          layout exactly as it was.
+        */}
+        <fieldset disabled={isLocked} className="contents">
         {/* 1 — Client Information (read-only) */}
         <ProposalClientInfo lead={lead} />
 
@@ -382,7 +452,19 @@ export function ProposalEditorPage() {
             rows={10}
           />
         </WorkspaceSection>
-      </motion.div>
+        </fieldset>
+        </motion.div>
+
+        {/* Sticky so history stays reachable while scrolling a long proposal. */}
+        <div className="xl:sticky xl:top-36 xl:self-start">
+          <ProposalVersionHistory
+            versions={versions?.items ?? []}
+            currentId={proposal.id}
+            onSelect={(version) => openVersion(version.id)}
+            isLoading={isLoadingVersions}
+          />
+        </div>
+      </div>
     </div>
   );
 }

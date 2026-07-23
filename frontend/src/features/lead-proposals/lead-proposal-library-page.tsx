@@ -7,9 +7,13 @@ import { SectionError } from "@/components/shared/section-error";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LeadProposalClientTable } from "@/features/lead-proposals/components/lead-proposal-client-table";
 import { LeadProposalFilters } from "@/features/lead-proposals/components/lead-proposal-filters";
 import { LeadProposalTable } from "@/features/lead-proposals/components/lead-proposal-table";
-import { useLeadProposalLibrary } from "@/features/lead-proposals/hooks/use-lead-proposals";
+import {
+  useLeadProposalClients,
+  useLeadProposalLibrary,
+} from "@/features/lead-proposals/hooks/use-lead-proposals";
 import {
   PROPOSAL_SORT_OPTIONS,
   type LeadProposalFilterValues,
@@ -66,12 +70,23 @@ export function LeadProposalLibraryPage() {
     };
   }, [page, debouncedSearch, filters.status, filters.leadId, filters.sort]);
 
-  const { data, isLoading, isError, refetch, isFetching } =
-    useLeadProposalLibrary(queryParams);
+  /**
+   * Two grains over the same filters: "versions" is the audit view (what
+   * happened), "clients" is the status view (where each client stands). Only
+   * the active one fetches.
+   */
+  const [grouping, setGrouping] = useState<"versions" | "clients">("versions");
+  const byVersion = useLeadProposalLibrary(queryParams, grouping === "versions");
+  const byClient = useLeadProposalClients(queryParams, grouping === "clients");
+
+  const { isLoading, isError, refetch, isFetching } =
+    grouping === "versions" ? byVersion : byClient;
 
   // Memoized so the derived client options below don't recompute every render.
-  const proposals = useMemo(() => data?.items ?? [], [data]);
-  const meta = data?.meta;
+  const proposals = useMemo(() => byVersion.data?.items ?? [], [byVersion.data]);
+  const rollups = byClient.data?.items ?? [];
+  const meta = grouping === "versions" ? byVersion.data?.meta : byClient.data?.meta;
+  const isEmpty = grouping === "versions" ? proposals.length === 0 : rollups.length === 0;
 
   const hasActiveFilters =
     filters.search !== "" ||
@@ -109,7 +124,34 @@ export function LeadProposalLibraryPage() {
     <div className="flex flex-col gap-5">
       <PageHeader
         title="Proposal Management"
-        description="Every proposal version across all client requests."
+        description="Every proposal version across all client requests. Versions are never overwritten."
+        actions={
+          <div
+            role="group"
+            aria-label="Group proposals by"
+            className="flex items-center gap-1 rounded-xl border border-border bg-surface-muted p-1"
+          >
+            {(
+              [
+                { id: "versions", label: "All versions" },
+                { id: "clients", label: "By client" },
+              ] as const
+            ).map((option) => (
+              <Button
+                key={option.id}
+                variant={grouping === option.id ? "secondary" : "ghost"}
+                size="sm"
+                aria-pressed={grouping === option.id}
+                onClick={() => {
+                  setGrouping(option.id);
+                  setPage(1);
+                }}
+              >
+                {option.label}
+              </Button>
+            ))}
+          </div>
+        }
       />
 
       <LeadProposalFilters
@@ -128,7 +170,7 @@ export function LeadProposalLibraryPage() {
             <Skeleton key={index} className="h-14 w-full rounded-xl" />
           ))}
         </div>
-      ) : proposals.length === 0 ? (
+      ) : isEmpty ? (
         <EmptyState
           icon={FileSignature}
           title={hasActiveFilters ? "No proposals match those filters" : "No proposals yet"}
@@ -151,12 +193,29 @@ export function LeadProposalLibraryPage() {
         />
       ) : (
         <div className={isFetching ? "opacity-70 transition-opacity" : undefined}>
-          <LeadProposalTable
-            proposals={proposals}
-            onOpen={(proposal) =>
-              navigate(`/client-requests/${proposal.leadId}/proposals/${proposal.id}`)
-            }
-          />
+          {grouping === "versions" ? (
+            <LeadProposalTable
+              proposals={proposals}
+              onOpen={(proposal) =>
+                navigate(`/client-requests/${proposal.leadId}/proposals/${proposal.id}`)
+              }
+            />
+          ) : (
+            <LeadProposalClientTable
+              rollups={rollups}
+              // Opens the version that best represents "where this client is":
+              // the draft in progress, else whatever they last saw.
+              onOpen={(rollup) => {
+                const target =
+                  rollup.summary.workingDraft ?? rollup.summary.latest;
+                navigate(
+                  target
+                    ? `/client-requests/${rollup.leadId}/proposals/${target.id}`
+                    : `/client-requests/${rollup.leadId}`,
+                );
+              }}
+            />
+          )}
 
           {meta && meta.totalPages > 1 ? (
             <div className="mt-4">

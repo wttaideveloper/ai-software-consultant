@@ -39,18 +39,52 @@ export type LeadProposalDetailDto = LeadProposalListItemDto & {
 };
 
 /**
- * Roll-up the Lead Details workspace shows above the version list.
- *
- * `active` is the version that currently represents the live offer to the
- * client: the highest-precedence status (accepted, then sent, then ready), with
- * the newest version winning ties. Drafts, rejections and archives are never
- * "active", so a lead whose only versions are drafts reports null rather than
- * implying something is with the client.
+ * Roll-up shared by the Lead Details tiles, the editor's history panel and the
+ * library's per-client view. Each field is "the newest version that is X", so
+ * they can legitimately point at the same version (a lead whose V7 draft is also
+ * its latest) or at nothing (a lead with no draft open).
  */
 export type LeadProposalSummaryDto = {
   total: number;
+  /** Highest version number, whatever its status. */
   latest: LeadProposalListItemDto | null;
-  active: LeadProposalListItemDto | null;
+  /** Newest DRAFT — what an admin is currently working on. */
+  workingDraft: LeadProposalListItemDto | null;
+  /** Newest version the client has seen (sent, accepted or rejected). */
+  clientVersion: LeadProposalListItemDto | null;
+  latestSent: LeadProposalListItemDto | null;
+  latestAccepted: LeadProposalListItemDto | null;
+};
+
+/** One library row when the library is grouped by client. */
+export type LeadProposalLeadRollupDto = {
+  leadId: string;
+  leadName: string;
+  leadCompany: string | null;
+  summary: LeadProposalSummaryDto;
+};
+
+export type PaginatedLeadProposalRollupsDto = {
+  items: LeadProposalLeadRollupDto[];
+  meta: PaginationMetaDto;
+};
+
+/**
+ * What openForEditing() returns.
+ *
+ * `created` tells the UI whether it is looking at the version it asked for or a
+ * fresh draft forked from it — that single flag is what drives the "V6 is
+ * locked, a new draft V7 has been created" toast, so the UI never has to
+ * re-derive the rule the server just applied.
+ */
+export type LeadProposalEditSessionDto = {
+  proposal: LeadProposalDetailDto;
+  created: boolean;
+  source: {
+    id: string;
+    versionNumber: number;
+    status: LeadProposalStatus;
+  } | null;
 };
 
 /**
