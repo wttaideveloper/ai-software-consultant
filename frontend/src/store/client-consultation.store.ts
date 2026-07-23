@@ -115,6 +115,8 @@ export type ClientConsultationState = {
   currentQuestion: string | null;
   isDiscoveryComplete: boolean;
   summary: string | null;
+  /** The client's free-form "anything else" note from the Summary step, merged into `summary` as its "Additional Notes" section on continue. */
+  additionalNotes: string;
   features: ClientFeature[];
   estimate: ClientEstimate | null;
   timeline: string | null;
@@ -139,6 +141,7 @@ type ClientConsultationActions = {
   setDiscoveryComplete: (value: boolean) => void;
   resetDiscovery: () => void;
   setSummary: (value: string | null) => void;
+  setAdditionalNotes: (value: string) => void;
   /** Bulk replace — used after generate/regenerate, ids already assigned by the caller. */
   setFeatures: (value: ClientFeature[]) => void;
   addFeature: (feature: Omit<ClientFeature, "id">) => void;
@@ -164,6 +167,7 @@ const INITIAL_STATE: ClientConsultationState = {
   currentQuestion: null,
   isDiscoveryComplete: false,
   summary: null,
+  additionalNotes: "",
   features: [],
   estimate: null,
   timeline: null,
@@ -207,6 +211,7 @@ export const useClientConsultationStore = create<
       resetDiscovery: () =>
         set({ conversation: [], currentQuestion: null, isDiscoveryComplete: false }),
       setSummary: (value) => set({ summary: value }),
+      setAdditionalNotes: (value) => set({ additionalNotes: value }),
       setFeatures: (value) => set({ features: value }),
       addFeature: (feature) =>
         set((state) => ({

@@ -15,10 +15,19 @@ export type SummarySection = {
   heading: string;
   /** Markdown between this heading and the next. */
   body: string;
+  /** Offset of the `##` heading line itself, so a whole section can be removed. */
+  headingStart: number;
   /** Offsets of `body` within the source, for exact splicing. */
   bodyStart: number;
   bodyEnd: number;
 };
+
+/**
+ * Heading of the managed section that carries the client's free-form "anything
+ * else" notes from the Summary step. Owned by the bottom notes box, so it is
+ * hidden from the guided section list and kept in sync via upsertNamedSection().
+ */
+export const ADDITIONAL_NOTES_HEADING = "Additional Notes";
 
 export type ParsedSummary = {
   /** Anything before the first `##` — usually the `#` title and a lead paragraph. */
@@ -58,6 +67,7 @@ export function parseSummarySections(source: string): ParsedSummary {
       id: `${index}-${match[1]!.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
       heading: match[1]!,
       body: source.slice(bodyStart, bodyEnd),
+      headingStart,
       bodyStart,
       bodyEnd,
     };
@@ -91,4 +101,49 @@ export function spliceRange(
  */
 export function normalizeSectionBody(body: string): string {
   return `${body.replace(/\s+$/, "")}\n\n`;
+}
+
+/**
+ * Inserts, replaces, or removes a top-level `## <heading>` section within the
+ * single summary string, matched case-insensitively by heading text:
+ *
+ * - existing section + non-empty body → replace just that section's body
+ * - existing section + empty body     → drop the whole section (heading included)
+ * - no section + non-empty body        → append a fresh section at the end
+ * - no section + empty body            → leave the source untouched
+ *
+ * Lets the Summary step keep the client's free-form notes inside the same
+ * markdown the rest of the pipeline already consumes, without the client having
+ * to hand-edit markdown. Idempotent: calling it again with the same body is a
+ * no-op, so repeated Continue clicks never stack duplicate sections.
+ */
+export function upsertNamedSection(source: string, heading: string, body: string): string {
+  const normalizedHeading = heading.trim();
+  const trimmedBody = body.trim();
+  const { sections } = parseSummarySections(source);
+  const existing = sections.find(
+    (section) => section.heading.trim().toLowerCase() === normalizedHeading.toLowerCase(),
+  );
+
+  if (existing) {
+    if (trimmedBody.length === 0) {
+      const withoutSection = spliceRange(source, existing.headingStart, existing.bodyEnd, "");
+      // Collapse the blank lines the removal leaves behind; keep one trailing newline.
+      return `${withoutSection.replace(/\n{3,}/g, "\n\n").replace(/\s+$/, "")}\n`;
+    }
+    return spliceRange(
+      source,
+      existing.bodyStart,
+      existing.bodyEnd,
+      normalizeSectionBody(trimmedBody),
+    );
+  }
+
+  if (trimmedBody.length === 0) {
+    return source;
+  }
+
+  const base = source.replace(/\s+$/, "");
+  const separator = base.length === 0 ? "" : "\n\n";
+  return `${base}${separator}## ${normalizedHeading}\n\n${normalizeSectionBody(trimmedBody)}`;
 }

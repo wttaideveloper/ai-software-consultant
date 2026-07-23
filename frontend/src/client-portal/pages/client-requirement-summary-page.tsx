@@ -5,6 +5,7 @@ import {
   Code2,
   FileText,
   LayoutList,
+  MessageSquarePlus,
   RotateCcw,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -14,9 +15,11 @@ import { SummarySectionCard } from "@/client-portal/summary/components/summary-s
 import { SummarySkeleton } from "@/client-portal/summary/components/summary-skeleton";
 import { useGenerateClientSummary } from "@/client-portal/summary/hooks/use-generate-client-summary";
 import {
+  ADDITIONAL_NOTES_HEADING,
   normalizeSectionBody,
   parseSummarySections,
   spliceRange,
+  upsertNamedSection,
 } from "@/client-portal/summary/parse-summary-sections";
 import { MarkdownViewer } from "@/components/shared/markdown-viewer";
 import { Button, ConfirmDialog, EmptyState } from "@/components/ui";
@@ -42,18 +45,36 @@ export function ClientRequirementSummaryPage() {
 
   const projectIdea = useClientConsultationStore((state) => state.projectIdea);
   const platforms = useClientConsultationStore((state) => state.platforms);
-  const otherPlatform = useClientConsultationStore((state) => state.otherPlatform);
-  const conversation = useClientConsultationStore((state) => state.conversation);
+  const otherPlatform = useClientConsultationStore(
+    (state) => state.otherPlatform,
+  );
+  const conversation = useClientConsultationStore(
+    (state) => state.conversation,
+  );
   const summary = useClientConsultationStore((state) => state.summary);
   const setSummary = useClientConsultationStore((state) => state.setSummary);
-  const resetDiscovery = useClientConsultationStore((state) => state.resetDiscovery);
+  const additionalNotes = useClientConsultationStore(
+    (state) => state.additionalNotes,
+  );
+  const setAdditionalNotes = useClientConsultationStore(
+    (state) => state.setAdditionalNotes,
+  );
+  const resetDiscovery = useClientConsultationStore(
+    (state) => state.resetDiscovery,
+  );
 
   const generateSummary = useGenerateClientSummary();
   const hasGeneratedRef = useRef(false);
   const [isRegenerateConfirmOpen, setIsRegenerateConfirmOpen] = useState(false);
+  const [regenerateRequested, setRegenerateRequested] = useState(false);
   const [mode, setMode] = useState<EditMode>("guided");
 
-  const requestGeneration = () => {
+  const requestGeneration = ({
+    regenerate = false,
+  }: { regenerate?: boolean } = {}) => {
+    // Track *why* the mutation is running. Only an explicit regenerate should dim
+    // the existing summary; the initial generation must not (see isRegenerating).
+    setRegenerateRequested(regenerate);
     generateSummary.mutate({
       projectIdea,
       platforms,
@@ -77,6 +98,19 @@ export function ClientRequirementSummaryPage() {
     [summary],
   );
 
+  // The "Additional Notes" section is owned by the notes box at the bottom, so
+  // keep it out of the guided section cards — otherwise the same text would be
+  // editable in two places that could drift apart.
+  const guidedSections = useMemo(
+    () =>
+      parsed?.sections.filter(
+        (section) =>
+          section.heading.trim().toLowerCase() !==
+          ADDITIONAL_NOTES_HEADING.toLowerCase(),
+      ) ?? [],
+    [parsed],
+  );
+
   const handleBack = () => {
     resetDiscovery();
     navigate("/requirements/questions");
@@ -84,15 +118,30 @@ export function ClientRequirementSummaryPage() {
 
   const handleRegenerate = () => {
     setIsRegenerateConfirmOpen(false);
-    requestGeneration();
+    requestGeneration({ regenerate: true });
   };
 
   const handleContinue = () => {
+    // Fold the client's free-form note into the summary as its "Additional Notes"
+    // section so it flows to feature detection and the submitted lead unchanged —
+    // the rest of the pipeline only ever reads the single summary string.
+    if (summary) {
+      const merged = upsertNamedSection(
+        summary,
+        ADDITIONAL_NOTES_HEADING,
+        additionalNotes,
+      );
+      if (merged !== summary) setSummary(merged);
+    }
     navigate("/features");
   };
 
   /** Splices one section's body back into the single stored markdown string. */
-  const handleSectionSave = (bodyStart: number, bodyEnd: number, body: string) => {
+  const handleSectionSave = (
+    bodyStart: number,
+    bodyEnd: number,
+    body: string,
+  ) => {
     if (!summary) return;
     setSummary(
       spliceRange(summary, bodyStart, bodyEnd, normalizeSectionBody(body)),
@@ -100,7 +149,12 @@ export function ClientRequirementSummaryPage() {
   };
 
   const isLoading = generateSummary.isPending && !summary;
-  const isRegenerating = generateSummary.isPending && Boolean(summary);
+  // Dim the existing summary only for an explicit, user-requested regenerate —
+  // never during the initial generation's success handoff, where onSuccess sets
+  // `summary` before the mutation flips isPending to false, which would otherwise
+  // commit a render with the freshly generated summary shown dimmed. Gated by
+  // isPending so it always clears when the request settles.
+  const isRegenerating = regenerateRequested && generateSummary.isPending;
 
   // ── No discovery answers yet ────────────────────────────────────────────
   if (conversation.length === 0 && !summary) {
@@ -128,9 +182,9 @@ export function ClientRequirementSummaryPage() {
             Requirement Summary
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-muted text-pretty sm:text-base">
-            We've turned your answers into a structured brief. Review each section and
-            edit anything that doesn't look right — this is what your proposal will be
-            based on.
+            We've turned your answers into a structured brief. Review each
+            section and edit anything that doesn't look right — this is what
+            your proposal will be based on.
           </p>
         </header>
 
@@ -151,10 +205,11 @@ export function ClientRequirementSummaryPage() {
                 We couldn't write your summary
               </p>
               <p className="mt-1 max-w-sm text-sm text-muted text-pretty">
-                Something went wrong on our side. Your answers are saved — try again.
+                Something went wrong on our side. Your answers are saved — try
+                again.
               </p>
             </div>
-            <Button variant="secondary" onClick={requestGeneration}>
+            <Button variant="secondary" onClick={() => requestGeneration()}>
               <RotateCcw className="h-4 w-4" />
               Try again
             </Button>
@@ -163,7 +218,9 @@ export function ClientRequirementSummaryPage() {
 
         {/* ── Summary ─────────────────────────────────────────────────── */}
         {summary && parsed ? (
-          <div className={cn(isRegenerating && "pointer-events-none opacity-50")}>
+          <div
+            className={cn(isRegenerating && "pointer-events-none opacity-50")}
+          >
             {/* Toolbar: view mode + regenerate */}
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div
@@ -216,11 +273,14 @@ export function ClientRequirementSummaryPage() {
                     it's context, not something a client needs to edit. */}
                 {parsed.intro.trim().length > 0 ? (
                   <div className="mb-4 rounded-2xl border border-border bg-surface px-5 py-4">
-                    <MarkdownViewer content={parsed.intro} className="text-sm" />
+                    <MarkdownViewer
+                      content={parsed.intro}
+                      className="text-sm"
+                    />
                   </div>
                 ) : null}
 
-                {parsed.sections.length === 0 ? (
+                {guidedSections.length === 0 ? (
                   // No `##` headings — fall back to editing the whole document.
                   <div className="rounded-2xl border border-border bg-surface px-5 py-4">
                     <MarkdownViewer content={summary} className="text-sm" />
@@ -240,7 +300,7 @@ export function ClientRequirementSummaryPage() {
                     animate="visible"
                     className="flex flex-col gap-4"
                   >
-                    {parsed.sections.map((section, index) => (
+                    {guidedSections.map((section, index) => (
                       <motion.div key={section.id} variants={staggerItem}>
                         <SummarySectionCard
                           index={index}
@@ -279,16 +339,57 @@ export function ClientRequirementSummaryPage() {
                   )}
                 />
                 <p className="mt-2 text-xs text-muted">
-                  Editing the raw document. Switch to <strong>Sections</strong> for a
-                  guided view.
+                  Editing the raw document. Switch to <strong>Sections</strong>{" "}
+                  for a guided view.
                 </p>
               </div>
             )}
           </div>
         ) : null}
 
+        {/* ── Final confirmation + free-form notes ────────────────────── */}
+        {summary && parsed ? (
+          <div className="mt-8 rounded-2xl border border-border bg-surface-muted/40 p-5 sm:p-6">
+            <div className="flex items-start gap-3">
+              <span
+                aria-hidden
+                className="asc-gradient-subtle flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-accent-text"
+              >
+                <MessageSquarePlus className="h-4 w-4" strokeWidth={1.85} />
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground sm:text-base">
+                  This is the final requirement summary from our discussion.
+                </p>
+                <p className="mt-1 text-sm text-muted text-pretty">
+                  Would you like to add anything or make any changes? You can
+                  edit any section above or add anything else here, and it will
+                  be included in the summary.
+                </p>
+              </div>
+            </div>
+
+            <label htmlFor="additional-notes" className="sr-only">
+              Anything else to add
+            </label>
+            <textarea
+              id="additional-notes"
+              value={additionalNotes}
+              onChange={(event) => setAdditionalNotes(event.target.value)}
+              rows={3}
+              placeholder="Feel free to add anything else…"
+              className={cn(
+                "mt-4 w-full resize-y rounded-lg border border-border bg-canvas px-3.5 py-3",
+                "text-sm leading-relaxed text-foreground placeholder:text-muted",
+                "transition-[border-color,box-shadow] duration-200",
+                "focus:border-accent focus:outline-none focus:ring-[3px] focus:ring-accent/20",
+              )}
+            />
+          </div>
+        ) : null}
+
         {/* ── Navigation ──────────────────────────────────────────────── */}
-        <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6">
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6">
           <Button type="button" variant="secondary" onClick={handleBack}>
             Back
           </Button>
@@ -298,7 +399,7 @@ export function ClientRequirementSummaryPage() {
             onClick={handleContinue}
             disabled={!summary || generateSummary.isPending}
           >
-            Continue
+            No, I'm good to go!
             <ArrowRight className="h-4 w-4" />
           </Button>
         </div>
