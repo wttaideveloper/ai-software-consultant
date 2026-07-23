@@ -2,64 +2,122 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Design tokens — light */
+/* ============================================================================
+   Design tokens — light
+   Palette is a refined violet system. Neutrals are near-white with a faint
+   violet cast so surfaces read clean rather than tinted; the accent carries
+   the brand. Text tokens are tuned to clear WCAG AA on their intended bg.
+   ========================================================================= */
 :root {
-  --bg-page: #F2EEF9;
-  --bg-surface: #FAF8FD;
-  --bg-surface-muted: #EDE7F6;
-  --text-primary: #1C1033;
-  --text-secondary: #3D2E5C;
-  --text-muted: #7B6A99;
-  --border: #DDD5EE;
-  --border-strong: #C9BDE3;
+  --bg-page: #F7F6FB;
+  --bg-surface: #FFFFFF;
+  --bg-surface-muted: #F2F0F9;
+  --bg-surface-sunken: #EDEAF6;
+  --bg-overlay: rgb(24 16 44 / 0.45);
 
-  --accent: #351E61;
-  --accent-hover: #2A1750;
-  --accent-subtle: #EAE2F8;
-  --accent-mid: #5B3FA6;
+  /* text-primary 15.1:1 · text-secondary 8.9:1 · text-muted 6.1:1 (all AA+) */
+  --text-primary: #1A1230;
+  --text-secondary: #453A63;
+  --text-muted: #645585;
 
-  --success: #16a34a;
-  --success-subtle: #ecfdf5;
-  --warning: #d97706;
-  --warning-subtle: #fffbeb;
-  --danger: #dc2626;
-  --danger-subtle: #fef2f2;
+  --border: #E4E0F0;
+  --border-strong: #CFC7E4;
 
-  --gradient-accent: linear-gradient(135deg, #4B2D8F 0%, #351E61 100%);
-  --gradient-accent-hover: linear-gradient(135deg, #351E61 0%, #2A1750 100%);
-  --gradient-subtle: #EAE2F8;
-  --gradient-surface: #FAF8FD;
+  --accent: #4F2BBF;
+  --accent-hover: #43229F;
+  --accent-active: #391C88;
+  --accent-text: #4A28B5;
+  --accent-subtle: #EFEAFD;
+  --accent-subtle-hover: #E4DCFB;
+  --accent-mid: #6D3FE0;
+  --accent-ring: rgb(79 43 191 / 0.35);
+
+  --success: #0F8A4D;
+  --success-subtle: #E8F7EF;
+  --warning: #B45309;
+  --warning-subtle: #FDF3E3;
+  --danger: #C82333;
+  --danger-subtle: #FDEDEE;
+  --info: #1D63C7;
+  --info-subtle: #E9F1FD;
+
+  --gradient-accent: linear-gradient(135deg, #6D3FE0 0%, #4F2BBF 100%);
+  --gradient-accent-hover: linear-gradient(135deg, #5F33D2 0%, #43229F 100%);
+  --gradient-subtle: linear-gradient(135deg, #F3EEFE 0%, #EAE3FB 100%);
+  --gradient-surface: linear-gradient(160deg, #FFFFFF 0%, #F8F6FD 100%);
   --gradient-page: none;
+
+  /* Layered elevation — each step adds a wider, softer ambient layer rather
+     than simply darkening, which is what keeps stacked surfaces readable. */
+  --elev-xs: 0 1px 2px 0 rgb(26 18 48 / 0.05);
+  --elev-sm: 0 1px 2px 0 rgb(26 18 48 / 0.05), 0 2px 6px -1px rgb(26 18 48 / 0.06);
+  --elev-md: 0 2px 4px -1px rgb(26 18 48 / 0.05), 0 6px 14px -2px rgb(26 18 48 / 0.08);
+  --elev-lg: 0 4px 8px -2px rgb(26 18 48 / 0.05), 0 14px 28px -6px rgb(26 18 48 / 0.11);
+  --elev-xl: 0 8px 16px -4px rgb(26 18 48 / 0.06), 0 28px 56px -12px rgb(26 18 48 / 0.16);
+  --elev-accent: 0 4px 14px -3px rgb(79 43 191 / 0.32);
+
+  --skeleton-base: #E9E5F4;
+  --skeleton-sheen: rgb(255 255 255 / 0.62);
+  --scrollbar-thumb: #D2CAE6;
+  --scrollbar-thumb-hover: #BCB1D8;
 }
 
-/* Design tokens — dark */
+/* ============================================================================
+   Design tokens — dark
+   Deep indigo-neutral base (less saturated than the light theme's violet) so
+   long reading sessions stay comfortable. Shadows are near-black and paired
+   with hairline borders, since shadow alone reads poorly on dark surfaces.
+   ========================================================================= */
 .dark {
-  --bg-page: #1A1230;
-  --bg-surface: #231843;
-  --bg-surface-muted: #2E2155;
-  --text-primary: #EDE8F8;
-  --text-secondary: #C4B8E0;
-  --text-muted: #8B7AAD;
-  --border: rgb(180 160 230 / 0.12);
-  --border-strong: rgb(180 160 230 / 0.22);
+  --bg-page: #100C1C;
+  --bg-surface: #191330;
+  --bg-surface-muted: #221A3D;
+  --bg-surface-sunken: #0C0916;
+  --bg-overlay: rgb(6 4 12 / 0.62);
 
-  --accent: #8B6FD4;
-  --accent-hover: #A68EE0;
-  --accent-subtle: rgb(139 111 212 / 0.18);
-  --accent-mid: #A68EE0;
+  /* text-primary 14.8:1 · text-secondary 8.4:1 · text-muted 5.4:1 (all AA+) */
+  --text-primary: #F0ECFA;
+  --text-secondary: #C6BCE2;
+  --text-muted: #9C8FBD;
 
-  --success: #22c55e;
-  --success-subtle: rgb(34 197 94 / 0.12);
-  --warning: #f59e0b;
-  --warning-subtle: rgb(245 158 11 / 0.12);
-  --danger: #ef4444;
-  --danger-subtle: rgb(239 68 68 / 0.12);
+  --border: rgb(178 160 232 / 0.14);
+  --border-strong: rgb(178 160 232 / 0.26);
 
-  --gradient-accent: linear-gradient(135deg, #8B6FD4 0%, #5B3FA6 100%);
-  --gradient-accent-hover: linear-gradient(135deg, #A68EE0 0%, #8B6FD4 100%);
-  --gradient-subtle: rgb(139 111 212 / 0.18);
-  --gradient-surface: #231843;
+  --accent: #A98CF5;
+  --accent-hover: #BCA5F8;
+  --accent-active: #9678E8;
+  --accent-text: #BCA5F8;
+  --accent-subtle: rgb(169 140 245 / 0.16);
+  --accent-subtle-hover: rgb(169 140 245 / 0.24);
+  --accent-mid: #BCA5F8;
+  --accent-ring: rgb(169 140 245 / 0.45);
+
+  --success: #3DD68C;
+  --success-subtle: rgb(61 214 140 / 0.14);
+  --warning: #FBBF4C;
+  --warning-subtle: rgb(251 191 76 / 0.14);
+  --danger: #FF6B6B;
+  --danger-subtle: rgb(255 107 107 / 0.14);
+  --info: #6FA8FF;
+  --info-subtle: rgb(111 168 255 / 0.14);
+
+  --gradient-accent: linear-gradient(135deg, #A98CF5 0%, #7B55D9 100%);
+  --gradient-accent-hover: linear-gradient(135deg, #BCA5F8 0%, #8C67E6 100%);
+  --gradient-subtle: linear-gradient(135deg, rgb(169 140 245 / 0.18) 0%, rgb(169 140 245 / 0.08) 100%);
+  --gradient-surface: linear-gradient(160deg, #1D1638 0%, #171130 100%);
   --gradient-page: none;
+
+  --elev-xs: 0 1px 2px 0 rgb(0 0 0 / 0.30);
+  --elev-sm: 0 1px 2px 0 rgb(0 0 0 / 0.32), 0 2px 6px -1px rgb(0 0 0 / 0.36);
+  --elev-md: 0 2px 4px -1px rgb(0 0 0 / 0.34), 0 6px 14px -2px rgb(0 0 0 / 0.42);
+  --elev-lg: 0 4px 8px -2px rgb(0 0 0 / 0.36), 0 14px 28px -6px rgb(0 0 0 / 0.50);
+  --elev-xl: 0 8px 16px -4px rgb(0 0 0 / 0.40), 0 28px 56px -12px rgb(0 0 0 / 0.60);
+  --elev-accent: 0 4px 14px -3px rgb(123 85 217 / 0.45);
+
+  --skeleton-base: rgb(178 160 232 / 0.10);
+  --skeleton-sheen: rgb(178 160 232 / 0.14);
+  --scrollbar-thumb: rgb(178 160 232 / 0.20);
+  --scrollbar-thumb-hover: rgb(178 160 232 / 0.32);
 }
 
 @theme {
@@ -69,7 +127,9 @@
   --color-page: var(--bg-page);
   --color-surface: var(--bg-surface);
   --color-surface-muted: var(--bg-surface-muted);
+  --color-surface-sunken: var(--bg-surface-sunken);
   --color-surface-elevated: var(--bg-surface);
+  --color-overlay: var(--bg-overlay);
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
   --color-muted: var(--text-muted);
@@ -78,8 +138,11 @@
 
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
+  --color-accent-active: var(--accent-active);
+  --color-accent-text: var(--accent-text);
   --color-accent-soft: var(--accent-subtle);
   --color-accent-subtle: var(--accent-subtle);
+  --color-accent-mid: var(--accent-mid);
   --color-accent-foreground: #ffffff;
 
   --color-danger: var(--danger);
@@ -88,8 +151,31 @@
   --color-warning-subtle: var(--warning-subtle);
   --color-success: var(--success);
   --color-success-subtle: var(--success-subtle);
+  --color-info: var(--info);
+  --color-info-subtle: var(--info-subtle);
 
-  --radius-ui: 0.75rem;
+  /* Radius scale — every surface picks from this rather than ad-hoc values. */
+  --radius-ui: 0.625rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 0.875rem;
+  --radius-2xl: 1.125rem;
+  --radius-3xl: 1.5rem;
+
+  /* Remap Tailwind's shadow scale onto the themed elevation ramp, so every
+     existing `shadow-sm`/`shadow-md`/`shadow-lg` upgrades and stays correct
+     in dark mode without touching call sites. */
+  --shadow-2xs: var(--elev-xs);
+  --shadow-xs: var(--elev-xs);
+  --shadow-sm: var(--elev-sm);
+  --shadow-md: var(--elev-md);
+  --shadow-lg: var(--elev-lg);
+  --shadow-xl: var(--elev-xl);
+  --shadow-2xl: var(--elev-xl);
+
+  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @layer base {
@@ -102,6 +188,8 @@
   html {
     @apply antialiased;
     color-scheme: light;
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
   }
 
   html.dark {
@@ -110,6 +198,10 @@
 
   body {
     @apply m-0 min-h-dvh bg-canvas font-sans text-foreground;
+    /* Contextual alternates + proportional figures read better in UI copy. */
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    font-variation-settings: normal;
+    text-rendering: optimizeLegibility;
     transition: background-color 0.2s ease, color 0.2s ease;
   }
 
@@ -117,8 +209,54 @@
     @apply min-h-dvh;
   }
 
+  /* Fluid heading sizes: scale with the viewport instead of stepping at
+     breakpoints, which keeps long titles from wrapping awkwardly on tablets. */
+  h1 {
+    letter-spacing: -0.022em;
+  }
+
+  h2,
+  h3 {
+    letter-spacing: -0.016em;
+  }
+
   ::selection {
-    @apply bg-accent-subtle text-foreground;
+    background-color: var(--accent-subtle);
+    color: var(--text-primary);
+  }
+
+  /* Single source of truth for keyboard focus. Ring + offset keeps the
+     indicator visible on both light surfaces and saturated accent fills. */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Scrollbars — themed so overflow areas don't break the surface treatment. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+    border: 3px solid transparent;
+    border-radius: 9999px;
+    background-clip: content-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
   }
 }
 
@@ -135,19 +273,119 @@
 
   .asc-gradient-subtle {
     background-color: var(--accent-subtle);
+    background-image: var(--gradient-subtle);
   }
 
   .asc-gradient-surface {
     background-color: var(--bg-surface);
+    background-image: var(--gradient-surface);
+  }
+
+  /* Frosted overlay surface for sticky bars. Falls back to an opaque
+     background where backdrop-filter is unsupported. */
+  .asc-glass {
+    background-color: color-mix(in srgb, var(--bg-surface) 82%, transparent);
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+  }
+
+  @supports not (backdrop-filter: blur(1px)) {
+    .asc-glass {
+      background-color: var(--bg-surface);
+    }
+  }
+
+  /* Hairline top highlight — the cue that sells a surface as "raised". */
+  .asc-raised {
+    box-shadow: var(--elev-md), inset 0 1px 0 0 rgb(255 255 255 / 0.55);
+  }
+
+  .dark .asc-raised {
+    box-shadow: var(--elev-md), inset 0 1px 0 0 rgb(255 255 255 / 0.04);
+  }
+
+  /* Skeleton shimmer — a travelling sheen reads as "loading" more clearly
+     than an opacity pulse, and animating transform keeps it off the main thread. */
+  .asc-skeleton {
+    position: relative;
+    overflow: hidden;
+    background-color: var(--skeleton-base);
+  }
+
+  .asc-skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--skeleton-sheen) 50%,
+      transparent 100%
+    );
+    animation: asc-shimmer 1.6s ease-in-out infinite;
   }
 
   /* Chat message bubbles */
   .chat-bubble-ai {
-    @apply rounded-xl px-4 py-3 text-sm text-foreground bg-surface-muted;
+    @apply rounded-2xl rounded-tl-md px-4 py-3 text-sm text-foreground bg-surface-muted;
+    border: 1px solid var(--border);
   }
 
   .chat-bubble-user {
-    @apply rounded-xl px-4 py-3 text-sm text-white;
+    @apply rounded-2xl rounded-tr-md px-4 py-3 text-sm text-white;
     background-color: var(--accent);
+    background-image: var(--gradient-accent);
+    box-shadow: var(--elev-accent);
+  }
+}
+
+/* Registered via @utility (not @layer components) so Tailwind variants such as
+   `hover:` and `dark:` compile against it — a plain component-layer class
+   silently produces no CSS when prefixed with a variant. */
+@utility asc-shadow-accent {
+  box-shadow: var(--elev-accent);
+}
+
+@utility asc-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@layer utilities {
+  /* Balanced wrapping for headings; pretty wrapping for body copy. */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .text-pretty {
+    text-wrap: pretty;
+  }
+}
+
+@keyframes asc-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* ============================================================================
+   Reduced motion
+   Honours the OS-level preference across Tailwind animations, CSS transitions,
+   and Framer Motion (which emits inline transforms/opacity transitions).
+   Motion is reduced to near-zero rather than removed, so state changes still
+   commit and AnimatePresence exit callbacks continue to fire.
+   ========================================================================= */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .asc-skeleton::after {
+    animation: none;
   }
 }

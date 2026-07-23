@@ -30,7 +30,7 @@ export function WorkspaceActionsMenu({ onEdit, onDelete }: WorkspaceActionsMenuP
         onClick={() => setOpen((value) => !value)}
         aria-label="Consultation actions"
       >
-        <MoreHorizontal className="h-[18px] w-[18px]" />
+        <MoreHorizontal className="h-4.5 w-4.5" />
       </Button>
 
       <AnimatePresence>

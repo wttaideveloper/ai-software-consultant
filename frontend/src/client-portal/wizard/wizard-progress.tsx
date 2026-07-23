@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { EASE_OUT_EXPO } from "@/utils/motion";
 
 type WizardProgressProps = {
   currentIndex: number;
@@ -12,23 +13,38 @@ type WizardProgressProps = {
  * into several (e.g. AI Questions becoming multiple pages), so it scales by
  * percentage rather than by rendering one element per step.
  */
-export function WizardProgress({ currentIndex, totalSteps, label }: WizardProgressProps) {
-  const percent = totalSteps > 0 ? ((currentIndex + 1) / totalSteps) * 100 : 0;
+export function WizardProgress({
+  currentIndex,
+  totalSteps,
+  label,
+}: WizardProgressProps) {
+  const step = currentIndex + 1;
+  const percent = totalSteps > 0 ? (step / totalSteps) * 100 : 0;
 
   return (
     <div>
-      <div className="flex items-center justify-between text-xs">
-        <span className="text-muted">
-          Step {currentIndex + 1} of {totalSteps}
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-xs font-medium tracking-wide text-muted uppercase">
+          Step {step} of {totalSteps}
         </span>
-        <span className="font-medium text-foreground">{label}</span>
+        <span className="truncate text-sm font-semibold text-foreground">
+          {label}
+        </span>
       </div>
-      <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-border">
+
+      <div
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={totalSteps}
+        aria-valuenow={step}
+        aria-valuetext={`Step ${step} of ${totalSteps}: ${label}`}
+        className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-surface-muted"
+      >
         <motion.div
-          className="h-full rounded-full bg-accent"
+          className="asc-gradient-accent h-full rounded-full"
           initial={false}
           animate={{ width: `${percent}%` }}
-          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.45, ease: EASE_OUT_EXPO }}
         />
       </div>
     </div>

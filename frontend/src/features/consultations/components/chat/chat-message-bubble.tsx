@@ -44,7 +44,7 @@ export function ChatMessageBubble({
       {isUser ? (
         <Avatar name={userName} size="sm" className="shrink-0" />
       ) : (
-        <div className="asc-gradient-accent flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white shadow-sm shadow-accent/20">
+        <div className="asc-gradient-accent flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white asc-shadow-accent">
           <Sparkles className="h-4 w-4" strokeWidth={2} />
         </div>
       )}
@@ -79,7 +79,9 @@ export function ChatMessageBubble({
         ) : null}
 
         {isSettled ? (
-          <div className="mt-2 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          // focus-within keeps these reachable by keyboard — hover-only would
+          // leave them focusable but invisible.
+          <div className="mt-2 flex items-center gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100 focus-within:opacity-100">
             <Button variant="ghost" size="sm" onClick={handleCopy}>
               {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
               Copy

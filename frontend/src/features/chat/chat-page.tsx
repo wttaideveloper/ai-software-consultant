@@ -11,7 +11,7 @@ export function ChatPage() {
         description="Conversational discovery workspace. Messages and AI replies will stream here after API integration."
         actions={<Button variant="secondary">Attach context</Button>}
       />
-      <div className="asc-gradient-surface rounded-xl border border-border px-2 py-4 sm:px-6 sm:py-8">
+      <div className="asc-gradient-surface rounded-2xl border border-border px-2 py-4 shadow-sm sm:px-6 sm:py-8">
         <EmptyState
           icon={MessageSquareText}
           title="Start a discovery conversation"

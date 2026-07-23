@@ -5,7 +5,6 @@ import {
   FolderKanban,
   LayoutDashboard,
   Library,
-  MessageSquareText,
   Settings,
   Sparkles,
   Users,
@@ -18,18 +17,46 @@ export type AppNavItem = {
   icon: LucideIcon;
 };
 
-export const APP_NAV_ITEMS: AppNavItem[] = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Consultations", href: "/consultations", icon: FolderKanban },
-  { label: "Requirement Summary", href: "/requirement-summary", icon: FileText },
-  { label: "Detected Features", href: "/detected-features", icon: Sparkles },
-  { label: "Estimations", href: "/estimations", icon: Calculator },
-  { label: "Proposals", href: "/proposals", icon: BookOpen },
-  { label: "Feature Library", href: "/feature-library", icon: Library },
-  { label: "Users", href: "/users", icon: Users },
-  { label: "Settings", href: "/settings", icon: Settings },
+export type AppNavGroup = {
+  /** Section caption. Hidden while the sidebar is collapsed. */
+  title: string;
+  items: AppNavItem[];
+};
+
+/**
+ * Grouped navigation. The nine destinations map onto three mental models —
+ * where you work, the AI pipeline's stages in the order they run, and
+ * workspace administration — so the sidebar scans as three short lists
+ * instead of one flat nine-item column.
+ */
+export const APP_NAV_GROUPS: AppNavGroup[] = [
+  {
+    title: "Workspace",
+    items: [
+      { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { label: "Consultations", href: "/consultations", icon: FolderKanban },
+    ],
+  },
+  {
+    title: "Discovery Pipeline",
+    items: [
+      { label: "Requirement Summary", href: "/requirement-summary", icon: FileText },
+      { label: "Detected Features", href: "/detected-features", icon: Sparkles },
+      { label: "Estimations", href: "/estimations", icon: Calculator },
+      { label: "Proposals", href: "/proposals", icon: BookOpen },
+    ],
+  },
+  {
+    title: "Manage",
+    items: [
+      { label: "Feature Library", href: "/feature-library", icon: Library },
+      { label: "Users", href: "/users", icon: Users },
+      { label: "Settings", href: "/settings", icon: Settings },
+    ],
+  },
 ];
 
-export const SECONDARY_NAV = [
-  { label: "Chat", href: "/chat", icon: MessageSquareText },
-] as const;
+/** Flat list, kept for any consumer that needs every destination at once. */
+export const APP_NAV_ITEMS: AppNavItem[] = APP_NAV_GROUPS.flatMap(
+  (group) => group.items,
+);

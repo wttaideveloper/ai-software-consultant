@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 export function ChatTypingIndicator() {
   return (
     <div className="flex items-center gap-3 px-1 py-4" aria-label="AI is responding">
-      <div className="asc-gradient-accent flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white shadow-sm shadow-accent/20">
+      <div className="asc-gradient-accent flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white asc-shadow-accent">
         <span className="flex gap-0.5">
           {[0, 1, 2].map((index) => (
             <motion.span

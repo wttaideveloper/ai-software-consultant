@@ -15,7 +15,7 @@ export function ReviewStep() {
   return (
     <div className="flex flex-col gap-3">
       <p className="text-sm text-muted">Review your details before creating the workspace.</p>
-      <dl className="divide-y divide-border rounded-[10px] border border-border">
+      <dl className="divide-y divide-border rounded-lg border border-border">
         {rows.map((row) => (
           <div key={row.label} className="flex items-center justify-between gap-4 px-4 py-3">
             <dt className="text-sm text-muted">{row.label}</dt>

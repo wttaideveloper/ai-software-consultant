@@ -50,7 +50,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
           aria-label="Attach file (coming soon)"
           className="mb-0.5 shrink-0"
         >
-          <Paperclip className="h-[18px] w-[18px]" />
+          <Paperclip className="h-4.5 w-4.5" />
         </Button>
 
         <textarea
@@ -77,7 +77,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
           aria-label="Send message"
           className="mb-0.5 shrink-0"
         >
-          <Send className="h-[18px] w-[18px]" />
+          <Send className="h-4.5 w-4.5" />
         </Button>
       </div>
       <p className="mt-1.5 px-1 text-[11px] text-muted">

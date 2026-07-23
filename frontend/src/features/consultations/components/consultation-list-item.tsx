@@ -25,16 +25,17 @@ export function ConsultationListItem({
       whileHover={{ x: isSelected ? 0 : 2 }}
       transition={{ duration: 0.15 }}
       className={cn(
-        "w-full rounded-xl border px-3 py-3 text-left transition-colors",
+        "w-full rounded-xl border px-3 py-3 text-left transition-colors duration-150",
+        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
         isSelected
-          ? "asc-gradient-subtle border-accent/30"
+          ? "asc-gradient-subtle border-accent/30 shadow-xs"
           : "border-transparent hover:border-border hover:bg-surface-muted",
       )}
     >
       <p
         className={cn(
           "truncate text-sm font-medium",
-          isSelected ? "text-accent" : "text-foreground",
+          isSelected ? "text-accent-text" : "text-foreground",
         )}
       >
         {consultation.title}

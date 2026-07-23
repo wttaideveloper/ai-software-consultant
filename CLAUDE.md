@@ -40,7 +40,7 @@ B2B SaaS for software consultancies. Multi-tenant: every entity is scoped to an 
 Two-app monorepo, not a real workspace (root `package.json` has a single devDependency; `backend/` and `frontend/` are installed and run independently).
 
 - **Backend**: modular monolith. Each domain is a vertical slice — route → controller → service → repository → validation → dto. No microservices, no queue, no job runner.
-- **Frontend**: client-rendered SPA. Routing, layout, and design system are fully built; **API integration is not wired up** — pages render static placeholders (see Common Pitfalls).
+- **Frontend**: client-rendered SPA with two portals — a public **Client Portal** (`src/client-portal/`) for prospects, and a JWT-protected **Admin Portal** (`src/features/`) for consultants. Routing, layout, design system, auth flow, and API integration are all wired.
 - **AI layer**: provider-agnostic — `AIOrchestrator → PromptService → AIService → AIProvider` — one provider implemented today (OpenAI).
 
 ---
@@ -128,7 +128,7 @@ Backend: strict one-module-per-folder under `src/modules/<name>/` (see Backend A
 - Controllers validate with `zodSchema.safeParse(input)`; on failure, throw `AppError(parsed.error.issues[0]?.message ?? "Validation failed", HTTP_STATUS.BAD_REQUEST)`.
 - Repository methods that hit an unexpected invariant (e.g. `.returning()` came back empty) throw a plain `Error` — these represent bugs/DB inconsistency, not user-facing conditions.
 - AI-call failures are caught explicitly in services (not left to `asyncHandler`) so a failed `ai_generations` audit row can be written before re-throwing.
-- Frontend: no error-handling pattern exists yet (no wired API calls). When wiring one, use TanStack Query's error state and the already-configured Sonner toasts.
+- Frontend: TanStack Query error state surfaced through Sonner toasts and the shared `SectionError` component (retry affordance for a failed panel). `utils/api-error.ts` normalizes axios failures into a display message.
 
 ---
 
@@ -147,11 +147,11 @@ Three tiers:
 
 ### Routing
 
-`react-router-dom` v7, plain `<Routes>/<Route>` (no data router/loaders), declared in `router.tsx`. All routes are children of `AppLayout`; unmatched paths redirect to `/`. No route guards exist — every page is reachable client-side without auth.
+`react-router-dom` v7, plain `<Routes>/<Route>` (no data router/loaders), declared in `router.tsx`. Three route trees: the **public Client Portal** (`/`, `/requirements/*`, `/summary`, `/features`, `/estimate`, `/request-proposal`, `/gift`), the **public auth routes** behind `PublicRoute` (`/admin-login`, `/register`), and the **protected Admin Portal** behind `ProtectedRoute` → `AppLayout` (`/dashboard`, `/consultations`, …). Unmatched paths redirect to `/`.
 
 ### Forms & Validation
 
-`react-hook-form`, `@hookform/resolvers`, and `zod` are installed but unused — no page has a real form yet. When building the first one, follow the existing `Input`/`Select`/`Textarea` `{ label, hint, error }` contract so RHF's `formState.errors` maps directly onto them.
+`react-hook-form` + `@hookform/resolvers` + `zod`, with per-feature schemas (`*.schema.ts`). Controls follow the `{ label, hint, error }` contract so `formState.errors` maps straight onto them — see Reusable UI patterns → Form fields for the shared `FieldShell` / `field-styles` composition.
 
 ### Styling
 
@@ -159,12 +159,41 @@ Tailwind CSS 4, CSS-first config (no `tailwind.config.js` — theme lives in `gl
 
 **Never use Tailwind's native `bg-gradient-*` utilities for brand surfaces.** Use the custom `asc-gradient-accent` / `asc-gradient-subtle` / `asc-gradient-surface` classes defined in `globals.css` — the `asc-` prefix exists specifically to avoid colliding with Tailwind's own gradient utilities (documented inline in the file).
 
+#### Design tokens
+
+`globals.css` is the single source of truth. Style from tokens, not raw hex/px values:
+
+- **Colour** — `bg-canvas`, `bg-surface`, `bg-surface-muted`, `bg-surface-sunken`, `text-foreground`, `text-foreground-soft`, `text-muted`, `border-border`, `border-border-strong`, plus semantic `accent` / `success` / `warning` / `danger` / `info` and their `-subtle` fills. Every text token is tuned to clear **WCAG AA** on its intended background — don't lighten `text-muted`.
+- **`accent` vs `accent-text`** — `accent` is the fill/icon colour; `accent-text` is the variant for accent-coloured *text on a light surface*. Use `text-accent-text` for copy, `text-accent` for icons and fills.
+- **Elevation** — Tailwind's `shadow-xs…shadow-2xl` are remapped onto a themed `--elev-*` ramp, so shadows stay correct in dark mode automatically. Never use `shadow-<color>` utilities (e.g. `shadow-accent/20`) — the ramp bakes its own colours in and the modifier won't apply. For a coloured glow use `asc-shadow-accent`.
+- **Radius** — `rounded-lg` (controls), `rounded-xl` (small surfaces), `rounded-2xl` (cards, panels, modals, tables). Avoid arbitrary `rounded-[Npx]`.
+
+**Custom classes that need Tailwind variants must be declared with `@utility`, not `@layer components`.** A component-layer class silently compiles to nothing when prefixed (`hover:asc-shadow-accent` produced no CSS until it moved to `@utility`). `asc-shadow-accent` and `asc-tabular` are `@utility`; the `asc-gradient-*`, `asc-glass`, `asc-raised` and `asc-skeleton` classes are component-layer and are only ever used unprefixed.
+
+#### Motion
+
+Shared easings and variants live in `utils/motion.ts` (`EASE_OUT_EXPO`, `SPRING_LAYOUT`, `SPRING_SNAPPY`, `fadeIn`, `pageTransition`, `staggerContainer`/`staggerItem`, `scrollReveal` + `SCROLL_VIEWPORT`, `popover`, `modalOverlay`/`modalPanel`, `drawerPanel`, `fieldError`, `stepTransition`). Import these rather than inlining a bezier.
+
+Reduced motion is handled in **two** places, both required: the `prefers-reduced-motion` block in `globals.css` covers CSS animations/transitions, and `<MotionConfig reducedMotion="user">` in `providers.tsx` covers Framer Motion (which writes inline styles the media query cannot reach).
+
+Animate `transform`/`opacity` only — they stay on the compositor. Any `layoutId` must be unique per mounted instance: `Tabs` and `Sidebar` both scope theirs (`useId()` and an `embedded` flag respectively) because two copies can be mounted at once.
+
 ### Reusable UI patterns
 
 - **Placeholder shell**: every unwired feature page renders `PageHeader` + `EmptyState` (or a `Card` with a "not connected yet" description). This is the established scaffold for pages awaiting backend integration — replicate it for new pages rather than leaving a blank screen.
-- **Card composition**: `<Card><CardHeader>…</CardHeader><CardTitle/><CardDescription/></Card>`, with `hover={false}` for static/dashboard cards.
+- **Card composition**: `<Card><CardHeader>…</CardHeader><CardTitle/><CardDescription/></Card>`, with `hover={false}` for static/dashboard cards. Passing `onClick` automatically upgrades the card to `role="button"` + Enter/Space handling.
+- **Form fields**: `Input` / `Textarea` / `Select` / `PasswordInput` all compose `FieldShell` (`components/ui/field.tsx`) for their label/error/hint chrome and `fieldControlBase` / `fieldControlError` (`components/ui/field-styles.ts`) for control styling. Build new controls on those two rather than restyling from scratch — the styles live in a separate module so `field.tsx` stays component-only for Fast Refresh.
 - **Confirm-before-destructive-action**: `ConfirmDialog` wraps `Modal` with `tone: "danger" | "primary"` — use it instead of a native `confirm()`.
-- **Portal overlays**: `Modal`/`Drawer` both use `createPortal` + `AnimatePresence` — follow this for new overlay components.
+- **Portal overlays**: `Modal`/`Drawer` both use `createPortal` + `AnimatePresence`, lock body scroll, and close on `Escape`; `Modal` also traps Tab and restores focus to the trigger. Follow this for new overlay components.
+- **Accessibility baseline**: a global `:focus-visible` ring is defined in `globals.css`; custom interactive elements that override `outline` must re-add `focus-visible:outline-*`. Hover-revealed controls need `focus-within:opacity-100` so they stay keyboard-reachable. `AppLayout` renders a skip-to-content link targeting `#main-content`.
+
+### Navigation
+
+Sidebar destinations are grouped in `layouts/nav-config.ts` as `APP_NAV_GROUPS` (Workspace / Discovery Pipeline / Manage). `APP_NAV_ITEMS` remains exported as a flat derived list. Add routes there, not by hardcoding links in `Sidebar`.
+
+### Code splitting
+
+`app/router.tsx` lazy-loads every route behind `React.lazy` + a single `<Suspense fallback={<PageLoader />}>`. Only `ClientLandingPage` and the two route guards are eager, since they're on the critical path for a first visit. Keep new routes lazy — the largest chunk is ~240 kB (75 kB gzip); it was 963 kB when everything shipped in one bundle.
 
 ---
 
@@ -336,8 +365,10 @@ npm run preview     vite preview
 4. **`node_modules/` (both apps) and `frontend/dist/` are committed.** A broad `git add -A`/`git add .` will re-stage huge trees — always stage specific files.
 5. **JWT secrets aren't validated at boot.** `config/env.ts` defaults `JWT_SECRET`/`JWT_REFRESH_SECRET`/`DATABASE_URL` to `""` instead of throwing — a blank `.env` value won't be caught, it'll silently sign tokens with an empty key.
 6. **The five `extractJsonPayload` implementations are duplicated verbatim** across `feature-detection`, `estimation`, `proposal`, `requirement-summary`, `feature-library` services. A bugfix in one likely needs applying to all five.
-7. **The frontend has no auth flow, no wired API calls, and no route guards.** Every feature page renders static placeholder content — no UI interaction currently reaches the backend.
-8. **Backend `typescript@^7.0.2` vs. frontend `~6.0.2`** — don't assume identical behavior when touching build/tooling config across the two apps.
+7. **Tailwind v4 variants don't apply to `@layer components` classes.** `hover:my-custom-class` silently emits no CSS. Declare anything that needs a variant with `@utility` (see Frontend → Styling).
+8. **Don't combine Tailwind `shadow-<color>` modifiers with the shadow scale.** `--shadow-*` is remapped onto the themed `--elev-*` ramp with colours baked in, so `shadow-accent/20` is ignored. Use `asc-shadow-accent`.
+9. **`layoutId` must be unique per mounted instance.** `Sidebar` mounts twice (desktop rail + mobile drawer) and `Tabs` can appear more than once per page — both scope their `layoutId`, and new shared-layout animations must too.
+10. **Backend `typescript@^7.0.2` vs. frontend `~6.0.2`** — don't assume identical behavior when touching build/tooling config across the two apps.
 
 ---
 

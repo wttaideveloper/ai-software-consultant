@@ -1,7 +1,10 @@
-import { AnimatePresence, motion } from "framer-motion";
 import { forwardRef, type TextareaHTMLAttributes } from "react";
+import { FieldShell } from "@/components/ui/field";
+import {
+  fieldControlBase,
+  fieldControlError,
+} from "@/components/ui/field-styles";
 import { cn } from "@/utils/cn";
-import { fieldError } from "@/utils/motion";
 
 type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   label?: string;
@@ -14,38 +17,20 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     const textareaId = id ?? props.name;
 
     return (
-      <label className="flex w-full flex-col gap-1.5" htmlFor={textareaId}>
-        {label ? (
-          <span className="text-sm font-medium text-foreground-soft">{label}</span>
-        ) : null}
+      <FieldShell id={textareaId} label={label} hint={hint} error={error}>
         <textarea
           ref={ref}
           id={textareaId}
+          aria-invalid={error ? true : undefined}
           className={cn(
-            "min-h-28 w-full rounded-[10px] border border-border bg-surface px-3 py-2.5 text-sm text-foreground",
-            "placeholder:text-muted transition-colors resize-y",
-            "focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30",
-            error && "border-danger focus:border-danger focus:ring-danger/20",
+            fieldControlBase,
+            "min-h-28 resize-y px-3.5 py-2.5 leading-relaxed",
+            error && fieldControlError,
             className,
           )}
           {...props}
         />
-        <AnimatePresence initial={false}>
-          {error ? (
-            <motion.span
-              key="error"
-              variants={fieldError}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              className="overflow-hidden text-xs text-danger"
-            >
-              {error}
-            </motion.span>
-          ) : null}
-        </AnimatePresence>
-        {!error && hint ? <span className="text-xs text-muted">{hint}</span> : null}
-      </label>
+      </FieldShell>
     );
   },
 );

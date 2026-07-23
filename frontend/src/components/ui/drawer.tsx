@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useId, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
@@ -23,13 +23,24 @@ export function Drawer({
   side = "left",
   className,
 }: DrawerProps) {
+  const titleId = useId();
+
   useEffect(() => {
     if (!open) return;
+
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
     };
+
     document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
+    // Matches Modal: without this the page behind the drawer still scrolls,
+    // which is especially wrong for the mobile nav.
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = "";
+    };
   }, [open, onClose]);
 
   return createPortal(
@@ -37,7 +48,7 @@ export function Drawer({
       {open ? (
         <div className="fixed inset-0 z-50">
           <motion.div
-            className="absolute inset-0 bg-zinc-950/45 backdrop-blur-[2px]"
+            className="absolute inset-0 bg-overlay backdrop-blur-sm"
             variants={modalOverlay}
             initial="hidden"
             animate="visible"
@@ -45,6 +56,9 @@ export function Drawer({
             onClick={onClose}
           />
           <motion.aside
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={title ? titleId : undefined}
             variants={{
               ...drawerPanel,
               hidden: { x: side === "left" ? "-100%" : "100%" },
@@ -57,14 +71,24 @@ export function Drawer({
             animate="visible"
             exit="exit"
             className={cn(
-              "absolute top-0 flex h-full w-[min(20rem,88vw)] flex-col border-border bg-surface",
+              "absolute top-0 flex h-full w-[min(20rem,88vw)] flex-col border-border bg-surface shadow-xl",
               side === "left" ? "left-0 border-r" : "right-0 border-l",
               className,
             )}
           >
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
-              <h2 className="text-sm font-semibold">{title}</h2>
-              <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close drawer">
+            <div className="flex h-16 shrink-0 items-center justify-between border-b border-border px-4">
+              <h2
+                id={titleId}
+                className="text-sm font-semibold tracking-tight text-foreground"
+              >
+                {title}
+              </h2>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={onClose}
+                aria-label="Close drawer"
+              >
                 <X className="h-4 w-4" />
               </Button>
             </div>

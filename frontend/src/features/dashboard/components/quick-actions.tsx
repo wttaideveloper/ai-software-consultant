@@ -54,7 +54,7 @@ export function QuickActions() {
             <Link to={action.href} className="block h-full">
               <Card className="h-full">
                 <div className="asc-gradient-subtle flex h-10 w-10 items-center justify-center rounded-xl text-accent">
-                  <Icon className="h-[18px] w-[18px]" strokeWidth={1.85} />
+                  <Icon className="h-4.5 w-4.5" strokeWidth={1.85} />
                 </div>
                 <p className="mt-4 text-sm font-semibold text-foreground">{action.label}</p>
                 <p className="mt-1 text-xs text-muted">{action.description}</p>

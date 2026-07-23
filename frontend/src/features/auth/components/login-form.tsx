@@ -30,10 +30,12 @@ export function LoginForm() {
     <form
       onSubmit={handleSubmit(onSubmit)}
       noValidate
-      className="asc-gradient-surface rounded-xl border border-border p-6 sm:p-8"
+      className="asc-gradient-surface rounded-2xl border border-border p-6 shadow-md sm:p-8"
     >
       <h1 className="text-2xl font-semibold tracking-tight text-foreground">Sign in</h1>
-      <p className="mt-1.5 text-sm text-muted">Welcome back — enter your details to continue.</p>
+      <p className="mt-2 text-sm leading-relaxed text-muted">
+        Welcome back — enter your details to continue.
+      </p>
 
       <div className="mt-8 flex flex-col gap-4">
         <Input
@@ -57,7 +59,7 @@ export function LoginForm() {
           <Checkbox label="Remember me" {...register("rememberMe")} />
           <Link
             to="/register"
-            className="text-sm font-medium text-accent transition-colors hover:text-accent-hover"
+            className="rounded-sm text-sm font-medium text-accent-text transition-colors hover:text-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             Need an account?
           </Link>

@@ -12,31 +12,41 @@ type StatCardProps = {
   isLoading?: boolean;
 };
 
-export function StatCard({ icon: Icon, label, value, description, isLoading }: StatCardProps) {
+export function StatCard({
+  icon: Icon,
+  label,
+  value,
+  description,
+  isLoading,
+}: StatCardProps) {
   return (
-    <motion.div variants={staggerItem}>
-      <Card className="h-full">
-        <div className="asc-gradient-accent flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-sm shadow-accent/20">
-          <Icon className="h-[18px] w-[18px]" strokeWidth={1.85} />
+    <motion.div variants={staggerItem} className="h-full">
+      <Card className="group h-full">
+        <div className="flex items-start justify-between gap-3">
+          <p className="text-xs font-medium tracking-wider text-muted uppercase">
+            {label}
+          </p>
+          <div className="asc-gradient-subtle flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-accent-text transition-transform duration-300 group-hover:scale-105">
+            <Icon className="h-4.5 w-4.5" strokeWidth={1.85} />
+          </div>
         </div>
 
-        <p className="mt-4 text-xs font-medium tracking-wide text-muted uppercase">{label}</p>
-
         {isLoading ? (
-          <Skeleton className="mt-2 h-9 w-16" />
+          <Skeleton className="mt-3 h-10 w-16" />
         ) : (
           <motion.p
             key={value}
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25 }}
-            className="mt-2 text-3xl font-semibold tracking-tight text-foreground tabular-nums"
+            // tabular-nums stops the figure jittering when a count changes.
+            className="mt-3 text-[2.25rem] leading-none font-semibold tracking-tight text-foreground asc-tabular"
           >
             {value}
           </motion.p>
         )}
 
-        <p className="mt-1.5 text-xs text-muted">{description}</p>
+        <p className="mt-2.5 text-xs leading-relaxed text-muted">{description}</p>
       </Card>
     </motion.div>
   );

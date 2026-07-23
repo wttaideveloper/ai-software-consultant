@@ -46,7 +46,7 @@ export function WizardLayout({ steps, basePath, onStepChange }: WizardLayoutProp
             variants={fadeIn}
             initial="hidden"
             animate="visible"
-            className="mt-8 rounded-xl border border-border bg-surface p-6 shadow-sm sm:p-8"
+            className="mt-8 rounded-2xl border border-border bg-surface p-6 shadow-md sm:p-8"
           >
             <Outlet />
           </motion.div>
