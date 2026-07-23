@@ -21,4 +21,10 @@ exports.authRouter = (0, express_1.Router)();
  * (requires the user:create permission).
  */
 exports.authRouter.post("/login", auth_controller_js_1.authController.login);
+/**
+ * Unauthenticated by design — callers arrive here because their access token has
+ * already expired, so requiring one would be circular. The refresh token itself
+ * is the credential, and it is rotated on every use (see authService.refreshSession).
+ */
+exports.authRouter.post("/refresh", auth_controller_js_1.authController.refresh);
 exports.authRouter.get("/me", auth_middleware_js_1.authenticate, auth_controller_js_1.authController.me);

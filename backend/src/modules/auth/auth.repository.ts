@@ -15,6 +15,7 @@ import {
 export type OrganizationRecord = typeof organizations.$inferSelect;
 export type UserRecord = typeof users.$inferSelect;
 export type RoleRecord = typeof roles.$inferSelect;
+export type RefreshTokenRecord = typeof refreshTokens.$inferSelect;
 
 export type CreateOrganizationData = {
   name: string;
@@ -210,6 +211,25 @@ export class AuthRepository {
     await executor
       .delete(refreshTokens)
       .where(eq(refreshTokens.userId, userId));
+  }
+
+  /**
+   * Looks a refresh token up by its SHA-256 hash — the raw token is never stored,
+   * so this is the only way to confirm a presented token is the one still on
+   * record. A miss means it was rotated away, superseded by a newer login, or
+   * never issued here, all of which must be treated as "no longer valid".
+   */
+  async findRefreshTokenByHash(
+    tokenHash: string,
+    executor: DbExecutor = db,
+  ): Promise<RefreshTokenRecord | null> {
+    const [record] = await executor
+      .select()
+      .from(refreshTokens)
+      .where(eq(refreshTokens.tokenHash, tokenHash))
+      .limit(1);
+
+    return record ?? null;
   }
 
   async createOrganization(

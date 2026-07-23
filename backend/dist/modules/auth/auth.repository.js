@@ -94,6 +94,20 @@ class AuthRepository {
             .delete(index_js_2.refreshTokens)
             .where((0, drizzle_orm_1.eq)(index_js_2.refreshTokens.userId, userId));
     }
+    /**
+     * Looks a refresh token up by its SHA-256 hash — the raw token is never stored,
+     * so this is the only way to confirm a presented token is the one still on
+     * record. A miss means it was rotated away, superseded by a newer login, or
+     * never issued here, all of which must be treated as "no longer valid".
+     */
+    async findRefreshTokenByHash(tokenHash, executor = index_js_1.db) {
+        const [record] = await executor
+            .select()
+            .from(index_js_2.refreshTokens)
+            .where((0, drizzle_orm_1.eq)(index_js_2.refreshTokens.tokenHash, tokenHash))
+            .limit(1);
+        return record ?? null;
+    }
     async createOrganization(data, executor = index_js_1.db) {
         const [organization] = await executor
             .insert(index_js_2.organizations)

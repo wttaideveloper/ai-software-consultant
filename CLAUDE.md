@@ -302,7 +302,9 @@ JWTs signed with **separate secrets** (`JWT_SECRET` / `JWT_REFRESH_SECRET`) and 
 - **There is no "Super Admin" role.** Roles are org-scoped; the full-permission role both registration and the admin seed use is `slug: "admin"` (`isSystem: true`, every permission granted). `permissions.seed.ts` tops up every role with that slug.
 - **Login**: verify email/password/status → update `lastLoginAt` → delete all of the user's existing refresh tokens → store a new one (SHA-256 hash, never the raw token). One valid refresh token per user at a time.
 - `GET /auth/me` returns the current user + organization.
-- No `/auth/refresh` or `/auth/logout` endpoint exists, despite refresh-token infrastructure being fully built (see Common Pitfalls).
+- **Refresh**: `POST /api/auth/refresh` exchanges a refresh token for a **new pair**. Deliberately unauthenticated — the caller arrives precisely because its access token expired, so requiring one would be circular. It verifies the JWT, then requires the SHA-256 hash to still match a stored row (signature alone is not enough — that DB check is what makes "newer login wins" and rotation actually bite), checks not revoked/expired and that the user is still active, then **rotates**: the old token is deleted and a replacement issued in the same transaction. So a refresh token is **single-use** — replaying one after the real client has refreshed is rejected. Every failure mode returns the same flat 401; the client's correct reaction to all of them is identical, and distinguishing them only helps someone probing.
+- **There is still no `/auth/logout` endpoint.** Logging out clears client state only; the stored refresh-token row survives until the next login (which deletes all of the user's tokens) or its 7-day expiry.
+- **Session lifetime is 15m access / 7d refresh** (`ACCESS_TOKEN_EXPIRES` / `REFRESH_TOKEN_EXPIRES`). The frontend renews silently, so the effective session is the refresh window, not 15 minutes — see State Management → Session renewal.
 
 ### Authorization
 
@@ -315,6 +317,7 @@ Base prefix: **`/api`** (`API_PREFIX` in `shared/constants/app.ts` — no `/v1`)
 ```
 GET  /api/health                                          no auth
 POST /api/auth/login                                       (no /register — not mounted)
+POST /api/auth/refresh                                     no auth; rotates the pair, single-use
 GET  /api/auth/me                                          authenticate
 
 GET|POST    /api/users, /api/users/:id                     authorize(USER_*)
@@ -362,7 +365,7 @@ Zustand. Each persisted store owns exactly one storage key and never clears anot
 | Store | Key | Storage | Notes |
 |---|---|---|---|
 | `store/theme-store.ts` | `asc-theme` | localStorage | `initializeTheme()` runs once in `main.tsx` before render to avoid a theme flash, falling back to `prefers-color-scheme`. |
-| `store/auth-store.ts` | `asc-auth` | local **or** session | "Remember me" picks the storage via `setAuthStoragePreference()`; the custom `dualStorage` writes one and removes the other. |
+| `store/auth-store.ts` | `asc-auth` | local **or** session | "Remember me" picks the storage via `setAuthStoragePreference()`; the custom `dualStorage` writes one and removes the other. Persists **both** tokens — the refresh token is what keeps a session alive past 15 minutes, so dropping it from `partialize` silently reintroduces the hard logout. |
 | `store/client-consultation.store.ts` | `asc-client-consultation` | **sessionStorage** | Client Portal wizard state. Session-scoped on purpose: a refresh mid-consultation must not lose answers, but closing the browser must not resurrect the project on the next visit. Cleared outright by `clearClientConsultation()` on lead submit and on "start a new consultation" (`client-portal/hooks/use-start-new-consultation.ts`). |
 | `features/proposal-editor/proposal-draft.store.ts` | `asc-proposal-drafts` | localStorage | **Deprecated, read-only.** Proposals now live in `lead_proposals`. Retained solely so `use-migrate-local-draft.ts` can promote a pre-existing browser draft to Version 1 and then clear it. Nothing writes it. |
 
@@ -374,7 +377,19 @@ Plain `useState`/`useEffect`/`useRef` for component-local concerns (e.g. `Navbar
 
 ### Data fetching & caching
 
-TanStack Query is configured in `providers.tsx` (`retry: 1`, `refetchOnWindowFocus: false`, `staleTime: 30_000`), but **no query or mutation hooks exist anywhere**. `services/api.ts` is an unconfigured axios instance — its own comment says "no endpoints wired yet." There's no existing `hooks/api`/`queries/` convention; the first integration should establish one.
+TanStack Query is configured in `providers.tsx` (`retry: 1`, `refetchOnWindowFocus: false`, `staleTime: 30_000`). `services/*.service.ts` holds the axios calls; per-feature `hooks/use-*.ts` wrap them in `useQuery`/`useMutation`.
+
+### Session renewal
+
+`services/api.ts` owns the whole token lifecycle, so no feature hook ever thinks about expiry:
+
+- A **request** interceptor attaches the current access token.
+- A **response** interceptor turns a 401 into a silent recovery: refresh once, then replay the original request. It only does so for a request that still has a session, hasn't already been replayed (`_retried`), isn't `/auth/login` (a 401 there is bad credentials) and isn't `/auth/refresh` itself. Anything else — or a failed refresh — falls through to `clearSession()` + toast + redirect to `/admin-login`, which is the pre-existing behaviour.
+- **The refresh is single-flight.** Concurrent 401s all await one shared `refreshPromise`. This is not an optimisation: the server rotates the refresh token on every use, so N parallel refreshes would invalidate each other and log the user out. Keep it that way.
+- The refresh call uses **bare `axios`, not the `api` instance** — routing it through `api` would re-enter this interceptor and recurse when a refresh fails.
+- The rotated refresh token is written back via `setTokens()`; failing to store it breaks the *next* renewal, not the current one, so the bug would surface 15 minutes later.
+
+**A caveat when reasoning about "auto-logout" reports:** sessions persisted before refresh-token storage shipped have no `refreshToken`, so the first 401 logs them out once; logging in again fixes it permanently.
 
 ---
 

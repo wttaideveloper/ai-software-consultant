@@ -8,6 +8,7 @@ const async_handler_js_1 = require("../../utils/async-handler.js");
 const auth_service_js_1 = require("./auth.service.js");
 const auth_validation_js_1 = require("./auth.validation.js");
 const login_validation_js_1 = require("./login.validation.js");
+const refresh_validation_js_1 = require("./refresh.validation.js");
 function getClientIp(req) {
     const forwardedFor = req.headers["x-forwarded-for"];
     if (typeof forwardedFor === "string" && forwardedFor.length > 0) {
@@ -43,6 +44,17 @@ class AuthController {
         res
             .status(http_status_js_1.HTTP_STATUS.OK)
             .json((0, api_response_js_1.successResponse)("Login successful.", result));
+    });
+    refresh = (0, async_handler_js_1.asyncHandler)(async (req, res) => {
+        const parsed = refresh_validation_js_1.refreshSchema.safeParse(req.body);
+        if (!parsed.success) {
+            const message = parsed.error.issues[0]?.message ?? "Validation failed";
+            throw new app_error_js_1.AppError(message, http_status_js_1.HTTP_STATUS.BAD_REQUEST);
+        }
+        const result = await auth_service_js_1.authService.refreshSession(parsed.data, getRequestContext(req));
+        res
+            .status(http_status_js_1.HTTP_STATUS.OK)
+            .json((0, api_response_js_1.successResponse)("Session refreshed.", result));
     });
     me = (0, async_handler_js_1.asyncHandler)(async (req, res) => {
         if (!req.user) {

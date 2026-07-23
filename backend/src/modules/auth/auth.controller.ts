@@ -6,6 +6,7 @@ import { asyncHandler } from "../../utils/async-handler.js";
 import { authService } from "./auth.service.js";
 import { registerSchema } from "./auth.validation.js";
 import { loginSchema } from "./login.validation.js";
+import { refreshSchema } from "./refresh.validation.js";
 
 function getClientIp(req: Request): string | null {
   const forwardedFor = req.headers["x-forwarded-for"];
@@ -61,6 +62,25 @@ export class AuthController {
     res
       .status(HTTP_STATUS.OK)
       .json(successResponse("Login successful.", result));
+  });
+
+  refresh = asyncHandler(async (req: Request, res: Response) => {
+    const parsed = refreshSchema.safeParse(req.body);
+
+    if (!parsed.success) {
+      const message =
+        parsed.error.issues[0]?.message ?? "Validation failed";
+      throw new AppError(message, HTTP_STATUS.BAD_REQUEST);
+    }
+
+    const result = await authService.refreshSession(
+      parsed.data,
+      getRequestContext(req),
+    );
+
+    res
+      .status(HTTP_STATUS.OK)
+      .json(successResponse("Session refreshed.", result));
   });
 
   me = asyncHandler(async (req: Request, res: Response) => {

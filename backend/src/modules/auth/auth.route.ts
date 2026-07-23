@@ -20,4 +20,12 @@ export const authRouter = Router();
  * (requires the user:create permission).
  */
 authRouter.post("/login", authController.login);
+
+/**
+ * Unauthenticated by design — callers arrive here because their access token has
+ * already expired, so requiring one would be circular. The refresh token itself
+ * is the credential, and it is rotated on every use (see authService.refreshSession).
+ */
+authRouter.post("/refresh", authController.refresh);
+
 authRouter.get("/me", authenticate, authController.me);

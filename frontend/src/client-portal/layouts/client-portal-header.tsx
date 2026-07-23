@@ -31,7 +31,9 @@ export function ClientPortalHeader() {
             type="button"
             onClick={toggleTheme}
             aria-label={
-              theme === "dark" ? "Switch to light theme" : "Switch to dark theme"
+              theme === "dark"
+                ? "Switch to light theme"
+                : "Switch to dark theme"
             }
             className={cn(
               "flex h-9 w-9 items-center justify-center rounded-lg text-muted",
@@ -56,17 +58,6 @@ export function ClientPortalHeader() {
               </motion.span>
             </AnimatePresence>
           </button>
-
-          <Link
-            to="/admin-login"
-            className={cn(
-              "rounded-lg px-3 py-2 text-sm font-medium text-muted",
-              "transition-colors hover:bg-surface-muted hover:text-foreground",
-              "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-            )}
-          >
-            Staff Login
-          </Link>
         </div>
       </div>
     </header>

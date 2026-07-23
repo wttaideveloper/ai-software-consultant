@@ -197,6 +197,69 @@ class AuthService {
             refreshToken,
         };
     }
+    /**
+     * Exchanges a valid refresh token for a brand-new token pair.
+     *
+     * Deliberately unauthenticated: the caller reaches here precisely *because*
+     * its access token has expired, so requiring one would be circular.
+     *
+     * The refresh token is rotated on every use — the presented one is deleted and
+     * a replacement issued in the same transaction. That preserves login's "one
+     * valid refresh token per user at a time" invariant and means a captured token
+     * is single-use: replaying it after the real client has refreshed hits the
+     * `findRefreshTokenByHash` miss below and is rejected.
+     *
+     * Every failure is a flat 401 with the same message. The client's only correct
+     * reaction to any of them is identical (log in again), and distinguishing
+     * "expired" from "revoked" from "unknown user" only helps someone probing.
+     */
+    async refreshSession(input, context) {
+        const invalidSession = () => new app_error_js_1.AppError("Session expired. Please log in again.", http_status_js_1.HTTP_STATUS.UNAUTHORIZED);
+        let claims;
+        try {
+            claims = (0, jwt_js_1.verifyRefreshToken)(input.refreshToken);
+        }
+        catch {
+            throw invalidSession();
+        }
+        // Signature alone is not enough: the token must still be the one on record,
+        // which is what makes logout-by-rotation and "newer login wins" actually bite.
+        const stored = await auth_repository_js_1.authRepository.findRefreshTokenByHash(hashRefreshToken(input.refreshToken));
+        if (!stored || stored.revokedAt !== null || stored.expiresAt.getTime() <= Date.now()) {
+            throw invalidSession();
+        }
+        if (stored.userId !== claims.sub) {
+            throw invalidSession();
+        }
+        const record = await auth_repository_js_1.authRepository.findUserWithOrganizationById(claims.sub);
+        if (!record || record.user.status !== "active") {
+            throw invalidSession();
+        }
+        const tokenInput = {
+            sub: record.user.id,
+            organizationId: record.organization.id,
+            email: record.user.email,
+        };
+        const accessToken = (0, jwt_js_1.generateAccessToken)(tokenInput);
+        const refreshToken = (0, jwt_js_1.generateRefreshToken)(tokenInput);
+        await auth_repository_js_1.authRepository.runInTransaction(async (tx) => {
+            await auth_repository_js_1.authRepository.deleteRefreshTokensByUserId(record.user.id, tx);
+            await auth_repository_js_1.authRepository.createRefreshToken({
+                userId: record.user.id,
+                tokenHash: hashRefreshToken(refreshToken),
+                expiresAt: resolveRefreshTokenExpiry(env_js_1.config.REFRESH_TOKEN_EXPIRES),
+                userAgent: context.userAgent,
+                ipAddress: context.ipAddress,
+            }, tx);
+        });
+        logger_js_1.logger.debug(`Session refreshed for user: ${record.user.email}`);
+        return {
+            user: toPublicUser(record.user),
+            organization: toPublicOrganization(record.organization),
+            accessToken,
+            refreshToken,
+        };
+    }
     async getCurrentUser(userId) {
         const record = await auth_repository_js_1.authRepository.findUserWithOrganizationById(userId);
         if (!record) {
