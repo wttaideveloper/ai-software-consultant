@@ -29,8 +29,8 @@ export function EmptyState({
         className,
       )}
     >
-      <div className="asc-gradient-subtle mb-4 flex h-14 w-14 items-center justify-center rounded-xl text-accent shadow-sm shadow-accent/10">
-        <Icon className="h-6 w-6" strokeWidth={1.75} />
+      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-surface-muted text-muted">
+        <Icon className="h-5 w-5" strokeWidth={1.75} />
       </div>
       <h3 className="text-lg font-semibold tracking-tight">{title}</h3>
       <p className="mt-2 max-w-md text-sm leading-relaxed text-muted">{description}</p>

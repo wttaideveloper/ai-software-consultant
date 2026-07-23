@@ -51,10 +51,10 @@ export function ClientPlatformsStep() {
               type="button"
               onClick={() => togglePlatform(platform)}
               className={cn(
-                "flex items-center justify-between rounded-xl border px-4 py-3.5 text-left text-sm font-medium transition-colors",
+                "flex items-center justify-between rounded-lg border px-4 py-3.5 text-left text-sm font-medium transition-colors",
                 isSelected
-                  ? "asc-gradient-subtle border-accent/40 text-accent"
-                  : "border-border text-foreground hover:border-accent/25 hover:bg-surface-muted",
+                  ? "border-accent bg-accent-subtle text-accent"
+                  : "border-border text-foreground hover:border-border-strong hover:bg-surface-muted",
               )}
             >
               <span>{platform}</span>

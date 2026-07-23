@@ -5,13 +5,10 @@ type BadgeVariant = "default" | "accent" | "success" | "warning" | "danger";
 
 const variants: Record<BadgeVariant, string> = {
   default: "bg-surface-muted text-foreground-soft border-border",
-  accent: "asc-gradient-subtle text-accent border-transparent",
-  success:
-    "border-transparent bg-gradient-to-br from-success-subtle to-[#cfefdd] text-success dark:to-[#123322]",
-  warning:
-    "border-transparent bg-gradient-to-br from-warning-subtle to-[#fce7c3] text-warning dark:to-[#3d2b0e]",
-  danger:
-    "border-transparent bg-gradient-to-br from-danger-subtle to-[#fbd5d5] text-danger dark:to-[#3d1414]",
+  accent: "bg-accent-subtle text-accent border-transparent",
+  success: "border-transparent bg-success-subtle text-success",
+  warning: "border-transparent bg-warning-subtle text-warning",
+  danger: "border-transparent bg-danger-subtle text-danger",
 };
 
 type BadgeProps = HTMLAttributes<HTMLSpanElement> & {

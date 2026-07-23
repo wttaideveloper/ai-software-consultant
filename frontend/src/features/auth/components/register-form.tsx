@@ -60,7 +60,7 @@ export function RegisterForm() {
 
   return (
     <FormProvider {...form}>
-      <div className="asc-gradient-surface rounded-xl border border-border p-6 sm:p-8">
+      <div className="rounded-xl border border-border bg-surface p-6 shadow-sm sm:p-8">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           Create your workspace
         </h1>
@@ -68,7 +68,9 @@ export function RegisterForm() {
           Set up your organization and admin account in a few steps.
         </p>
 
-        <StepProgress steps={REGISTER_STEPS} currentStep={step} />
+        <div className="mb-8 mt-6">
+          <StepProgress steps={REGISTER_STEPS} currentStep={step} />
+        </div>
 
         <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
           <div className="relative overflow-hidden">

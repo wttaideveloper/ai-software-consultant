@@ -18,14 +18,14 @@ export function WizardProgress({ currentIndex, totalSteps, label }: WizardProgre
   return (
     <div>
       <div className="flex items-center justify-between text-xs">
-        <span className="font-medium text-muted">
+        <span className="text-muted">
           Step {currentIndex + 1} of {totalSteps}
         </span>
-        <span className="font-medium text-foreground-soft">{label}</span>
+        <span className="font-medium text-foreground">{label}</span>
       </div>
-      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-surface-muted">
+      <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-border">
         <motion.div
-          className="asc-gradient-accent h-full rounded-full"
+          className="h-full rounded-full bg-accent"
           initial={false}
           animate={{ width: `${percent}%` }}
           transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}

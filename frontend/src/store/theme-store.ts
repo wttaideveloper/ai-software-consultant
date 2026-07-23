@@ -16,7 +16,7 @@ function applyTheme(theme: ThemeMode) {
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set, get) => ({
-      theme: "dark",
+      theme: "light",
       setTheme: (theme) => {
         applyTheme(theme);
         set({ theme });
@@ -41,14 +41,14 @@ export const useThemeStore = create<ThemeState>()(
 export function initializeTheme() {
   const stored = localStorage.getItem("asc-theme");
   if (!stored) {
-    applyTheme("dark");
+    applyTheme("light");
     return;
   }
 
   try {
     const parsed = JSON.parse(stored) as { state?: { theme?: ThemeMode } };
-    applyTheme(parsed.state?.theme ?? "dark");
+    applyTheme(parsed.state?.theme ?? "light");
   } catch {
-    applyTheme("dark");
+    applyTheme("light");
   }
 }

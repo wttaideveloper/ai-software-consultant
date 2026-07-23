@@ -42,13 +42,13 @@ export function ClientConsultationTimeStep() {
               type="button"
               onClick={() => setConsultationTime(option.value)}
               className={cn(
-                "rounded-xl border p-5 text-left transition-colors",
+                "rounded-lg border p-5 text-left transition-colors",
                 isSelected
-                  ? "asc-gradient-subtle border-accent/40"
-                  : "border-border hover:border-accent/25 hover:bg-surface-muted",
+                  ? "border-accent bg-accent-subtle"
+                  : "border-border hover:border-border-strong hover:bg-surface-muted",
               )}
             >
-              <p className={cn("text-lg font-semibold", isSelected ? "text-accent" : "text-foreground")}>
+              <p className={cn("text-base font-semibold", isSelected ? "text-accent" : "text-foreground")}>
                 {option.label}
               </p>
               <p className="mt-1 text-xs text-muted">{option.description}</p>

@@ -1,4 +1,3 @@
-import { Card } from "@/components/ui";
 import { cn } from "@/utils/cn";
 
 type MetricCardProps = {
@@ -10,16 +9,16 @@ type MetricCardProps = {
 
 export function MetricCard({ label, value, unavailable }: MetricCardProps) {
   return (
-    <Card hover={false}>
+    <div className="rounded-xl border border-border bg-surface p-4">
       <p className="text-xs font-medium uppercase tracking-wide text-muted">{label}</p>
       <p
         className={cn(
           "mt-1.5 text-lg font-semibold",
-          unavailable ? "text-muted italic" : "text-foreground",
+          unavailable ? "text-muted" : "text-foreground",
         )}
       >
         {value}
       </p>
-    </Card>
+    </div>
   );
 }

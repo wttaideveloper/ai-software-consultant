@@ -21,8 +21,8 @@ export function Card({
       transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
       onClick={onClick}
       className={cn(
-        "asc-gradient-surface rounded-2xl border border-border p-5 shadow-sm",
-        hover && "transition-all duration-200 hover:border-accent/30 hover:shadow-lg hover:shadow-accent/10",
+        "rounded-xl border border-border bg-surface p-5 shadow-sm",
+        hover && "transition-all duration-200 hover:shadow-md hover:border-border-strong",
         className,
       )}
     >

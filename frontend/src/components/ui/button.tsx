@@ -17,22 +17,22 @@ type ButtonProps = {
 
 const variants: Record<ButtonVariant, string> = {
   primary:
-    "asc-gradient-accent asc-gradient-accent-interactive text-white shadow-md shadow-accent/25",
+    "asc-gradient-accent text-white shadow-sm hover:opacity-90",
   secondary:
-    "border border-border bg-transparent text-foreground hover:bg-surface-muted hover:border-border-strong",
+    "border border-border bg-surface text-foreground hover:bg-surface-muted",
   ghost:
     "bg-transparent text-foreground-soft hover:bg-surface-muted hover:text-foreground",
   danger:
-    "bg-gradient-to-br from-danger to-[#b91c1c] text-white hover:opacity-95",
+    "bg-danger text-white hover:opacity-90",
   outline:
-    "border border-border bg-transparent text-foreground hover:bg-surface-muted hover:border-border-strong",
+    "border border-border bg-transparent text-foreground hover:bg-surface-muted",
 };
 
 const sizes: Record<ButtonSize, string> = {
-  sm: "h-8 px-3 text-xs rounded-lg gap-1.5",
-  md: "h-10 px-4 text-sm rounded-xl gap-2",
-  lg: "h-11 px-5 text-sm rounded-xl gap-2",
-  icon: "h-10 w-10 rounded-xl justify-center",
+  sm: "h-8 px-3 text-xs rounded-md gap-1.5",
+  md: "h-9 px-4 text-sm rounded-lg gap-2",
+  lg: "h-10 px-5 text-sm rounded-lg gap-2",
+  icon: "h-9 w-9 rounded-lg justify-center",
 };
 
 export function Button({

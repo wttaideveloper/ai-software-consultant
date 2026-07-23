@@ -2,75 +2,68 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Design tokens — light (on-brand, orange accent) */
+/* Design tokens — light */
 :root {
-  --bg-page: #faf8fc;
+  --bg-page: #F8FAFC;
   --bg-surface: #ffffff;
-  --bg-surface-muted: #f2eaf9;
-  --text-primary: #1a0b2e;
-  --text-secondary: #4b3b63;
-  --text-muted: #8b7a9e;
-  --border: #e7def2;
-  --border-strong: #d6c7ea;
+  --bg-surface-muted: #F3F0F9;
+  --text-primary: #111827;
+  --text-secondary: #374151;
+  --text-muted: #6B7280;
+  --border: #E5E7EB;
+  --border-strong: #D1D5DB;
 
-  --accent: #ff5a3c;
-  --accent-hover: #e64526;
-  --accent-subtle: #ffede7;
-  --accent-mid: #ff3d68;
+  --accent: #351E61;
+  --accent-hover: #2A1750;
+  --accent-subtle: #F0EBFF;
+  --accent-mid: #5B3FA6;
 
   --success: #16a34a;
-  --success-subtle: #e8f9ee;
+  --success-subtle: #f0fdf4;
   --warning: #d97706;
-  --warning-subtle: #fdf3e3;
+  --warning-subtle: #fffbeb;
   --danger: #dc2626;
-  --danger-subtle: #fdecec;
+  --danger-subtle: #fef2f2;
 
-  /* Gradients — Wisdom Tooth orange/pink brand accent */
-  --gradient-accent: linear-gradient(90deg, #ff6a3d 0%, #ff3d68 100%);
-  --gradient-accent-hover: linear-gradient(90deg, #e6512e 0%, #e6335a 100%);
-  --gradient-subtle: linear-gradient(135deg, #ffede7 0%, #fff0f4 100%);
-  --gradient-surface: linear-gradient(180deg, #ffffff 0%, #faf8fc 100%);
-  --gradient-page:
-    radial-gradient(ellipse 80% 50% at 0% -20%, rgb(255 90 60 / 0.08), transparent),
-    radial-gradient(ellipse 60% 40% at 100% 0%, rgb(255 61 104 / 0.06), transparent),
-    radial-gradient(ellipse 50% 30% at 50% 100%, rgb(255 90 60 / 0.03), transparent);
+  --gradient-accent: linear-gradient(135deg, #4B2D8F 0%, #351E61 100%);
+  --gradient-accent-hover: linear-gradient(135deg, #351E61 0%, #2A1750 100%);
+  --gradient-subtle: #F0EBFF;
+  --gradient-surface: #ffffff;
+  --gradient-page: none;
 }
 
-/* Design tokens — dark (Wisdom Tooth Technologies brand) */
+/* Design tokens — dark */
 .dark {
-  --bg-page: #16052d;
-  --bg-surface: #24133f;
-  --bg-surface-muted: #36215b;
-  --text-primary: #ffffff;
-  --text-secondary: #d6d6d6;
-  --text-muted: #9ca3af;
+  --bg-page: #0D0B14;
+  --bg-surface: #16112A;
+  --bg-surface-muted: #221A3A;
+  --text-primary: #F9FAFB;
+  --text-secondary: #E5E7EB;
+  --text-muted: #9CA3AF;
   --border: rgb(255 255 255 / 0.08);
   --border-strong: rgb(255 255 255 / 0.16);
 
-  --accent: #ff5a3c;
-  --accent-hover: #ff3d68;
-  --accent-subtle: rgb(255 90 60 / 0.14);
-  --accent-mid: #ff6a3d;
+  --accent: #7C5CBF;
+  --accent-hover: #9B7FD4;
+  --accent-subtle: rgb(124 92 191 / 0.15);
+  --accent-mid: #9B7FD4;
 
   --success: #22c55e;
-  --success-subtle: rgb(34 197 94 / 0.14);
-  --warning: #f5a623;
-  --warning-subtle: rgb(245 166 35 / 0.14);
+  --success-subtle: rgb(34 197 94 / 0.12);
+  --warning: #f59e0b;
+  --warning-subtle: rgb(245 158 11 / 0.12);
   --danger: #ef4444;
-  --danger-subtle: rgb(239 68 68 / 0.14);
+  --danger-subtle: rgb(239 68 68 / 0.12);
 
-  --gradient-accent: linear-gradient(90deg, #ff6a3d 0%, #ff3d68 100%);
-  --gradient-accent-hover: linear-gradient(90deg, #ff7d52 0%, #ff5580 100%);
-  --gradient-subtle: linear-gradient(135deg, rgb(255 106 61 / 0.16) 0%, rgb(255 61 104 / 0.12) 100%);
-  --gradient-surface: linear-gradient(180deg, #2d184e 0%, #24133f 100%);
-  --gradient-page:
-    radial-gradient(ellipse 70% 45% at 0% -10%, rgb(255 90 60 / 0.14), transparent),
-    radial-gradient(ellipse 50% 35% at 100% 0%, rgb(255 61 104 / 0.1), transparent),
-    radial-gradient(ellipse 60% 40% at 50% 100%, rgb(45 24 78 / 0.6), transparent);
+  --gradient-accent: linear-gradient(135deg, #7C5CBF 0%, #4B2D8F 100%);
+  --gradient-accent-hover: linear-gradient(135deg, #9B7FD4 0%, #7C5CBF 100%);
+  --gradient-subtle: rgb(124 92 191 / 0.15);
+  --gradient-surface: #16112A;
+  --gradient-page: none;
 }
 
 @theme {
-  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
 
   --color-canvas: var(--bg-page);
   --color-page: var(--bg-page);
@@ -96,7 +89,7 @@
   --color-success: var(--success);
   --color-success-subtle: var(--success-subtle);
 
-  --radius-ui: 1rem;
+  --radius-ui: 0.75rem;
 }
 
 @layer base {
@@ -117,8 +110,7 @@
 
   body {
     @apply m-0 min-h-dvh bg-canvas font-sans text-foreground;
-    background-image: var(--gradient-page);
-    background-attachment: fixed;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   #root {
@@ -131,7 +123,6 @@
 }
 
 @layer components {
-  /* Avoid bg-gradient-* names — they collide with Tailwind's gradient utilities */
   .asc-gradient-accent {
     background-color: var(--accent);
     background-image: var(--gradient-accent);
@@ -144,27 +135,19 @@
 
   .asc-gradient-subtle {
     background-color: var(--accent-subtle);
-    background-image: var(--gradient-subtle);
   }
 
   .asc-gradient-surface {
     background-color: var(--bg-surface);
-    background-image: var(--gradient-surface);
   }
 
   /* Chat message bubbles */
   .chat-bubble-ai {
-    @apply rounded-2xl px-4 py-3 text-sm text-foreground;
-    background-image: linear-gradient(
-      135deg,
-      var(--bg-surface-muted) 0%,
-      color-mix(in srgb, var(--bg-surface-muted) 70%, var(--accent-subtle)) 100%
-    );
+    @apply rounded-xl px-4 py-3 text-sm text-foreground bg-surface-muted;
   }
 
   .chat-bubble-user {
-    @apply rounded-2xl px-4 py-3 text-sm text-white;
+    @apply rounded-xl px-4 py-3 text-sm text-white;
     background-color: var(--accent);
-    background-image: var(--gradient-accent);
   }
 }

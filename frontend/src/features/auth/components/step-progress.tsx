@@ -9,7 +9,7 @@ type StepProgressProps = {
 
 export function StepProgress({ steps, currentStep }: StepProgressProps) {
   return (
-    <div className="mb-8 flex items-center">
+    <div className="flex items-center">
       {steps.map((step, index) => {
         const isComplete = index < currentStep;
         const isActive = index === currentStep;
@@ -19,10 +19,10 @@ export function StepProgress({ steps, currentStep }: StepProgressProps) {
             <div className="flex flex-col items-center gap-1.5">
               <span
                 className={cn(
-                  "flex h-8 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-colors",
+                  "flex h-7 w-7 items-center justify-center rounded-full border text-xs font-semibold transition-colors",
                   isComplete || isActive
-                    ? "asc-gradient-accent border-transparent text-white"
-                    : "border-border bg-surface-muted text-muted",
+                    ? "border-transparent bg-accent text-white"
+                    : "border-border bg-surface text-muted",
                 )}
               >
                 {isComplete ? <Check className="h-4 w-4" /> : index + 1}

@@ -12,8 +12,8 @@ export function ClientStepIndicator() {
   }
 
   return (
-    <div className="border-b border-border bg-surface px-4 py-4 sm:px-6">
-      <div className="mx-auto max-w-3xl">
+    <div className="border-b border-border bg-surface px-4 py-3 sm:px-6">
+      <div className="mx-auto max-w-5xl">
         <StepProgress
           steps={CLIENT_PORTAL_STEPS.map((step) => step.label)}
           currentStep={activeIndex}
