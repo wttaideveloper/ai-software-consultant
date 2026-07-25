@@ -22,17 +22,19 @@ import {
 /**
  * Shared style contract appended to every screen's prompt.
  *
- * Stated as hard negatives because image models drift toward inventing brands and
- * unreadable filler text, which would make a *concept* preview look like a real
- * design decision the client never approved.
+ * The single hardest requirement is legible, real English text: gpt-image-1 can
+ * render typography well, but it drifts toward invented, misspelled filler when
+ * not held to it — and garbled labels are exactly what makes a concept preview
+ * look unprofessional. The per-screen prompt supplies the literal labels to draw;
+ * this directive enforces that they be rendered as real, correctly spelled words.
  */
 const IMAGE_STYLE_DIRECTIVE = [
-  "Clean, modern SaaS application user interface mockup.",
-  "Flat design, neutral and muted colour palette, generous whitespace, strong visual hierarchy.",
-  "Material Design quality, crisp alignment, realistic UI components.",
-  "Do NOT include any logo, brand mark, company name, or trademark.",
-  "Do NOT include readable body text, lorem ipsum, or gibberish lettering — suggest text as neutral placeholder bars.",
-  "No people, no photographs, no 3D renders, no drop shadows on the outer frame.",
+  "High-fidelity, production-quality user interface design of a single modern application screen — the quality an expert product designer would ship, comparable to Figma community templates, Dribbble, Linear, Stripe, Notion, and Apple's design standards. Not a wireframe, not low-detail.",
+  "Realistic modern layout: clean spacing, clear visual hierarchy, rounded cards, soft subtle shadows, consistent line-style iconography, professional typography, and realistic navigation.",
+  "ALL text in the interface MUST be real, correctly spelled English and match the labels described above. Every heading, button, menu item, tab, and form field must read as a genuine English word or phrase (for example: Login, Sign In, Email, Password, Continue, Search, Dashboard, Settings, Notifications, Cart, Checkout, Order Summary, Payment, Profile, Save, Cancel, Back).",
+  "Absolutely NO invented words, misspellings, random letters or symbols, gibberish, lorem ipsum, or placeholder text, and NEVER render text as blurred or abstract bars. If unsure of a label, use a common correct English UI term.",
+  "Flat, modern, professional colour palette with strong contrast and generous whitespace.",
+  "No logos, brand marks, company names, trademarks, or watermarks. Avoid photorealistic human faces and stock-photo people (simple circular avatar placeholders are fine). No 3D renders, no cartoon or illustration style, no abstract art, and no drop shadow on the outer frame.",
 ].join(" ");
 
 /** One batch per IP per window — the cheap first line of defence. */
