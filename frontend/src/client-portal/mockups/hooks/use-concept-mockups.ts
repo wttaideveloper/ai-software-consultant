@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import {
   clientMockupsService,
@@ -16,29 +15,27 @@ const POLL_INTERVAL_MS = 4_000;
 /**
  * Drives the concept-mockup step (`/mockups`).
  *
- * Two deliberate separations from the Estimate step before it:
+ * Two deliberate properties:
  *
  * 1. **It never blocks the estimate.** This is its own query with its own state on
  *    its own route; the estimate is resolved and stored before this ever mounts, and
  *    a failure here degrades to a retry panel rather than affecting anything upstream.
- * 2. **Reading is free, generating is not.** The GET is a pure read, so refreshes
- *    and polls cost nothing. Generation is kicked off exactly once per
- *    consultation key by the effect below, guarded by a ref so a remount cannot
- *    re-trigger a billable batch — the same "auto-generate on first visit only"
- *    rule the Summary, Features and Estimate steps use, but with real money
- *    behind it.
+ * 2. **Reading is free, generating is not — and generating is user-initiated.** The
+ *    GET is a pure read, so mounting the page, refreshing and polling all cost
+ *    nothing. A billable batch starts ONLY when the visitor clicks Generate, which
+ *    calls `generate()` below. There is intentionally no auto-generation effect:
+ *    mockups are optional, so no AI credits are spent until the client opts in.
  */
 export function useConceptMockups(input: {
   requirementSummary: string | null;
   features: GenerateMockupsPayload["features"];
   platforms: string[];
   techStack: string[];
-  /** Gate: only start once the estimate exists, so we never spend on a half-finished funnel. */
+  /** Gate: only fetch/allow generation once the estimate exists. */
   enabled: boolean;
 }) {
   const consultationKey = useClientConsultationStore((state) => state.consultationKey);
   const queryClient = useQueryClient();
-  const hasRequestedRef = useRef(false);
 
   const query = useQuery({
     queryKey: [MOCKUPS_QUERY_KEY, consultationKey],
@@ -86,39 +83,29 @@ export function useConceptMockups(input: {
     Boolean(input.requirementSummary) &&
     input.features.length > 0;
 
-  useEffect(() => {
-    // Only NONE authorises spending. READY / PENDING / FAILED / DISABLED all mean
-    // "do not start a batch" — FAILED is user-retryable rather than automatic, so
-    // a persistent backend fault can't bill in a loop.
-    if (hasRequestedRef.current || !canGenerate || query.data?.status !== "NONE") {
-      return;
-    }
-
-    hasRequestedRef.current = true;
-    generate.mutate(buildPayload());
-    // Intentionally keyed to the readiness signal only — see the ref guard above.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canGenerate, query.data?.status]);
-
   return {
     set: query.data,
     isLoading: query.isLoading,
     isError: query.isError,
     /**
      * A rejected kick-off counts as failed even though the row still reads NONE —
-     * the mutation's error is silent, so without this the gallery would sit on
+     * the mutation's error is silent, so without this the panel would sit on
      * "preparing" forever waiting for a batch that was never accepted.
      */
     isFailed: query.data?.status === "FAILED" || generate.isError,
     isGenerating: generate.isPending || query.data?.status === "PENDING",
     isRegenerating: regenerate.isPending,
+    /** Only meaningful before a batch exists — the intro CTA guards on it. */
+    canGenerate,
     canRegenerate:
       query.data !== undefined &&
       query.data.regenerationsUsed < query.data.regenerationsAllowed,
-    regenerate: () => regenerate.mutate(buildPayload()),
-    retry: () => {
-      hasRequestedRef.current = true;
+    /** User-initiated: called from the "Generate AI Mockups" button, never on mount. */
+    generate: () => {
+      if (!canGenerate) return;
       generate.mutate(buildPayload());
     },
+    regenerate: () => regenerate.mutate(buildPayload()),
+    retry: () => generate.mutate(buildPayload()),
   };
 }
