@@ -13,10 +13,10 @@ type MockupGalleryProps = {
 const DISCLAIMER =
   "These images are AI-generated concepts and are intended for visualization only. Final UI/UX design may differ.";
 
-const GALLERY_LAYOUT = [
-  "flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 [scrollbar-width:thin]",
-  "sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:pb-0",
-].join(" ");
+// A calm 1-col (mobile) / 2-col (tablet+) presentation grid. The vertical gap is
+// deliberately large so each screen reads as its own section — title, image,
+// caption — rather than as a tile in a dense gallery.
+const GALLERY_LAYOUT = "grid grid-cols-1 gap-x-8 gap-y-12 sm:grid-cols-2 sm:gap-y-16";
 
 /**
  * Body of the "This is how I envision your project" step — the heading and the
@@ -93,18 +93,14 @@ export function MockupGallery({ set, isGenerating, isFailed, onRetry }: MockupGa
   return (
     <>
       {/*
-        Mobile: a horizontal snap carousel, so five multi-megabyte concepts
-        don't turn the page into an endless scroll on a phone. Desktop (sm+):
-        a two-column grid. Native scroll rather than a JS carousel — it keeps
-        keyboard, trackpad and touch behaviour correct for free.
+        Each screen is presented independently — title, hero image, caption — in a
+        single column on mobile and two on tablet/desktop. Images stay lazy, so the
+        vertical stack doesn't front-load several megabytes on a phone.
       */}
       <ul className={GALLERY_LAYOUT}>
-        {set?.images.map((image) => (
-          <li
-            key={image.id}
-            className="w-[78vw] max-w-sm shrink-0 snap-start sm:w-auto sm:max-w-none sm:shrink"
-          >
-            <MockupCard image={image} />
+        {set?.images.map((image, index) => (
+          <li key={image.id}>
+            <MockupCard image={image} index={index} />
           </li>
         ))}
       </ul>
