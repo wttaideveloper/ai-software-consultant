@@ -1,6 +1,7 @@
 import type {
   ClientLeadEstimate,
   ClientLeadFeature,
+  ClientLeadPricing,
 } from "../../db/schema/client-leads.js";
 import type { ClientLeadStatus } from "./client-lead.repository.js";
 
@@ -64,6 +65,10 @@ export type ClientLeadDetailDto = ClientLeadListItemDto & {
   requirementSummary: string;
   features: ClientLeadFeature[];
   estimate: ClientLeadEstimate;
+  /** Recommended technologies the client saw; empty for pre-snapshot leads. */
+  techStack: string[];
+  /** Frozen project cost the client saw; null for pre-snapshot leads or unpriced. */
+  pricing: ClientLeadPricing | null;
 
   updatedAt: Date;
 };

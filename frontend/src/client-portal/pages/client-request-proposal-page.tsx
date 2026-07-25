@@ -43,6 +43,7 @@ export function ClientRequestProposalPage() {
   const estimate = useClientConsultationStore((state) => state.estimate);
   const complexity = useClientConsultationStore((state) => state.complexity);
   const recommendedTeam = useClientConsultationStore((state) => state.recommendedTeam);
+  const techStack = useClientConsultationStore((state) => state.techStack);
   const currentPricing = useClientConsultationStore((state) => state.currentPricing);
   const contactInfo = useClientConsultationStore((state) => state.contactInfo);
   const setContactInfo = useClientConsultationStore((state) => state.setContactInfo);
@@ -93,6 +94,11 @@ export function ClientRequestProposalPage() {
           included: includedById.get(id) ?? true,
         })),
         estimate: estimate!,
+        // Freeze exactly what this page presented — the tech stack and the price
+        // after the client's feature toggles — so the Admin sees the same figures.
+        // No repricing or AI: these come straight from the wizard state.
+        techStack: techStack ?? [],
+        pricing: currentPricing,
       },
       {
         onSuccess: () => {

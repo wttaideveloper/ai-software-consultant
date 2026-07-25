@@ -45,6 +45,8 @@ function toDetailDto(lead: ClientLeadRecord): ClientLeadDetailDto {
     requirementSummary: lead.requirementSummary,
     features: lead.features,
     estimate: lead.estimate,
+    techStack: lead.techStack,
+    pricing: lead.pricing,
     updatedAt: lead.updatedAt,
   };
 }

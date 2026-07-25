@@ -63,6 +63,38 @@ export type ClientLeadEstimate = {
   breakdown: ClientLeadEstimateBreakdownItem[];
 };
 
+export type ClientLeadPricingBreakdown = {
+  estimatedHours: number;
+  hourlyRate: number;
+  complexityMultiplier: number;
+  platformMultiplier: number;
+  baseCost: number;
+  developmentCost: number;
+  riskBufferPercentage: number;
+  riskBufferAmount: number;
+  subtotal: number;
+  discountAmount: number;
+  discountCapped: boolean;
+  taxPercentage: number;
+  taxAmount: number;
+  finalPrice: number;
+};
+
+/**
+ * The frozen project cost the client saw at submission. Read-only history — the
+ * Admin renders a range from `breakdown.finalPrice` + `currency`, never re-prices.
+ * Null for leads submitted before this snapshot existed, or when unpriced.
+ */
+export type ClientLeadPricing = {
+  currency: string;
+  currencySymbol: string;
+  complexityLevel: string;
+  platforms: string[];
+  unpricedPlatforms: string[];
+  rateBasis: "EXPLICIT" | "ROLE" | "BLENDED";
+  breakdown: ClientLeadPricingBreakdown;
+};
+
 /** Full lead returned by GET /api/client-leads/:id. */
 export type ClientLeadDetail = ClientLead & {
   whatsapp: string | null;
@@ -72,6 +104,10 @@ export type ClientLeadDetail = ClientLead & {
   requirementSummary: string;
   features: ClientLeadFeature[];
   estimate: ClientLeadEstimate;
+  /** Recommended technologies the client saw; empty for pre-snapshot leads. */
+  techStack: string[];
+  /** Frozen project cost the client saw; null for pre-snapshot leads or unpriced. */
+  pricing: ClientLeadPricing | null;
   updatedAt: string;
 };
 

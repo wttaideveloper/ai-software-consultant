@@ -231,7 +231,11 @@ export function ClientRequestDetailsPage() {
           isSaving={updateLead.isPending}
         />
 
-        <LeadEstimateSection estimate={lead.estimate} />
+        <LeadEstimateSection
+          estimate={lead.estimate}
+          techStack={lead.techStack}
+          pricing={lead.pricing}
+        />
 
         <LeadProposalVersionsSection lead={lead} />
 

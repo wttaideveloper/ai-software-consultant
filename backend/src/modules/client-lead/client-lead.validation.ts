@@ -30,6 +30,38 @@ const estimateInputSchema = z.object({
   breakdown: z.array(estimateBreakdownItemSchema),
 });
 
+/**
+ * The Cost Engine breakdown the client was shown. Accepted as-is and frozen — the
+ * server never re-prices this at submission, so it is a faithful record of that
+ * moment rather than a recalculation.
+ */
+const pricingBreakdownSchema = z.object({
+  estimatedHours: z.number(),
+  hourlyRate: z.number(),
+  complexityMultiplier: z.number(),
+  platformMultiplier: z.number(),
+  baseCost: z.number(),
+  developmentCost: z.number(),
+  riskBufferPercentage: z.number(),
+  riskBufferAmount: z.number(),
+  subtotal: z.number(),
+  discountAmount: z.number(),
+  discountCapped: z.boolean(),
+  taxPercentage: z.number(),
+  taxAmount: z.number(),
+  finalPrice: z.number(),
+});
+
+const pricingSnapshotSchema = z.object({
+  currency: z.string(),
+  currencySymbol: z.string(),
+  complexityLevel: z.string(),
+  platforms: z.array(z.string()),
+  unpricedPlatforms: z.array(z.string()),
+  rateBasis: z.enum(["EXPLICIT", "ROLE", "BLENDED"]),
+  breakdown: pricingBreakdownSchema,
+});
+
 export const createClientLeadSchema = z.object({
   name: z.string().trim().min(1, "Name is required"),
   email: z.string().trim().min(1, "Email is required").email("Enter a valid email address"),
@@ -48,6 +80,10 @@ export const createClientLeadSchema = z.object({
   requirementSummary: z.string().trim().min(1, "A requirement summary is required"),
   features: z.array(featureInputSchema).min(1, "At least one feature is required"),
   estimate: estimateInputSchema,
+  // Snapshot extras: exactly what the client saw. Optional so an older client can
+  // still submit; the pricing is captured, never recomputed on the server.
+  techStack: z.array(z.string()).optional().default([]),
+  pricing: pricingSnapshotSchema.nullable().optional().default(null),
 });
 
 export type CreateClientLeadInput = z.infer<typeof createClientLeadSchema>;

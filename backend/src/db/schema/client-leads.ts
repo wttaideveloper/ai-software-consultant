@@ -37,6 +37,42 @@ export type ClientLeadEstimate = {
   breakdown: ClientLeadEstimateBreakdownItem[];
 };
 
+/** The Cost Engine breakdown the client was shown — stored verbatim (see ClientLeadPricing). */
+export type ClientLeadPricingBreakdown = {
+  estimatedHours: number;
+  hourlyRate: number;
+  complexityMultiplier: number;
+  platformMultiplier: number;
+  baseCost: number;
+  developmentCost: number;
+  riskBufferPercentage: number;
+  riskBufferAmount: number;
+  subtotal: number;
+  discountAmount: number;
+  discountCapped: boolean;
+  taxPercentage: number;
+  taxAmount: number;
+  finalPrice: number;
+};
+
+/**
+ * Snapshot of the project cost the client saw at submission, exactly as the Cost
+ * Engine priced it then. Stored verbatim and never recomputed: a later rate-card
+ * change must not move a historical quote. The enum-like fields are widened to
+ * `string` on purpose — this is a frozen record, not a live typed value, so it
+ * stays readable even if the cost vocabularies evolve. Null for leads submitted
+ * before this snapshot existed, or when pricing could not be produced.
+ */
+export type ClientLeadPricing = {
+  currency: string;
+  currencySymbol: string;
+  complexityLevel: string;
+  platforms: string[];
+  unpricedPlatforms: string[];
+  rateBasis: "EXPLICIT" | "ROLE" | "BLENDED";
+  breakdown: ClientLeadPricingBreakdown;
+};
+
 /**
  * No organizationId: unlike every other table in this schema, a Client Portal lead
  * has no tenant to scope to — the portal is a single, unauthenticated public front
@@ -71,6 +107,11 @@ export const clientLeads = pgTable(
     requirementSummary: text("requirement_summary").notNull(),
     features: jsonb("features").$type<ClientLeadFeature[]>().notNull(),
     estimate: jsonb("estimate").$type<ClientLeadEstimate>().notNull(),
+    // Snapshot extras added alongside estimate — the exact project cost and tech
+    // stack the client saw. Nullable/defaulted so pre-existing leads are valid
+    // without a backfill; they simply render "not available".
+    techStack: jsonb("tech_stack").$type<string[]>().notNull().default([]),
+    pricing: jsonb("pricing").$type<ClientLeadPricing>(),
 
     status: clientLeadStatusEnum("status").notNull().default("NEW"),
 

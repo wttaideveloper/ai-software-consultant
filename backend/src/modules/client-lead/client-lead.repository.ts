@@ -95,6 +95,8 @@ export class ClientLeadRepository {
         requirementSummary: data.requirementSummary,
         features: data.features,
         estimate: data.estimate,
+        techStack: data.techStack,
+        pricing: data.pricing,
       })
       .returning();
 

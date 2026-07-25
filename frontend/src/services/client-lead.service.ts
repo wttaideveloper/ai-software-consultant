@@ -4,7 +4,7 @@ import type {
   ClientFeature,
   ClientPreferredContactMethod,
 } from "@/store/client-consultation.store";
-import type { ApiSuccessResponse } from "@/types";
+import type { ApiSuccessResponse, CostPreview } from "@/types";
 
 export type CreateClientLeadPayload = {
   name: string;
@@ -24,6 +24,14 @@ export type CreateClientLeadPayload = {
   requirementSummary: string;
   features: Array<Omit<ClientFeature, "id"> & { included: boolean }>;
   estimate: ClientEstimate;
+  /**
+   * Snapshot extras so the Admin can later see exactly what the client saw. These
+   * are already-computed values carried straight from the wizard — no new pricing
+   * or AI happens here; the client just hands over the figures it displayed.
+   */
+  techStack: string[];
+  /** The repriced project cost the client was shown (after feature toggles), or null. */
+  pricing: CostPreview | null;
 };
 
 export type CreateClientLeadResponse = {
