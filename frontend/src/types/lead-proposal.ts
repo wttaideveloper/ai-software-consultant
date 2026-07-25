@@ -19,6 +19,29 @@ export const LEAD_PROPOSAL_STATUSES = [
 export type LeadProposalStatus = (typeof LEAD_PROPOSAL_STATUSES)[number];
 
 /**
+ * The editable Project Estimate carried by a proposal version.
+ *
+ * Prefilled from the lead's frozen snapshot, then editable per version — so an
+ * admin can adjust the figures for a specific proposal without touching the
+ * client's original (immutable) lead estimate. Cost and timeline are stored as
+ * range endpoints because that is exactly what the client is shown; `costMin`/
+ * `costMax` are null when the lead had no pricing snapshot. Optional on the
+ * content so versions created before this field simply fall back to the lead.
+ */
+export type ProposalProjectEstimate = {
+  /** ISO currency code used to format the cost range (e.g. "INR"). */
+  currency: string;
+  costMin: number | null;
+  costMax: number | null;
+  timelineMinWeeks: number;
+  timelineMaxWeeks: number;
+  estimatedHours: number;
+  complexity: "LOW" | "MEDIUM" | "HIGH";
+  teamSize: number;
+  techStack: string[];
+};
+
+/**
  * The authored body of a version — everything the editor writes except the
  * title and status, which are columns because the library sorts and filters on
  * them. Mirrors the `proposal_json` jsonb type field for field.
@@ -34,6 +57,8 @@ export type LeadProposalContent = {
   pricingNotes: string;
   termsAndConditions: string;
   features: ClientLeadFeature[];
+  /** Editable estimate; absent on versions created before it existed. */
+  projectEstimate?: ProposalProjectEstimate;
 };
 
 /** Row shape returned by the version list and the proposal library. */

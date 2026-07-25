@@ -36,6 +36,7 @@ export function splitDraft(draft: LeadProposalDraft): {
     pricingNotes,
     termsAndConditions,
     features,
+    projectEstimate,
   } = draft;
 
   // Fields are listed explicitly rather than spread, so nothing extra a caller
@@ -53,6 +54,8 @@ export function splitDraft(draft: LeadProposalDraft): {
       pricingNotes,
       termsAndConditions,
       features,
+      // Omitted from the JSON body when a legacy version has no estimate yet.
+      projectEstimate,
     },
   };
 }

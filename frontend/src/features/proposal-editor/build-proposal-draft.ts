@@ -1,4 +1,8 @@
 import type { LeadProposalDraft } from "@/features/proposal-editor/lead-proposal.types";
+import {
+  deriveProposalEstimate,
+  formatProposalEstimate,
+} from "@/features/proposal-editor/proposal-estimate";
 import type { ClientLeadDetail } from "@/types";
 
 /**
@@ -9,10 +13,10 @@ import type { ClientLeadDetail } from "@/types";
  * from data already saved on the lead, so this runs instantly and produces the
  * same draft every time.
  *
- * Deliberately does NOT invent commercial figures: no rate card exists in the
- * schema (Cost Settings is still a placeholder), so the commercial section
- * states the effort facts and leaves pricing for a human to fill in rather than
- * fabricating a number that could end up in front of a client.
+ * The commercial section and the Project Estimate are prefilled from the lead's
+ * frozen pricing snapshot (the client already saw these figures), not left as a
+ * to-do. Both remain editable per version, and no pricing is recomputed —
+ * deriveProposalEstimate only reads the stored snapshot.
  */
 
 const DEFAULT_TERMS = `1. This proposal is valid for 30 days from the date of issue.
@@ -125,15 +129,24 @@ function buildTeamStructure(lead: ClientLeadDetail): string {
 }
 
 function buildCommercialSummary(lead: ClientLeadDetail): string {
-  const { estimatedHours, estimatedWeeks, teamSize } = lead.estimate;
+  const { costRange, timelineRange, teamSize, estimatedHours } =
+    formatProposalEstimate(deriveProposalEstimate(lead));
 
-  // No rate card exists in the schema, so no figure is invented here.
+  // Figures come straight from the lead's stored snapshot — the same ones the
+  // client already saw. Nothing is recomputed and no rate card is consulted here.
+  const investmentLine = costRange
+    ? `Estimated Investment: ${costRange}`
+    : "Estimated Investment: to be confirmed after requirement analysis";
+
   return [
-    "Commercial summary — to be completed.",
+    "Commercial Estimate",
     "",
-    `Effort basis: ${estimatedHours} development hours across ~${estimatedWeeks} week${estimatedWeeks === 1 ? "" : "s"} with a team of ${teamSize}.`,
+    investmentLine,
+    `Estimated Duration: ${timelineRange}`,
+    `Recommended Team: ${teamSize} member${teamSize === 1 ? "" : "s"}`,
+    `Estimated Effort: ${estimatedHours} hours`,
     "",
-    "Add the applicable rate card, total investment, payment schedule and any discounts before sharing this proposal with the client.",
+    "This is an approximate project estimate generated from the submitted requirements. The final commercial quotation may change after detailed requirement analysis, project scoping, and contract discussions.",
   ].join("\n");
 }
 
@@ -149,6 +162,8 @@ export function buildProposalDraft(lead: ClientLeadDetail): LeadProposalDraft {
     // Column is a single newline-joined string; the estimate stores an array.
     assumptions: lead.estimate.assumptions.join("\n"),
     pricingNotes: buildCommercialSummary(lead),
+    // Editable estimate, prefilled from the lead's frozen snapshot.
+    projectEstimate: deriveProposalEstimate(lead),
     // No status here — a new version's status is set by the server (DRAFT), and
     // moving it is a lifecycle action, not part of the generated body.
     features: lead.features,

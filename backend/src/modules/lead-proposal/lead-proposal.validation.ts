@@ -23,6 +23,24 @@ const proposalFeatureSchema = z.object({
 });
 
 /**
+ * Editable Project Estimate carried by a version. Prefilled from the lead's
+ * frozen snapshot on the client, then adjustable per version. Optional so older
+ * versions (created before it existed) remain valid and fall back to the lead.
+ * Stored inside `proposal_json`, so no column/migration is involved.
+ */
+const proposalEstimateSchema = z.object({
+  currency: z.string(),
+  costMin: z.number().nullable(),
+  costMax: z.number().nullable(),
+  timelineMinWeeks: z.number(),
+  timelineMaxWeeks: z.number(),
+  estimatedHours: z.number(),
+  complexity: z.enum(["LOW", "MEDIUM", "HIGH"]),
+  teamSize: z.number(),
+  techStack: z.array(z.string()),
+});
+
+/**
  * The authored body. Every field is required but may be empty — a half-written
  * draft is a legitimate state, so the schema validates shape, not completeness.
  * Only `title` (below) must be non-empty, because it names the version
@@ -39,6 +57,7 @@ export const leadProposalContentSchema = z.object({
   pricingNotes: z.string(),
   termsAndConditions: z.string(),
   features: z.array(proposalFeatureSchema),
+  projectEstimate: proposalEstimateSchema.optional(),
 });
 
 export type LeadProposalContentInput = z.infer<typeof leadProposalContentSchema>;

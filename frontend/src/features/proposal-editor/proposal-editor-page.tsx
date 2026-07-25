@@ -6,7 +6,6 @@ import {
   CalendarRange,
   FileSearch,
   FileSignature,
-  Gauge,
   Lightbulb,
   Lock,
   PencilLine,
@@ -44,7 +43,9 @@ import { DownloadProposalMenu } from "@/features/proposal-editor/components/down
 import { ListField } from "@/features/proposal-editor/components/list-field";
 import { MarkdownField } from "@/features/proposal-editor/components/markdown-field";
 import { ProposalClientInfo } from "@/features/proposal-editor/components/proposal-client-info";
+import { ProposalProjectEstimate } from "@/features/proposal-editor/components/proposal-project-estimate";
 import { ProposalFeaturesEditor } from "@/features/proposal-editor/components/proposal-features-editor";
+import { deriveProposalEstimate } from "@/features/proposal-editor/proposal-estimate";
 import { ProposalEditorSkeleton } from "@/features/proposal-editor/components/proposal-editor-skeleton";
 import { useExportProposal } from "@/features/proposal-editor/hooks/use-export-proposal";
 import { useProposalEditorDraft } from "@/features/proposal-editor/hooks/use-proposal-editor-draft";
@@ -299,8 +300,14 @@ export function ProposalEditorPage() {
         {/* 1 — Client Information (read-only) */}
         <ProposalClientInfo lead={lead} />
 
+        {/* 2 — Project Estimate (editable; prefilled from the lead's snapshot) */}
+        <ProposalProjectEstimate
+          value={draft.projectEstimate ?? deriveProposalEstimate(lead)}
+          onChange={(projectEstimate) => patch({ projectEstimate })}
+        />
+
         {/* Title sits with the executive summary rather than in its own section. */}
-        {/* 2 — Executive Summary */}
+        {/* 3 — Executive Summary */}
         <WorkspaceSection
           id="executive-summary"
           icon={FileSignature}
@@ -419,23 +426,16 @@ export function ProposalEditorPage() {
           title="Commercial Summary"
           description="Pricing and payment basis"
           actions={
-            <Badge variant="warning" size="sm">
-              Needs completion
+            <Badge variant="info" size="sm">
+              Prefilled from estimate
             </Badge>
           }
         >
-          <div className="mb-3 flex items-start gap-2 rounded-lg border border-border bg-canvas px-3.5 py-2.5">
-            <Gauge className="mt-0.5 h-4 w-4 shrink-0 text-muted" strokeWidth={1.85} />
-            <p className="text-xs leading-relaxed text-muted">
-              No rate card exists in the system yet (Cost Settings is not built), so
-              no figures are pre-filled here — only the effort basis from the
-              estimate. Add pricing manually before sharing.
-            </p>
-          </div>
           <MarkdownField
             value={draft.pricingNotes}
             onChange={(pricingNotes) => patch({ pricingNotes })}
             rows={8}
+            hint="Prefilled from the client's estimate snapshot. Refine payment terms and discounts before sharing."
           />
         </WorkspaceSection>
 

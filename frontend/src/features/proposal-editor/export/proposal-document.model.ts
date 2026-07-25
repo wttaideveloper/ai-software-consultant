@@ -1,3 +1,7 @@
+import {
+  formatProposalEstimate,
+  resolveProposalEstimate,
+} from "@/features/proposal-editor/proposal-estimate";
 import type { LeadProposalDraft } from "@/features/proposal-editor/lead-proposal.types";
 import type { ClientLeadDetail } from "@/types";
 
@@ -133,7 +137,45 @@ export function buildProposalDocument(
     ? [{ kind: "paragraph", text: PRICING_PLACEHOLDER }]
     : textToBlocks(draft.pricingNotes);
 
+  // Project Estimate, placed first — right after the cover's Client Information —
+  // so it leads the document, exactly as on screen. Uses this version's edited
+  // estimate when present, else the lead's frozen snapshot. No AI, no Cost Engine.
+  const estimate = formatProposalEstimate(
+    resolveProposalEstimate(draft.projectEstimate, lead),
+  );
+  const techStackBlock: DocBlock =
+    estimate.techStack.length > 0
+      ? { kind: "bullets", items: estimate.techStack }
+      : { kind: "note", text: "Not recorded for this request." };
+
+  const projectEstimateSection: DocSection = {
+    heading: "Project Estimate",
+    blocks: [
+      {
+        kind: "table",
+        columns: ["Estimate", "Value"],
+        rows: [
+          ["Estimated Project Cost", estimate.costRange ?? "To be confirmed"],
+          ["Estimated Timeline", estimate.timelineRange],
+          ["Estimated Hours", `${estimate.estimatedHours} hours`],
+          ["Complexity", estimate.complexityLabel],
+          [
+            "Recommended Team",
+            `${estimate.teamSize} member${estimate.teamSize === 1 ? "" : "s"}`,
+          ],
+        ],
+      },
+      { kind: "paragraph", text: "Technology Stack" },
+      techStackBlock,
+      {
+        kind: "note",
+        text: "Approximate estimate shown to the client at submission. The final quotation may change after detailed requirement analysis.",
+      },
+    ],
+  };
+
   const sections: DocSection[] = [
+    projectEstimateSection,
     {
       heading: "Executive Summary",
       blocks: textToBlocks(draft.executiveSummary),

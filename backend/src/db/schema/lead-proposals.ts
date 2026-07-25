@@ -26,6 +26,24 @@ import { users } from "./users.js";
  * of the lead's features taken when the version was created, editable from then
  * on independently of the lead. Same shape, so no mapping layer exists.
  */
+
+/**
+ * Editable Project Estimate carried by a version. Prefilled from the lead's frozen
+ * snapshot, then adjustable per version without touching the lead's original.
+ * Optional so versions created before it existed remain valid.
+ */
+export type LeadProposalProjectEstimate = {
+  currency: string;
+  costMin: number | null;
+  costMax: number | null;
+  timelineMinWeeks: number;
+  timelineMaxWeeks: number;
+  estimatedHours: number;
+  complexity: "LOW" | "MEDIUM" | "HIGH";
+  teamSize: number;
+  techStack: string[];
+};
+
 export type LeadProposalContent = {
   executiveSummary: string;
   scopeOfWork: string[];
@@ -37,6 +55,7 @@ export type LeadProposalContent = {
   pricingNotes: string;
   termsAndConditions: string;
   features: ClientLeadFeature[];
+  projectEstimate?: LeadProposalProjectEstimate;
 };
 
 /**
