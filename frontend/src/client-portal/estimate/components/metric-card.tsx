@@ -1,4 +1,6 @@
+import { motion } from "framer-motion";
 import { cn } from "@/utils/cn";
+import { EASE_OUT_EXPO } from "@/utils/motion";
 
 type MetricCardProps = {
   label: string;
@@ -11,7 +13,13 @@ type MetricCardProps = {
 
 export function MetricCard({ label, value, unavailable, hint }: MetricCardProps) {
   return (
-    <div className="rounded-xl border border-border bg-surface p-4">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: EASE_OUT_EXPO }}
+      whileHover={{ y: -2 }}
+      className="rounded-xl border border-border bg-surface p-4 transition-[box-shadow,border-color] duration-300 hover:border-border-strong hover:shadow-md"
+    >
       <p className="text-xs font-medium uppercase tracking-wide text-muted">{label}</p>
       <p
         className={cn(
@@ -22,6 +30,6 @@ export function MetricCard({ label, value, unavailable, hint }: MetricCardProps)
         {value}
       </p>
       {hint ? <p className="mt-1.5 text-xs leading-relaxed text-muted">{hint}</p> : null}
-    </div>
+    </motion.div>
   );
 }

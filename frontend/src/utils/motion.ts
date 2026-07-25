@@ -45,16 +45,19 @@ export const pageTransition: Variants = {
 };
 
 /**
- * Client Portal wizard step entrance — a slightly larger, softer slide+fade than
- * `fadeIn`, so moving between steps (Requirements → Summary → … → Proposal) reads
- * as a gentle glide rather than a hard cut. Client Portal only.
+ * Client Portal wizard step entrance — a soft fade + slide + brief blur, so moving
+ * between steps (Requirements → Summary → … → Proposal) resolves into focus rather
+ * than hard-cutting. The blur is a one-shot on enter (never a continuous filter),
+ * and `ClientLayout` swaps this for a static render under prefers-reduced-motion,
+ * since Framer's reduced-motion handling doesn't strip `filter`. Client Portal only.
  */
 export const clientPageEnter: Variants = {
-  hidden: { opacity: 0, y: 16 },
+  hidden: { opacity: 0, y: 16, filter: "blur(8px)" },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.45, ease: EASE_OUT_EXPO },
+    filter: "blur(0px)",
+    transition: { duration: 0.5, ease: EASE_OUT_EXPO },
   },
   exit: { opacity: 0, y: -8, transition: { duration: 0.2 } },
 };
