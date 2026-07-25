@@ -44,6 +44,21 @@ export const pageTransition: Variants = {
   exit: { opacity: 0, y: -4, transition: { duration: 0.16 } },
 };
 
+/**
+ * Client Portal wizard step entrance — a slightly larger, softer slide+fade than
+ * `fadeIn`, so moving between steps (Requirements → Summary → … → Proposal) reads
+ * as a gentle glide rather than a hard cut. Client Portal only.
+ */
+export const clientPageEnter: Variants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.45, ease: EASE_OUT_EXPO },
+  },
+  exit: { opacity: 0, y: -8, transition: { duration: 0.2 } },
+};
+
 export const staggerContainer: Variants = {
   hidden: { opacity: 0 },
   visible: {

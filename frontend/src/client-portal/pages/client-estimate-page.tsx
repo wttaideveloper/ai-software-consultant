@@ -14,7 +14,9 @@ import {
 } from "@/client-portal/estimate/estimate-pricing";
 import { useClientEstimatePrice } from "@/client-portal/estimate/hooks/use-client-estimate-price";
 import { useGenerateClientEstimate } from "@/client-portal/estimate/hooks/use-generate-client-estimate";
-import { Button, ConfirmDialog, EmptyState, Spinner } from "@/components/ui";
+import { AiGenerationLoader } from "@/client-portal/components/ai-generation-loader";
+import { Button, ConfirmDialog, EmptyState } from "@/components/ui";
+import { Gauge, Layers, Sparkles, Wallet } from "lucide-react";
 import { useClientConsultationStore } from "@/store/client-consultation.store";
 
 /**
@@ -147,9 +149,16 @@ export function ClientEstimatePage() {
 
         <div className="mt-6">
           {isLoading ? (
-            <div className="flex items-center justify-center rounded-xl border border-dashed border-border py-16">
-              <Spinner label="Generating your project estimate" />
-            </div>
+            <AiGenerationLoader
+              title="Estimating your project investment…"
+              caption="Pricing your features against our rate card."
+              steps={[
+                { icon: Layers, label: "Reviewing your feature list" },
+                { icon: Gauge, label: "Calculating project complexity" },
+                { icon: Wallet, label: "Estimating project investment" },
+                { icon: Sparkles, label: "Finalizing your estimate" },
+              ]}
+            />
           ) : null}
 
           {!isLoading && generateEstimate.isError && !estimate ? (

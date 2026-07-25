@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import { Wallet } from "lucide-react";
 import { useCallback } from "react";
 import {
@@ -6,6 +7,7 @@ import {
 } from "@/client-portal/estimate/estimate-pricing";
 import { formatMoney } from "@/features/cost-settings/cost-settings.labels";
 import type { CostPreview } from "@/types";
+import { EASE_OUT_EXPO } from "@/utils/motion";
 import { CountUp } from "./count-up";
 
 type ProjectCostCardProps = {
@@ -37,7 +39,12 @@ export function ProjectCostCard({
   const range = pricing ? toPriceRange(pricing.breakdown.finalPrice) : null;
 
   return (
-    <div className="asc-gradient-subtle rounded-2xl border border-accent/20 p-6">
+    <motion.div
+      initial={{ opacity: 0, y: 12, scale: 0.99 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.45, ease: EASE_OUT_EXPO }}
+      className="asc-gradient-subtle asc-shadow-accent relative overflow-hidden rounded-2xl border border-accent/25 p-6"
+    >
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-subtle text-accent-text">
@@ -82,6 +89,6 @@ export function ProjectCostCard({
           </p>
         </>
       )}
-    </div>
+    </motion.div>
   );
 }

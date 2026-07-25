@@ -99,13 +99,24 @@ export function ClientLandingPage() {
             Hero
             --------------------------------------------------------------- */}
         <section className="relative overflow-hidden">
-          {/* Ambient accent wash. pointer-events-none + aria-hidden so it stays
-              purely decorative and never intercepts a click. */}
+          {/* Ambient accent wash — two softly drifting blobs. pointer-events-none +
+              aria-hidden so they stay purely decorative and never intercept a
+              click; the gentle motion pauses under prefers-reduced-motion via the
+              global MotionConfig. */}
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
           >
-            <div className="asc-gradient-subtle absolute -top-40 left-1/2 h-[32rem] w-[52rem] -translate-x-1/2 rounded-full opacity-70 blur-3xl" />
+            <motion.div
+              className="asc-gradient-subtle absolute -top-40 left-1/2 h-[32rem] w-[52rem] -translate-x-1/2 rounded-full opacity-70 blur-3xl"
+              animate={{ y: [0, 18, 0], scale: [1, 1.05, 1] }}
+              transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+            />
+            <motion.div
+              className="asc-gradient-accent absolute top-24 -right-24 h-72 w-72 rounded-full opacity-10 blur-3xl"
+              animate={{ y: [0, -22, 0], x: [0, 12, 0] }}
+              transition={{ duration: 15, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
+            />
           </div>
 
           <motion.div
