@@ -14,8 +14,6 @@ import {
 } from "@/client-portal/estimate/estimate-pricing";
 import { useClientEstimatePrice } from "@/client-portal/estimate/hooks/use-client-estimate-price";
 import { useGenerateClientEstimate } from "@/client-portal/estimate/hooks/use-generate-client-estimate";
-import { MockupGallery } from "@/client-portal/mockups/components/mockup-gallery";
-import { useConceptMockups } from "@/client-portal/mockups/hooks/use-concept-mockups";
 import { Button, ConfirmDialog, EmptyState, Spinner } from "@/components/ui";
 import { useClientConsultationStore } from "@/store/client-consultation.store";
 
@@ -28,9 +26,6 @@ export function ClientEstimatePage() {
   const navigate = useNavigate();
 
   const features = useClientConsultationStore((state) => state.features);
-  // Read only for the concept-mockup prompt; the estimate itself is derived from
-  // features alone and is unaffected by this.
-  const summary = useClientConsultationStore((state) => state.summary);
   const platforms = useClientConsultationStore((state) => state.platforms);
   const otherPlatform = useClientConsultationStore((state) => state.otherPlatform);
   const estimate = useClientConsultationStore((state) => state.estimate);
@@ -128,25 +123,6 @@ export function ClientEstimatePage() {
   };
 
   const isLoading = generateEstimate.isPending && !estimate;
-
-  /**
-   * Independent of everything above: its own query, its own error state, and
-   * gated on a resolved `estimate` so no image is ever generated for an
-   * incomplete funnel. Nothing here feeds back into the estimate or its pricing.
-   */
-  const mockups = useConceptMockups({
-    requirementSummary: summary,
-    features: features.map(({ name, category, description, priority, complexity: featureComplexity }) => ({
-      name,
-      category,
-      description,
-      priority,
-      complexity: featureComplexity,
-    })),
-    platforms: platformLabels,
-    techStack: techStack ?? [],
-    enabled: Boolean(estimate) && Boolean(summary) && features.length > 0,
-  });
 
   if (features.length === 0 && !estimate) {
     return (
@@ -271,20 +247,10 @@ export function ClientEstimatePage() {
         </div>
 
         {/*
-          Concept mockups — rendered *below* a fully resolved estimate and driven by
-          their own query, so image generation (30-90s) can never delay or block the
-          estimate above. Gated on `estimate` so nothing is ever generated for a
-          half-finished funnel.
+          Concept mockups are deliberately NOT on this page: they live on the
+          /mockups step that follows, so image generation can never delay, block
+          or share state with the estimate. See client-mockups-page.tsx.
         */}
-        <MockupGallery
-          set={mockups.set}
-          isGenerating={mockups.isGenerating}
-          isRegenerating={mockups.isRegenerating}
-          canRegenerate={mockups.canRegenerate}
-          onRegenerate={mockups.regenerate}
-          onRetry={mockups.retry}
-        />
-
         <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6">
           <Button type="button" variant="secondary" onClick={() => navigate("/features")}>
             Back
@@ -300,7 +266,7 @@ export function ClientEstimatePage() {
               <RotateCcw className="h-4 w-4" />
               Regenerate
             </Button>
-            <Button type="button" onClick={() => navigate("/request-proposal")} disabled={!estimate}>
+            <Button type="button" onClick={() => navigate("/mockups")} disabled={!estimate}>
               Continue
             </Button>
           </div>

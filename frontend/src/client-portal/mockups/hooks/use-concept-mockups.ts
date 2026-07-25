@@ -14,13 +14,13 @@ const MOCKUPS_QUERY_KEY = "client-mockups";
 const POLL_INTERVAL_MS = 4_000;
 
 /**
- * Drives the concept-mockup gallery.
+ * Drives the concept-mockup step (`/mockups`).
  *
- * Two deliberate separations from the Estimate above it:
+ * Two deliberate separations from the Estimate step before it:
  *
- * 1. **It never blocks the estimate.** This is its own query with its own state;
- *    the estimate has already rendered by the time this mounts, and a failure here
- *    degrades to a retry panel rather than affecting anything upstream.
+ * 1. **It never blocks the estimate.** This is its own query with its own state on
+ *    its own route; the estimate is resolved and stored before this ever mounts, and
+ *    a failure here degrades to a retry panel rather than affecting anything upstream.
  * 2. **Reading is free, generating is not.** The GET is a pure read, so refreshes
  *    and polls cost nothing. Generation is kicked off exactly once per
  *    consultation key by the effect below, guarded by a ref so a remount cannot
@@ -104,6 +104,12 @@ export function useConceptMockups(input: {
     set: query.data,
     isLoading: query.isLoading,
     isError: query.isError,
+    /**
+     * A rejected kick-off counts as failed even though the row still reads NONE —
+     * the mutation's error is silent, so without this the gallery would sit on
+     * "preparing" forever waiting for a batch that was never accepted.
+     */
+    isFailed: query.data?.status === "FAILED" || generate.isError,
     isGenerating: generate.isPending || query.data?.status === "PENDING",
     isRegenerating: regenerate.isPending,
     canRegenerate:

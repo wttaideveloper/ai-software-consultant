@@ -58,6 +58,11 @@ const ClientEstimatePage = lazy(() =>
     default: m.ClientEstimatePage,
   })),
 );
+const ClientMockupsPage = lazy(() =>
+  import("@/client-portal/pages/client-mockups-page").then((m) => ({
+    default: m.ClientMockupsPage,
+  })),
+);
 const ClientRequestProposalPage = lazy(() =>
   import("@/client-portal/pages/client-request-proposal-page").then((m) => ({
     default: m.ClientRequestProposalPage,
@@ -170,6 +175,8 @@ export function AppRouter() {
         <Route path="/summary" element={<ClientRequirementSummaryPage />} />
         <Route path="/features" element={<ClientDetectedFeaturesPage />} />
         <Route path="/estimate" element={<ClientEstimatePage />} />
+        {/* Concept mockups sit between the estimate and the proposal request. */}
+        <Route path="/mockups" element={<ClientMockupsPage />} />
         <Route path="/request-proposal" element={<ClientRequestProposalPage />} />
         <Route path="/proposal-sent" element={<ClientProposalSentPage />} />
         <Route path="/gift" element={<ClientGiftPage />} />

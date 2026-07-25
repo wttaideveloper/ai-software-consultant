@@ -191,7 +191,7 @@ export function ClientRequestProposalPage() {
           />
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6">
-            <Button type="button" variant="secondary" onClick={() => navigate("/estimate")}>
+            <Button type="button" variant="secondary" onClick={() => navigate("/mockups")}>
               Back
             </Button>
             <Button type="submit" isLoading={createLead.isPending}>

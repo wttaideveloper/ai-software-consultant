@@ -147,7 +147,7 @@ Three tiers:
 
 ### Routing
 
-`react-router-dom` v7, plain `<Routes>/<Route>` (no data router/loaders), declared in `router.tsx`. Three route trees: the **public Client Portal** (`/`, `/requirements/*`, `/summary`, `/features`, `/estimate`, `/request-proposal`, `/gift`), the **public auth route** behind `PublicRoute` (`/admin-login` only — there is no register page or route), and the **protected Admin Portal** behind `ProtectedRoute` → `AppLayout` (`/dashboard`, `/consultations`, …). Unmatched paths redirect to `/`.
+`react-router-dom` v7, plain `<Routes>/<Route>` (no data router/loaders), declared in `router.tsx`. Three route trees: the **public Client Portal** (`/`, `/requirements/*`, `/summary`, `/features`, `/estimate`, `/mockups`, `/request-proposal`, `/gift`), the **public auth route** behind `PublicRoute` (`/admin-login` only — there is no register page or route), and the **protected Admin Portal** behind `ProtectedRoute` → `AppLayout` (`/dashboard`, `/consultations`, …). Unmatched paths redirect to `/`.
 
 ### Forms & Validation
 
@@ -219,7 +219,9 @@ finalPrice  = subtotal − discount + tax
 
 ### Concept mockups (Client Portal)
 
-`modules/client-mockups/` renders 4–6 AI **concept screens** below the Estimate ("This is how I envision your project"). It is the only feature that generates images, and the only one that spends money per anonymous page view — every design decision below is a consequence of that.
+`modules/client-mockups/` renders 4–6 AI **concept screens** ("This is how I envision your project"). It is the only feature that generates images, and the only one that spends money per anonymous page view — every design decision below is a consequence of that.
+
+It is **its own Client Portal step at `/mockups`** (`client-mockups-page.tsx`), sitting between Estimate and Proposal in `CLIENT_PORTAL_STEPS` — it is not part of the Estimate page. A batch therefore starts when the client continues past a finished estimate, never while they are reading one, so nothing billable is ever in flight behind the number they came for. The page owns the heading and the Regenerate control; `MockupGallery` is the body and, unlike when it lived under the estimate, never renders `null` — `DISABLED` and a rejected kick-off both resolve to a visible state rather than a blank route. **Continue is never gated on the concepts**: a slow, failed or switched-off batch must not block the proposal request.
 
 - **Two AI stages, different models.** A cheap text call (`PROMPT_TYPES.CONCEPT_SCREENS`) *plans* the screens, returning `{name, description, imagePrompt}` per screen; the image model only *renders* one screen at a time. The image model is never asked what the screens should be — naming a coherent, domain-specific journey (Restaurant Details, not "Screen 3") is a reasoning task it does badly and cannot return as structured data. The planner's output is also what fills each card's name and description.
 - **Images are never stored as provider URLs.** `gpt-image-1` returns base64 and DALL·E URLs expire within the hour, so a persisted provider URL is a guaranteed broken image. Bytes go through the `MockupStorage` port (`shared/storage/`); the DB stores only an opaque `storageKey`. Swapping the filesystem adapter for S3/R2 is a new adapter plus one line in the factory — **no schema, DTO, or route change**. `client_mockup_images.storageKey` must stay opaque for that to hold.
@@ -229,7 +231,7 @@ finalPrice  = subtotal − discount + tax
 - **Spend controls, in order of durability**: the unique index on `consultation_key` + `onConflictDoNothing` (two concurrent POSTs → exactly one batch, holds across instances); `generation_count` enforced *inside the UPDATE predicate* (racing regenerate clicks can't both pass a stale read); a daily global batch budget in Postgres; and an in-memory per-IP window that is explicitly per-process and only the outermost, weakest layer.
 - **`MOCKUPS_ENABLED` defaults to `false`.** Opt-in, not opt-out — a deployment that hasn't set a budget must not start billing because the code shipped. When off, `GET` returns `DISABLED` and the section renders nothing.
 - **Caching identity is `consultationKey`**, a UUID minted client-side into the sessionStorage wizard state. The portal has no server-side consultation (see `client-leads.ts`), so this is the only thing that makes "generate once, never on refresh" possible without accounts. `reset()` mints a fresh one, so a new consultation never inherits the previous one's mockups.
-- **Strictly downstream of the estimate.** Its own module, endpoint, table and query; gated on a resolved estimate; never touches `client-estimate.*`, the cost engine, or proposal generation. A mockup failure degrades to a retry panel and nothing else.
+- **Strictly downstream of the estimate.** Its own module, endpoint, table, query and now route; gated on a resolved estimate (no estimate → the page renders an EmptyState back to `/estimate` and spends nothing); never touches `client-estimate.*`, the cost engine, or proposal generation. A mockup failure degrades to a retry panel and nothing else.
 
 ### Proposals
 
