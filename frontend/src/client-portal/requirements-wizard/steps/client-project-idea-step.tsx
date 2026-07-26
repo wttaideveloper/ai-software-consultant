@@ -1,4 +1,6 @@
+import { useRef } from "react";
 import { Textarea } from "@/components/ui";
+import { SpeechInput } from "@/client-portal/speech/speech-input";
 import { WizardFooter } from "@/client-portal/wizard/wizard-footer";
 import { WizardNavigation } from "@/client-portal/wizard/wizard-navigation";
 import { useWizardNavigation } from "@/client-portal/wizard/use-wizard-navigation";
@@ -17,6 +19,7 @@ export function ClientProjectIdeaStep() {
   );
   const projectIdea = useClientConsultationStore((state) => state.projectIdea);
   const setProjectIdea = useClientConsultationStore((state) => state.setProjectIdea);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const isValid = projectIdea.trim().length > 0;
 
@@ -26,15 +29,28 @@ export function ClientProjectIdeaStep() {
         What would you like to build?
       </h1>
       <p className="mt-1.5 text-sm text-muted">
-        Describe your idea in your own words — as much or as little detail as you have.
+        Describe your idea in your own words — type it, or say it out loud.
       </p>
 
       <div className="mt-6">
         <Textarea
+          ref={textareaRef}
           value={projectIdea}
           onChange={(event) => setProjectIdea(event.target.value)}
           rows={8}
           placeholder="e.g. An app that helps small gyms manage class bookings and memberships..."
+        />
+
+        {/*
+          Voice is a second way into the same field, never a replacement: it
+          writes through setProjectIdea exactly as typing does, so the store,
+          the validation below and everything downstream are unchanged. Renders
+          nothing on browsers without the Web Speech API.
+        */}
+        <SpeechInput
+          value={projectIdea}
+          onChange={setProjectIdea}
+          scrollTargetRef={textareaRef}
         />
       </div>
 
