@@ -15,6 +15,7 @@ import { clientLeadRouter } from "./modules/client-lead/client-lead.route.js";
 import { clientMockupsRouter } from "./modules/client-mockups/client-mockups.route.js";
 import { clientRequirementSummaryRouter } from "./modules/client-requirement-summary/client-requirement-summary.route.js";
 import { clientRequirementsRouter } from "./modules/client-requirements/client-requirements.route.js";
+import { clientSpeechRouter } from "./modules/client-speech/client-speech.route.js";
 import { consultationsRouter } from "./modules/consultations/consultations.route.js";
 import {
   complexityMultipliersRouter,
@@ -62,6 +63,9 @@ app.use(`${API_PREFIX}/client/summary`, clientRequirementSummaryRouter);
 app.use(`${API_PREFIX}/client/features`, clientFeaturesRouter);
 app.use(`${API_PREFIX}/client/estimate`, clientEstimateRouter);
 app.use(`${API_PREFIX}/client/mockups`, clientMockupsRouter);
+// Speech-to-text for the Client Portal's textareas. Multipart, so it parses its
+// own body — express.json() above leaves it untouched.
+app.use(`${API_PREFIX}/client/speech-to-text`, clientSpeechRouter);
 app.use(`${API_PREFIX}/client/request-proposal`, clientLeadRouter);
 app.use(`${API_PREFIX}/auth`, authRouter);
 // Admin lead inbox — same module as the public submit route above, but

@@ -23,6 +23,23 @@ export type EnvConfig = {
    * deployment that has not thought about the budget yet.
    */
   MOCKUPS_ENABLED: boolean;
+  /**
+   * Client Portal speech-to-text. Reuses OPENAI_API_KEY — no second provider.
+   *
+   * The timeout is its own knob rather than OPENAI_TIMEOUT because audio is a
+   * fundamentally slower call than a chat completion: a two-minute recording can
+   * legitimately take far longer than the 60s a text prompt is allowed.
+   *
+   * The three limits below are abuse controls on a public, unauthenticated and
+   * billable endpoint. The byte cap is the enforceable one (duration is only ever
+   * client-declared); both are checked before a single byte reaches OpenAI.
+   */
+  OPENAI_WHISPER_MODEL: string;
+  OPENAI_WHISPER_TIMEOUT_MS: number;
+  SPEECH_MAX_UPLOAD_BYTES: number;
+  SPEECH_MAX_DURATION_SECONDS: number;
+  /** Transcriptions one IP may request per hour. */
+  SPEECH_RATE_LIMIT_PER_HOUR: number;
   OPENAI_IMAGE_MODEL: string;
   OPENAI_IMAGE_SIZE: string;
   OPENAI_IMAGE_QUALITY: string;
@@ -78,6 +95,15 @@ function loadEnv(): EnvConfig {
     // Opt-in, not opt-out: an unconfigured deployment must not start billing for
     // image generation just because the code shipped.
     MOCKUPS_ENABLED: process.env.MOCKUPS_ENABLED === "true",
+    OPENAI_WHISPER_MODEL: process.env.OPENAI_WHISPER_MODEL ?? "whisper-1",
+    OPENAI_WHISPER_TIMEOUT_MS:
+      Number(process.env.OPENAI_WHISPER_TIMEOUT_MS) || 120_000,
+    SPEECH_MAX_UPLOAD_BYTES:
+      Number(process.env.SPEECH_MAX_UPLOAD_BYTES) || 10_485_760,
+    SPEECH_MAX_DURATION_SECONDS:
+      Number(process.env.SPEECH_MAX_DURATION_SECONDS) || 120,
+    SPEECH_RATE_LIMIT_PER_HOUR:
+      Number(process.env.SPEECH_RATE_LIMIT_PER_HOUR) || 30,
     OPENAI_IMAGE_MODEL: process.env.OPENAI_IMAGE_MODEL ?? "gpt-image-1",
     OPENAI_IMAGE_SIZE: process.env.OPENAI_IMAGE_SIZE ?? "1024x1024",
     OPENAI_IMAGE_QUALITY: process.env.OPENAI_IMAGE_QUALITY ?? "low",

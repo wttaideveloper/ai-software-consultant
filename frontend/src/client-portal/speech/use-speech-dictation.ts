@@ -1,38 +1,44 @@
-import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import { useMotionValue, useReducedMotion } from "framer-motion";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  SPEECH_ERROR_MESSAGES,
-  SPEECH_FALLBACK_ERROR,
-  SPEECH_NO_SPEECH_ERROR,
-  getSpeechRecognizerConstructor,
-  isSpeechRecognitionSupported,
-  type SpeechRecognizer,
-} from "@/client-portal/speech/speech-recognition";
+  MAX_RECORDING_SECONDS,
+  describeRecorderError,
+  isAudioRecordingSupported,
+  pickRecordingMimeType,
+} from "@/client-portal/speech/audio-recording";
+import { startMicLevelMeter } from "@/client-portal/speech/mic-level-meter";
+import {
+  clientSpeechService,
+  describeTranscriptionError,
+} from "@/services/client-speech.service";
 
 /**
- * Dictation into an existing text field, using the browser's native Web Speech
- * API. No backend call, no upload, no recording is ever created or kept — the
- * only thing that leaves this hook is recognised text handed to `onChange`.
+ * Dictation into an existing text field, transcribed by OpenAI.
  *
- * The field stays a normal controlled textarea throughout: there is no lock
- * state, so the user can type, delete or rewrite while the microphone is live.
+ * The browser records; the server transcribes. Audio lives in memory as a Blob
+ * for the length of one upload and is never written anywhere — no object URL, no
+ * IndexedDB, no download. The microphone track is released the instant recording
+ * stops, before the upload even starts, so the browser's recording indicator
+ * goes out immediately rather than lingering through transcription.
+ *
+ * The field stays a normal controlled textarea throughout: the transcript is
+ * *appended* to whatever is already there, and the user can edit it freely
+ * before, during and after.
  */
 
 export type SpeechDictationStatus =
   | "idle"
-  | "listening"
-  | "processing"
+  | "recording"
+  | "uploading"
+  | "transcribing"
   | "completed"
   | "error";
 
-/** Hard cap on one dictation session, so an unattended tab can't hold the mic open. */
-const MAX_LISTENING_MS = 120_000;
-/** "Converting speech…" gets a floor so it reads as a step, not a flicker. */
-const PROCESSING_MIN_MS = 550;
 /** How long the success confirmation stays before falling back to idle. */
 const COMPLETED_RESET_MS = 2_600;
 
 type UseSpeechDictationOptions = {
-  /** Current field value — the hook appends to whatever is in the box right now. */
+  /** Current field value — the transcript is appended to whatever is in the box. */
   value: string;
   /** Receives the full next value. The caller stays the single owner of the text. */
   onChange: (next: string) => void;
@@ -46,55 +52,46 @@ function appendFragment(base: string, addition: string): string {
 }
 
 export function useSpeechDictation({ value, onChange }: UseSpeechDictationOptions) {
-  const [isSupported] = useState(isSpeechRecognitionSupported);
+  const [isSupported] = useState(isAudioRecordingSupported);
+  const reduce = useReducedMotion();
+
   const [status, setStatus] = useState<SpeechDictationStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  /** True only once the mic is actually capturing — the gap before it is the permission prompt. */
+  /** True only once the recorder is actually running — the gap before it is the permission prompt. */
   const [isCapturing, setIsCapturing] = useState(false);
 
-  const recognizerRef = useRef<SpeechRecognizer | null>(null);
-  /** The user's intent, which is what decides whether a browser-side `end` is a real stop. */
-  const shouldListenRef = useRef(false);
-  const capturedTextRef = useRef(false);
-  const pendingErrorRef = useRef<string | null>(null);
-  const startedAtRef = useRef(0);
-  const stoppedAtRef = useRef(0);
-  const tickRef = useRef<number | null>(null);
-  const finalizeTimeoutRef = useRef<number | null>(null);
-  const completedTimeoutRef = useRef<number | null>(null);
+  /** Live input level (0–1). A MotionValue so metering never re-renders React. */
+  const audioLevel = useMotionValue(0);
 
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const stopMeterRef = useRef<(() => void) | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const tickRef = useRef<number | null>(null);
+  const completedTimeoutRef = useRef<number | null>(null);
+  const startedAtRef = useRef(0);
   /**
-   * The exact tail we appended for the last interim hypothesis (separator
-   * included). Interim text is provisional — it gets stripped and rewritten on
-   * every event — while final text is committed and never touched again.
+   * Why the pending recording must be thrown away instead of uploaded. The
+   * *reason* matters, not just the fact: a recorder error already put a message
+   * on screen, so the `stop` that follows it must not reset the panel to idle
+   * and erase it.
    */
-  const pendingInterimRef = useRef("");
+  const discardRef = useRef<"cancel" | "error" | "unmount" | null>(null);
+  const startingRef = useRef(false);
+  const unmountedRef = useRef(false);
+
   const valueRef = useRef(value);
-  const lastEmittedRef = useRef(value);
   const onChangeRef = useRef(onChange);
+
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
 
   useEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
-
-  useEffect(() => {
-    if (value !== lastEmittedRef.current) {
-      // A change we didn't emit means the user edited the field themselves.
-      // Whatever we had appended is now their text, so it must never be
-      // rewritten by the next interim result.
-      pendingInterimRef.current = "";
-      lastEmittedRef.current = value;
-    }
-    valueRef.current = value;
-  }, [value]);
-
-  const clearTimer = useCallback((ref: RefObject<number | null>) => {
-    if (ref.current !== null) {
-      window.clearTimeout(ref.current);
-      ref.current = null;
-    }
-  }, []);
 
   const stopTicking = useCallback(() => {
     if (tickRef.current !== null) {
@@ -103,232 +100,259 @@ export function useSpeechDictation({ value, onChange }: UseSpeechDictationOption
     }
   }, []);
 
-  const emit = useCallback((next: string) => {
-    // Mirror the emission locally: two recognition events can land before React
-    // re-renders, and the second must compose from the first, not from a stale prop.
-    valueRef.current = next;
-    lastEmittedRef.current = next;
-    onChangeRef.current(next);
+  const stopMeter = useCallback(() => {
+    stopMeterRef.current?.();
+    stopMeterRef.current = null;
   }, []);
 
-  const finalize = useCallback(() => {
-    shouldListenRef.current = false;
-    stopTicking();
-    setIsCapturing(false);
-    // Anything left in the box is the user's text from here on.
-    pendingInterimRef.current = "";
+  /** Ends the capture tracks — this is what turns the browser's mic indicator off. */
+  const releaseMicrophone = useCallback(() => {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+  }, []);
 
-    if (pendingErrorRef.current) {
-      const message = pendingErrorRef.current;
-      pendingErrorRef.current = null;
-      setErrorMessage(message);
-      setStatus("error");
-      return;
-    }
+  const fail = useCallback((message: string) => {
+    setErrorMessage(message);
+    setStatus("error");
+  }, []);
 
-    if (!capturedTextRef.current) {
-      setErrorMessage(SPEECH_NO_SPEECH_ERROR);
-      setStatus("error");
-      return;
-    }
-
+  const succeed = useCallback(() => {
     setErrorMessage(null);
     setStatus("completed");
     completedTimeoutRef.current = window.setTimeout(() => {
       completedTimeoutRef.current = null;
       setStatus("idle");
     }, COMPLETED_RESET_MS);
-  }, [stopTicking]);
+  }, []);
 
-  /** Keeps the "Converting speech…" state visible long enough to be read. */
-  const finalizeAfterProcessing = useCallback(() => {
-    const sinceStop = stoppedAtRef.current ? Date.now() - stoppedAtRef.current : PROCESSING_MIN_MS;
-    const remaining = Math.max(0, PROCESSING_MIN_MS - sinceStop);
-    stoppedAtRef.current = 0;
+  /**
+   * Runs after MediaRecorder has flushed its final chunk: tear down capture
+   * first, then upload. Nothing here can run twice for one recording — the
+   * recorder fires `stop` exactly once.
+   */
+  const handleRecordingStopped = useCallback(
+    async (recordedMimeType: string) => {
+      stopTicking();
+      stopMeter();
+      releaseMicrophone();
+      setIsCapturing(false);
+      recorderRef.current = null;
 
-    if (remaining === 0) {
-      finalize();
-      return;
-    }
-    finalizeTimeoutRef.current = window.setTimeout(() => {
-      finalizeTimeoutRef.current = null;
-      finalize();
-    }, remaining);
-  }, [finalize]);
+      const chunks = chunksRef.current;
+      chunksRef.current = [];
+
+      // Cancelled, failed or unmounted: the bytes are dropped without ever being sent.
+      const discardReason = discardRef.current;
+      if (discardReason) {
+        discardRef.current = null;
+        // Only an explicit cancel returns to idle — "error" has already shown a
+        // message, and "unmount" has no component left to update.
+        if (discardReason === "cancel" && !unmountedRef.current) setStatus("idle");
+        return;
+      }
+
+      const durationSeconds = (Date.now() - startedAtRef.current) / 1_000;
+      const blob = new Blob(chunks, { type: recordedMimeType || "audio/webm" });
+
+      if (blob.size === 0) {
+        fail("We didn't catch any audio. Please check your microphone and try again.");
+        return;
+      }
+
+      setStatus("uploading");
+
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      try {
+        const text = await clientSpeechService.transcribe(blob, {
+          durationSeconds,
+          signal: controller.signal,
+          onUploadComplete: () => {
+            if (!controller.signal.aborted) setStatus("transcribing");
+          },
+        });
+
+        const transcript = text.trim();
+
+        if (!transcript) {
+          fail("We couldn't make out any words in that recording. Please try again.");
+          return;
+        }
+
+        const next = appendFragment(valueRef.current, transcript);
+        valueRef.current = next;
+        onChangeRef.current(next);
+        succeed();
+      } catch (error) {
+        // Aborted by unmount — the component is gone, so there is no state worth setting.
+        if (controller.signal.aborted) return;
+        fail(describeTranscriptionError(error));
+      } finally {
+        abortRef.current = null;
+      }
+    },
+    [fail, releaseMicrophone, stopMeter, stopTicking, succeed],
+  );
 
   const stop = useCallback(() => {
-    if (!shouldListenRef.current) return;
-    shouldListenRef.current = false;
-    stoppedAtRef.current = Date.now();
-    stopTicking();
-    setStatus("processing");
-    try {
-      recognizerRef.current?.stop();
-    } catch {
-      // Already closed — settle from here instead of waiting for an `end` that won't come.
-      finalizeAfterProcessing();
+    const recorder = recorderRef.current;
+    if (!recorder || recorder.state === "inactive") return;
+    // Flushes a final chunk, then fires `stop` → handleRecordingStopped.
+    recorder.stop();
+  }, []);
+
+  const cancel = useCallback(() => {
+    discardRef.current = "cancel";
+
+    const recorder = recorderRef.current;
+
+    if (recorder && recorder.state !== "inactive") {
+      recorder.stop();
+      return;
     }
-  }, [finalizeAfterProcessing, stopTicking]);
 
-  const start = useCallback(() => {
-    const Recognizer = getSpeechRecognizerConstructor();
-    if (!Recognizer || shouldListenRef.current) return;
+    stopTicking();
+    stopMeter();
+    releaseMicrophone();
+    setIsCapturing(false);
+    setStatus("idle");
+  }, [releaseMicrophone, stopMeter, stopTicking]);
 
-    clearTimer(completedTimeoutRef);
-    clearTimer(finalizeTimeoutRef);
-    pendingErrorRef.current = null;
-    pendingInterimRef.current = "";
-    capturedTextRef.current = false;
-    stoppedAtRef.current = 0;
+  const start = useCallback(async () => {
+    if (!isAudioRecordingSupported() || startingRef.current || recorderRef.current) {
+      return;
+    }
+
+    startingRef.current = true;
+
+    if (completedTimeoutRef.current !== null) {
+      window.clearTimeout(completedTimeoutRef.current);
+      completedTimeoutRef.current = null;
+    }
+
+    discardRef.current = null;
+    chunksRef.current = [];
     setErrorMessage(null);
     setElapsedSeconds(0);
     setIsCapturing(false);
-    setStatus("listening");
+    setStatus("recording");
 
-    const recognizer = new Recognizer();
-    recognizer.lang = navigator.language || "en-US";
-    recognizer.continuous = true;
-    recognizer.interimResults = true;
-    recognizer.maxAlternatives = 1;
-
-    recognizer.onaudiostart = () => setIsCapturing(true);
-
-    recognizer.onresult = (event) => {
-      let finalChunk = "";
-      let interim = "";
-
-      for (let index = event.resultIndex; index < event.results.length; index += 1) {
-        const result = event.results[index];
-        const transcript = result[0]?.transcript ?? "";
-        if (result.isFinal) {
-          finalChunk += transcript;
-        } else {
-          interim += transcript;
-        }
-      }
-
-      // Drop the previous provisional tail, commit anything the engine settled
-      // on, then re-append the current hypothesis.
-      let base = valueRef.current;
-      const previousInterim = pendingInterimRef.current;
-      if (previousInterim && base.endsWith(previousInterim)) {
-        base = base.slice(0, base.length - previousInterim.length);
-      }
-
-      const trimmedFinal = finalChunk.trim();
-      if (trimmedFinal) {
-        base = appendFragment(base, trimmedFinal);
-      }
-
-      const trimmedInterim = interim.trim();
-      // Interim counts too: text is already in the box, so ending the session
-      // with "we couldn't hear anything" would contradict what the user sees.
-      if (trimmedFinal || trimmedInterim) {
-        capturedTextRef.current = true;
-      }
-
-      const next = appendFragment(base, trimmedInterim);
-      pendingInterimRef.current = next.slice(base.length);
-
-      if (next !== valueRef.current) emit(next);
-    };
-
-    recognizer.onerror = (event) => {
-      // We aborted it ourselves (unmount / restart) — not something to report.
-      if (event.error === "aborted") return;
-      // A pause in a continuous session also surfaces as `no-speech`; if we
-      // already have words it's just silence, and `end` will restart us.
-      if (event.error === "no-speech" && capturedTextRef.current) return;
-
-      shouldListenRef.current = false;
-      pendingErrorRef.current = SPEECH_ERROR_MESSAGES[event.error] ?? SPEECH_FALLBACK_ERROR;
-    };
-
-    recognizer.onend = () => {
-      // Chrome ends the session on its own after a stretch of silence. While the
-      // user still intends to dictate, restart so thinking out loud doesn't end
-      // the recording — bounded by the hard cap.
-      if (shouldListenRef.current && Date.now() - startedAtRef.current < MAX_LISTENING_MS) {
-        try {
-          // A new session restarts result indexing, so treat everything already
-          // in the field as committed — nothing from it may be rewritten.
-          pendingInterimRef.current = "";
-          recognizer.start();
-          return;
-        } catch {
-          // Fall through: the engine refused to restart, so settle the session.
-        }
-      }
-      finalizeAfterProcessing();
-    };
-
-    recognizerRef.current = recognizer;
-    shouldListenRef.current = true;
-    startedAtRef.current = Date.now();
+    let stream: MediaStream;
 
     try {
-      recognizer.start();
-    } catch {
-      shouldListenRef.current = false;
-      setErrorMessage(SPEECH_FALLBACK_ERROR);
-      setStatus("error");
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+    } catch (error) {
+      startingRef.current = false;
+      if (!unmountedRef.current) fail(describeRecorderError(error));
       return;
     }
 
+    // Cancelled or unmounted while the permission prompt was open. The page stays
+    // interactive behind that prompt, so this is reachable — without it, granting
+    // permission after pressing Cancel would start a recording nobody asked for.
+    if (unmountedRef.current || discardRef.current === "cancel") {
+      stream.getTracks().forEach((track) => track.stop());
+      discardRef.current = null;
+      startingRef.current = false;
+      return;
+    }
+
+    streamRef.current = stream;
+
+    let recorder: MediaRecorder;
+
+    try {
+      const mimeType = pickRecordingMimeType();
+      recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+    } catch (error) {
+      releaseMicrophone();
+      startingRef.current = false;
+      fail(describeRecorderError(error));
+      return;
+    }
+
+    recorder.ondataavailable = (event) => {
+      if (event.data.size > 0) chunksRef.current.push(event.data);
+    };
+
+    recorder.onerror = () => {
+      discardRef.current = "error";
+      fail("Recording stopped unexpectedly. Please try again.");
+    };
+
+    recorder.onstop = () => {
+      void handleRecordingStopped(recorder.mimeType);
+    };
+
+    // A timeslice keeps chunks flowing rather than buffering one large blob at
+    // the end, which is what makes a long recording survive a tab hiccup.
+    recorder.start(1_000);
+
+    recorderRef.current = recorder;
+    startedAtRef.current = Date.now();
+    startingRef.current = false;
+    setIsCapturing(true);
+
+    if (!reduce) {
+      stopMeterRef.current = startMicLevelMeter(stream, audioLevel);
+    }
+
     tickRef.current = window.setInterval(() => {
-      const elapsed = Date.now() - startedAtRef.current;
-      setElapsedSeconds(Math.floor(elapsed / 1_000));
-      if (elapsed >= MAX_LISTENING_MS) stop();
+      const elapsed = Math.floor((Date.now() - startedAtRef.current) / 1_000);
+      setElapsedSeconds(elapsed);
+      if (elapsed >= MAX_RECORDING_SECONDS) stop();
     }, 1_000);
-  }, [clearTimer, emit, finalizeAfterProcessing, stop]);
+  }, [audioLevel, fail, handleRecordingStopped, reduce, releaseMicrophone, stop]);
 
   const dismissError = useCallback(() => {
     setErrorMessage(null);
     setStatus("idle");
   }, []);
 
-  const toggle = useCallback(() => {
-    if (shouldListenRef.current) {
-      stop();
-      return;
-    }
-    start();
-  }, [start, stop]);
-
-  // Leaving the step must release the microphone immediately.
+  // Leaving the step must release the microphone and drop any pending upload.
   useEffect(
     () => () => {
-      shouldListenRef.current = false;
-      stopTicking();
-      if (finalizeTimeoutRef.current !== null) window.clearTimeout(finalizeTimeoutRef.current);
-      if (completedTimeoutRef.current !== null) window.clearTimeout(completedTimeoutRef.current);
+      unmountedRef.current = true;
+      discardRef.current = "unmount";
 
-      const recognizer = recognizerRef.current;
-      if (!recognizer) return;
-      recognizer.onresult = null;
-      recognizer.onerror = null;
-      recognizer.onend = null;
-      recognizer.onaudiostart = null;
-      try {
-        recognizer.abort();
-      } catch {
-        // Nothing to abort — the session had already closed.
+      const recorder = recorderRef.current;
+      if (recorder && recorder.state !== "inactive") {
+        recorder.stop();
       }
-      recognizerRef.current = null;
+
+      abortRef.current?.abort();
+      stopMeterRef.current?.();
+      stopMeterRef.current = null;
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+
+      if (tickRef.current !== null) window.clearInterval(tickRef.current);
+      if (completedTimeoutRef.current !== null) {
+        window.clearTimeout(completedTimeoutRef.current);
+      }
     },
-    [stopTicking],
+    [],
   );
 
   return {
     isSupported,
     status,
-    isListening: status === "listening",
+    isRecording: status === "recording",
     isCapturing,
     elapsedSeconds,
+    maxSeconds: MAX_RECORDING_SECONDS,
     errorMessage,
+    audioLevel,
     start,
     stop,
-    toggle,
+    cancel,
     dismissError,
   };
 }

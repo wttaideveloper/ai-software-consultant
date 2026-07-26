@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { HTTP_STATUS } from "../../shared/constants/http-status.js";
 import { AppError } from "../../shared/errors/app-error.js";
+import { getClientIp } from "../../shared/http/get-client-ip.js";
 import { successResponse } from "../../shared/responses/api-response.js";
 import { asyncHandler } from "../../utils/async-handler.js";
 import { clientMockupsService } from "./client-mockups.service.js";
@@ -9,16 +10,6 @@ import {
   mockupImageParamsSchema,
   mockupSetParamsSchema,
 } from "./client-mockups.validation.js";
-
-function getClientIp(req: Request): string | null {
-  const forwardedFor = req.headers["x-forwarded-for"];
-
-  if (typeof forwardedFor === "string" && forwardedFor.length > 0) {
-    return forwardedFor.split(",")[0]?.trim() ?? null;
-  }
-
-  return req.ip ?? null;
-}
 
 function parseOrThrow<T>(result: { success: true; data: T } | { success: false; error: { issues: Array<{ message?: string }> } }): T {
   if (!result.success) {

@@ -1,5 +1,14 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { AlertCircle, CheckCircle2, Mic, Sparkles, Square } from "lucide-react";
+import {
+  AlertCircle,
+  BrainCircuit,
+  CheckCircle2,
+  CloudUpload,
+  Mic,
+  ShieldCheck,
+  Square,
+  X,
+} from "lucide-react";
 import type { ReactNode, RefObject } from "react";
 import { SpeechWaveform } from "@/client-portal/speech/speech-waveform";
 import { useSpeechDictation } from "@/client-portal/speech/use-speech-dictation";
@@ -12,44 +21,46 @@ import { EASE_OUT_EXPO } from "@/utils/motion";
  * than in writing, so this is a first-class second path into the same field,
  * not an afterthought.
  *
- * It is deliberately *additive*: the textarea stays exactly as it was, remains
- * fully editable while the microphone is live, and the value it produces flows
- * through the caller's existing `onChange`. Nothing about the submitted payload
- * or the AI flow downstream changes.
+ * The browser records; OpenAI transcribes; the transcript is **appended** to the
+ * field. It is deliberately additive: the textarea is unchanged, stays fully
+ * editable, and the value flows through the caller's existing `onChange`, so
+ * nothing downstream can tell whether the words were typed or spoken.
  *
- * On a browser without the Web Speech API (Safari/Firefox today) the whole
- * block renders nothing at all, leaving a plain, unbroken typing experience.
+ * On a browser that cannot record — or on an insecure origin, where
+ * `navigator.mediaDevices` does not exist — the whole block renders nothing,
+ * leaving a plain, unbroken typing experience.
  */
 
 type SpeechInputProps = {
-  /** The field's current value — dictation appends to it. */
+  /** The field's current value — the transcript is appended to it. */
   value: string;
   /** Receives the full next value, same contract as the textarea's own onChange. */
   onChange: (next: string) => void;
-  /** Optional field to keep pinned to its newest line as words stream in. */
+  /** Optional field to keep pinned to its newest line once text lands. */
   scrollTargetRef?: RefObject<HTMLTextAreaElement | null>;
   /** Copy on the idle button. */
   idleLabel?: string;
-  /** Sub-label shown while listening. */
-  listeningHint?: string;
   className?: string;
 };
 
-function formatElapsed(totalSeconds: number): string {
+/** `01:15` — always two-digit minutes, so the elapsed/total pair stays aligned. */
+function formatClock(totalSeconds: number): string {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
-  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
 const panelBase =
   "flex flex-wrap items-center gap-x-3 gap-y-3 rounded-xl border px-4 py-3";
+
+const linkButton =
+  "text-sm font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 export function SpeechInput({
   value,
   onChange,
   scrollTargetRef,
   idleLabel = "Speak your idea",
-  listeningHint = "Speak naturally — your words appear in the box above.",
   className,
 }: SpeechInputProps) {
   const reduce = useReducedMotion();
@@ -59,16 +70,19 @@ export function SpeechInput({
     status,
     isCapturing,
     elapsedSeconds,
+    maxSeconds,
     errorMessage,
+    audioLevel,
     start,
     stop,
+    cancel,
     dismissError,
   } = useSpeechDictation({
     value,
     onChange: (next) => {
       onChange(next);
-      // Follow the transcript down after React has painted it, so long
-      // dictations don't disappear above the fold.
+      // Follow the transcript down after React has painted it, so a long
+      // dictation doesn't land out of sight above the fold.
       const element = scrollTargetRef?.current;
       if (!element) return;
       window.requestAnimationFrame(() => {
@@ -77,20 +91,21 @@ export function SpeechInput({
     },
   });
 
-  const isListening = status === "listening";
-
   // One polite live region for the whole control: screen readers get the state
   // changes without the timer chattering once a second. Errors are announced by
   // the error panel's own role="alert" instead.
-  const announcement = isListening
-    ? isCapturing
-      ? "Listening. Speak now."
-      : "Preparing your microphone."
-    : status === "processing"
-      ? "Converting speech to text."
-      : status === "completed"
-        ? "Speech added successfully."
-        : "";
+  const announcement =
+    status === "recording"
+      ? isCapturing
+        ? "Recording. Speak now."
+        : "Preparing your microphone."
+      : status === "uploading"
+        ? "Uploading audio."
+        : status === "transcribing"
+          ? "Converting your voice into text."
+          : status === "completed"
+            ? "Speech added successfully."
+            : "";
 
   if (!isSupported) return null;
 
@@ -119,9 +134,9 @@ export function SpeechInput({
 
       <div className="mt-4">
         <AnimatePresence mode="wait" initial={false}>
-          {status === "listening"
+          {status === "recording"
             ? panel(
-                "listening",
+                "recording",
                 <div className={cn(panelBase, "border-accent/40 bg-accent-subtle/60")}>
                   {/* Glowing, pulsing microphone. */}
                   <span className="relative flex h-10 w-10 shrink-0 items-center justify-center">
@@ -146,36 +161,64 @@ export function SpeechInput({
                         animate={reduce ? undefined : { opacity: [1, 0.25, 1] }}
                         transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
                       />
-                      {isCapturing ? "Listening…" : "Preparing microphone…"}
+                      {isCapturing ? "Recording…" : "Preparing microphone…"}
                     </p>
-                    <p className="mt-0.5 text-xs text-muted text-pretty">{listeningHint}</p>
+                    <p className="mt-0.5 text-xs text-muted text-pretty">
+                      Speak naturally, then press Stop when you're done.
+                    </p>
                   </div>
 
                   <div className="ml-auto flex shrink-0 items-center gap-3">
-                    <SpeechWaveform />
+                    <SpeechWaveform level={audioLevel} />
                     <span
                       aria-hidden
                       className="asc-tabular text-sm font-medium text-foreground-soft"
                     >
-                      {formatElapsed(elapsedSeconds)}
+                      {formatClock(elapsedSeconds)}
+                      <span className="text-muted"> / {formatClock(maxSeconds)}</span>
                     </span>
                     <button
                       type="button"
                       onClick={stop}
-                      aria-label={`Stop listening. Recording time ${formatElapsed(elapsedSeconds)}.`}
+                      aria-label={`Stop recording and convert to text. Recorded ${formatClock(elapsedSeconds)} of ${formatClock(maxSeconds)}.`}
                       className="inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-surface px-3 text-sm font-medium text-foreground shadow-xs transition-colors hover:border-border-strong hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                     >
                       <Square className="h-3.5 w-3.5 fill-current" strokeWidth={0} />
                       Stop
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cancel}
+                      aria-label="Cancel recording and discard the audio"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                    >
+                      <X className="h-4 w-4" />
                     </button>
                   </div>
                 </div>,
               )
             : null}
 
-          {status === "processing"
+          {status === "uploading"
             ? panel(
-                "processing",
+                "uploading",
+                <div className={cn(panelBase, "border-border bg-surface-muted/50")}>
+                  <motion.span
+                    aria-hidden
+                    className="asc-gradient-subtle flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-accent-text"
+                    animate={reduce ? undefined : { y: [0, -3, 0] }}
+                    transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+                  >
+                    <CloudUpload className="h-4 w-4" strokeWidth={1.8} />
+                  </motion.span>
+                  <p className="text-sm font-medium text-foreground">Uploading audio…</p>
+                </div>,
+              )
+            : null}
+
+          {status === "transcribing"
+            ? panel(
+                "transcribing",
                 <div className={cn(panelBase, "border-border bg-surface-muted/50")}>
                   <motion.span
                     aria-hidden
@@ -183,9 +226,11 @@ export function SpeechInput({
                     animate={reduce ? undefined : { scale: [1, 0.86, 1] }}
                     transition={{ duration: 1.1, repeat: Infinity, ease: "easeInOut" }}
                   >
-                    <Sparkles className="h-4 w-4" strokeWidth={1.8} />
+                    <BrainCircuit className="h-4 w-4" strokeWidth={1.8} />
                   </motion.span>
-                  <p className="text-sm font-medium text-foreground">Converting speech…</p>
+                  <p className="min-w-0 flex-1 text-sm font-medium text-foreground text-pretty">
+                    AI is converting your voice into text…
+                  </p>
                 </div>,
               )
             : null}
@@ -208,8 +253,8 @@ export function SpeechInput({
                   </p>
                   <button
                     type="button"
-                    onClick={start}
-                    className="ml-auto text-sm font-medium text-accent-text underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                    onClick={() => void start()}
+                    className={cn(linkButton, "ml-auto text-accent-text")}
                   >
                     Speak again
                   </button>
@@ -220,10 +265,7 @@ export function SpeechInput({
           {status === "error"
             ? panel(
                 "error",
-                <div
-                  role="alert"
-                  className={cn(panelBase, "border-danger/35 bg-danger-subtle")}
-                >
+                <div role="alert" className={cn(panelBase, "border-danger/35 bg-danger-subtle")}>
                   <AlertCircle className="h-5 w-5 shrink-0 text-danger" strokeWidth={1.9} />
                   <p className="min-w-0 flex-1 text-sm text-foreground text-pretty">
                     {errorMessage}
@@ -231,15 +273,15 @@ export function SpeechInput({
                   <div className="ml-auto flex shrink-0 items-center gap-3">
                     <button
                       type="button"
-                      onClick={start}
-                      className="text-sm font-medium text-accent-text underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                      onClick={() => void start()}
+                      className={cn(linkButton, "text-accent-text")}
                     >
                       Try again
                     </button>
                     <button
                       type="button"
                       onClick={dismissError}
-                      className="text-sm font-medium text-muted underline-offset-4 hover:text-foreground-soft hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                      className={cn(linkButton, "text-muted hover:text-foreground-soft")}
                     >
                       Dismiss
                     </button>
@@ -253,7 +295,7 @@ export function SpeechInput({
                 "idle",
                 <button
                   type="button"
-                  onClick={start}
+                  onClick={() => void start()}
                   aria-label={`${idleLabel} using your microphone`}
                   className={cn(
                     "group flex w-full items-center justify-center gap-3 rounded-xl border border-border bg-surface px-4 py-3.5",
@@ -272,6 +314,16 @@ export function SpeechInput({
             : null}
         </AnimatePresence>
       </div>
+
+      {/* Stated plainly and always visible — a microphone prompt without one is
+          a reasonable thing for a visitor to refuse. */}
+      <p className="mt-2.5 flex items-start gap-1.5 text-xs leading-relaxed text-muted">
+        <ShieldCheck className="mt-px h-3.5 w-3.5 shrink-0" strokeWidth={1.8} />
+        <span className="text-pretty">
+          Your voice is securely processed to generate text. Audio is not stored after
+          transcription.
+        </span>
+      </p>
 
       <p className="sr-only" role="status" aria-live="polite">
         {announcement}

@@ -1,4 +1,9 @@
-import OpenAI, { APIConnectionError, APIError, APIUserAbortError } from "openai";
+import OpenAI, {
+  APIConnectionError,
+  APIConnectionTimeoutError,
+  APIError,
+  APIUserAbortError,
+} from "openai";
 import type {
   ChatCompletionCreateParamsNonStreaming,
   ChatCompletionMessageParam,
@@ -16,6 +21,9 @@ import type {
   AIProvider,
   AIRequest,
   AIResponse,
+  AITranscriptionProvider,
+  AITranscriptionRequest,
+  AITranscriptionResult,
 } from "../ai.types.js";
 import { PROMPT_TYPES } from "../../prompts/prompt.constants.js";
 
@@ -196,7 +204,9 @@ function mapOpenAIError(error: unknown): AppError {
   );
 }
 
-export class OpenAIProvider implements AIProvider, AIImageProvider {
+export class OpenAIProvider
+  implements AIProvider, AIImageProvider, AITranscriptionProvider
+{
   readonly name = AI_PROVIDERS.OPENAI;
 
   private readonly injectedClient: OpenAI | undefined;
@@ -338,6 +348,80 @@ export class OpenAIProvider implements AIProvider, AIImageProvider {
       const appError = mapOpenAIError(error);
       logger.error(
         `OpenAIProvider generateImage failed: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+      );
+      throw appError;
+    }
+  }
+
+  /**
+   * Transcribes one recording and returns the text.
+   *
+   * The bytes arrive as a Buffer and are wrapped in a `File` purely to satisfy
+   * the SDK's upload contract — nothing here touches the filesystem, so there is
+   * no temporary file to clean up and no path that could outlive the request.
+   * The buffer becomes garbage the moment this returns.
+   *
+   * Timeout is per-call rather than the client-wide OPENAI_TIMEOUT: a two-minute
+   * recording is legitimately slower than any chat completion, and inheriting the
+   * text budget would abort valid transcriptions.
+   */
+  async transcribeAudio(
+    request: AITranscriptionRequest,
+  ): Promise<AITranscriptionResult> {
+    if (!config.OPENAI_API_KEY) {
+      throw new AppError(
+        "AI provider is not configured",
+        HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    const startedAt = Date.now();
+    const model = request.model ?? config.OPENAI_WHISPER_MODEL;
+
+    try {
+      const file = new File([new Uint8Array(request.body)], request.filename, {
+        type: request.mimeType,
+      });
+
+      const transcription = await this.getClient().audio.transcriptions.create(
+        {
+          file,
+          model,
+          response_format: "json",
+          ...(request.language ? { language: request.language } : {}),
+        },
+        { timeout: request.timeoutMs ?? config.OPENAI_WHISPER_TIMEOUT_MS },
+      );
+
+      // `json` yields an object with `text`; the string form only comes back for
+      // the plain-text response formats. Handled so the return type is honest.
+      const text =
+        typeof transcription === "string" ? transcription : transcription.text;
+
+      return {
+        text: text ?? "",
+        metadata: {
+          provider: this.name,
+          model,
+          latencyMs: Date.now() - startedAt,
+        },
+      };
+    } catch (error) {
+      // Distinguished here rather than in mapOpenAIError so the shared mapping
+      // (and every existing text/image call site) keeps its current messages.
+      if (error instanceof APIConnectionTimeoutError) {
+        logger.error("OpenAIProvider transcribeAudio timed out");
+        throw new AppError(
+          "Transcription took too long. Please try a shorter recording.",
+          HTTP_STATUS.GATEWAY_TIMEOUT,
+        );
+      }
+
+      const appError = mapOpenAIError(error);
+      logger.error(
+        `OpenAIProvider transcribeAudio failed: ${
           error instanceof Error ? error.message : "Unknown error"
         }`,
       );

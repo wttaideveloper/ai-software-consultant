@@ -1,22 +1,13 @@
 import type { Request, Response } from "express";
 import { HTTP_STATUS } from "../../shared/constants/http-status.js";
 import { AppError } from "../../shared/errors/app-error.js";
+import { getClientIp } from "../../shared/http/get-client-ip.js";
 import { successResponse } from "../../shared/responses/api-response.js";
 import { asyncHandler } from "../../utils/async-handler.js";
 import { authService } from "./auth.service.js";
 import { registerSchema } from "./auth.validation.js";
 import { loginSchema } from "./login.validation.js";
 import { refreshSchema } from "./refresh.validation.js";
-
-function getClientIp(req: Request): string | null {
-  const forwardedFor = req.headers["x-forwarded-for"];
-
-  if (typeof forwardedFor === "string" && forwardedFor.length > 0) {
-    return forwardedFor.split(",")[0]?.trim() ?? null;
-  }
-
-  return req.ip ?? null;
-}
 
 function getRequestContext(req: Request) {
   return {

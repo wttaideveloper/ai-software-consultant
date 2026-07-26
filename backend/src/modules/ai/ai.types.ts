@@ -72,3 +72,33 @@ export interface AIImageProvider {
   readonly name: AIProviderName;
   generateImage(request: AIImageRequest): Promise<AIImageResult>;
 }
+
+export type AITranscriptionRequest = {
+  /** Raw audio bytes. Held in memory only — never written to disk by any caller. */
+  body: Buffer;
+  /** Original upload name; the provider needs an extension to sniff the container. */
+  filename: string;
+  mimeType: string;
+  model?: string;
+  /** BCP-47 hint. Omitted means the provider auto-detects. */
+  language?: string;
+  /** Per-call override — audio is slower than text and gets its own budget. */
+  timeoutMs?: number;
+};
+
+export type AITranscriptionResult = {
+  text: string;
+  metadata: GenerationMetadata;
+};
+
+/**
+ * Speech-to-text is a **third, separate** capability, for the same reason images
+ * are (see AIImageProvider): a provider that only does chat completions must stay
+ * a valid AIProvider. Bytes in, text out — the port deliberately knows nothing
+ * about HTTP uploads or files on disk, so no adapter can be tempted to persist
+ * the audio.
+ */
+export interface AITranscriptionProvider {
+  readonly name: AIProviderName;
+  transcribeAudio(request: AITranscriptionRequest): Promise<AITranscriptionResult>;
+}

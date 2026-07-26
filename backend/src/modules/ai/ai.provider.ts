@@ -7,6 +7,9 @@ export type {
   AIProvider,
   AIRequest,
   AIResponse,
+  AITranscriptionProvider,
+  AITranscriptionRequest,
+  AITranscriptionResult,
   GenerationMetadata,
   TokenUsage,
 } from "./ai.types.js";

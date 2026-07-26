@@ -217,6 +217,19 @@ finalPrice  = subtotal − discount + tax
 - **Interactive pricing (Client Portal)**: the estimate's Project Cost recalculates as the client toggles features. **The AI runs exactly once**, at generation; every toggle afterwards hits `POST /api/client/estimate/price` (public), which carries only hours + complexity + platforms back through the same `priceAiEstimate()`. Repricing client-side was rejected deliberately — price is not linear in hours once a discount cap or FIXED discount applies, so only the engine can answer. The AI returns one project total, not hours per feature, so `distributeFeatureHours()` (`client-portal/estimate/estimate-pricing.ts`) splits it across features by complexity weight using largest-remainder, guaranteeing the parts sum to the AI's total — otherwise "all included" would not equal the original and the summary would show phantom savings. The query key *is* the hour total, so toggling back is served from cache. Cost and timeline are shown as **ranges** (`PRICE_RANGE_SPREAD`, `TIMELINE_RANGE_WEEKS` in that same module), never a single exact figure.
 - Permissions are `COST_SETTINGS_VIEW` / `COST_SETTINGS_EDIT`, separate from `SETTINGS_*`: seeing what a quote was built from and changing what the company charges are different privileges.
 
+### Speech-to-text (Client Portal)
+
+`modules/client-speech/` turns a recording into text for the Client Portal's "Speak your idea" control. It **replaced a browser-native Web Speech API implementation** — free and zero-latency, but Chrome-family only and materially less accurate on accents, product names and technical vocabulary, which is precisely the language a project brief is made of.
+
+- **The browser records; the server transcribes.** `MediaRecorder` captures to a Blob (`audio/webm;codecs=opus` preferred, `audio/mp4` for Safari), POSTs it to `POST /api/client/speech-to-text` as multipart, and appends the returned text to the textarea. There are no interim/live results — that capability was Web Speech's alone and does not exist in this architecture.
+- **`AITranscriptionProvider` is a third capability port**, separate from `AIProvider` and `AIImageProvider` for the same reason: a text-only provider must stay a valid `AIProvider`. `OpenAIProvider` implements all three. The port takes bytes and returns text, so it knows nothing about HTTP uploads or files.
+- **Audio is never stored.** Bytes exist as a Buffer for one request and are garbage after it. No temp file is written, so there is no cleanup step that can be skipped — the `File` handed to the SDK is an in-memory wrapper, not a path. The DTO is `{ text }` and deliberately carries no id or URL that could refer back to a recording.
+- **No multipart dependency.** `client-speech.upload.ts` parses the body with Node's built-in `Response.formData()` (undici) rather than adding multer for one route — the same call `shared/rate-limit/sliding-window.ts` made about express-rate-limit.
+- **Stateless like every `client-*` module**: no repository, and no `ai_generations` audit row, because there is no organization or consultation to hang the NOT NULL FKs on (the trade-off `client-requirements.service.ts` documents).
+- **Guards run before the provider call**, so a bad upload costs nothing: a MIME allowlist (parameters stripped, `video/webm`/`video/mp4` allowed because browsers label audio-only recordings that way), `SPEECH_MAX_UPLOAD_BYTES`, a declared-duration cap, and a per-IP hourly window. The byte cap is the enforceable one — duration is client-declared and only sanity-checked.
+- **`OPENAI_WHISPER_TIMEOUT_MS` is separate from `OPENAI_TIMEOUT`** (120s vs 60s): transcribing two minutes of audio is legitimately slower than any chat completion, and inheriting the text budget would abort valid work. The frontend's own timeout is deliberately *longer* still, so the server's friendly message wins over a generic network error.
+- The transcript is **appended, never substituted**, and the field is never locked. The consultation pipeline is untouched: speech only fills a textarea that was always there.
+
 ### Concept mockups (Client Portal)
 
 `modules/client-mockups/` renders 4–6 AI **concept screens** ("This is how I envision your project"). It is the only feature that generates images, and the only one that spends money per anonymous page view — every design decision below is a consequence of that.
@@ -282,6 +295,8 @@ Every domain under `src/modules/<name>/` follows the same five-file pattern:
 ```
 
 Modules: `auth`, `users`, `consultations`, `conversations`, `chat`, `requirement-summary`, `feature-detection`, `estimation`, `proposal`, `feature-library`, `client-lead`, `lead-proposal`, `cost`, `settings`, the `client-*` Client Portal modules, plus non-domain `ai/` (provider abstraction) and `prompts/` (templating). Empty scaffolds (`.gitkeep` only): `admin`, `crm`, `dashboard`.
+
+`client-speech/` is the one module with **no repository and no table** — it transcribes audio and returns text (see Speech-to-text below). Its extra file, `client-speech.upload.ts`, is the only multipart handling in the app.
 
 **Two proposal modules exist and are not the same thing.** `proposal/` is the consultation-based AI proposal (`project_proposals`, generated by the AI pipeline) — untouched and still routed. `lead-proposal/` is the versioned sales proposal for a client lead (`lead_proposals`) and involves no AI call: versions are prefilled client-side by `buildProposalDraft()` from the lead's summary, features and estimate.
 
@@ -350,6 +365,9 @@ GET|POST    /api/consultations/:consultationId/proposal
 PATCH|DELETE /api/messages/:id
 GET|POST     /api/feature-library, /api/feature-library/:id
 POST         /api/features/match
+
+# Client Portal speech-to-text — public, multipart/form-data, no DB:
+POST         /api/client/speech-to-text                 field `audio` (+ `durationSeconds`) → { text }
 
 # Cost Management — the pricing engine (authorize(COST_SETTINGS_VIEW|EDIT)):
 GET|PATCH    /api/cost-settings                           risk, currency, tax, discount rules
@@ -476,14 +494,15 @@ npm run preview     vite preview
 
 1. **Backend imports need explicit `.js` extensions** (NodeNext ESM) — omitting it breaks the build even though the source is `.ts`.
 2. **`API_PREFIX` is `/api`** — there is no `/v1` segment; don't assume API versioning.
-3. **`backend/.env` is gitignored and untracked** (root `.gitignore` covers `backend/.env`, `backend/dist/`, `.env`) — it holds the real `DATABASE_URL`, JWT secrets, `OPENAI_API_KEY` and `DEFAULT_ADMIN_PASSWORD`. `backend/.env.example` is the tracked, value-free counterpart: add new keys there, never real secrets.
-4. **`node_modules/` (both apps) and `frontend/dist/` are committed.** A broad `git add -A`/`git add .` will re-stage huge trees — always stage specific files.
+3. **`backend/.env` is gitignored and untracked** (root `.gitignore` covers `backend/.env`, `backend/dist/`, `.env` — though `backend/dist/` was committed before that rule and is still tracked, see #4) — it holds the real `DATABASE_URL`, JWT secrets, `OPENAI_API_KEY` and `DEFAULT_ADMIN_PASSWORD`. `backend/.env.example` is the tracked, value-free counterpart: add new keys there, never real secrets.
+4. **`node_modules/` (both apps), `frontend/dist/` and `backend/dist/` are committed.** A broad `git add -A`/`git add .` will re-stage huge trees — always stage specific files. `backend/dist/` is tracked *despite* the `.gitignore` rule (the files predate it, and an ignore rule doesn't untrack) and is **stale — no recent commit updates it**. So `npm run build` in `backend/` dirties tracked files that nobody intends to commit: leave them out of the commit and `git checkout -- backend/dist` afterwards.
 5. **JWT secrets aren't validated at boot.** `config/env.ts` defaults `JWT_SECRET`/`JWT_REFRESH_SECRET`/`DATABASE_URL` to `""` instead of throwing — a blank `.env` value won't be caught, it'll silently sign tokens with an empty key.
 6. **The five `extractJsonPayload` implementations are duplicated verbatim** across `feature-detection`, `estimation`, `proposal`, `requirement-summary`, `feature-library` services. A bugfix in one likely needs applying to all five.
 7. **Tailwind v4 variants don't apply to `@layer components` classes.** `hover:my-custom-class` silently emits no CSS. Declare anything that needs a variant with `@utility` (see Frontend → Styling).
 8. **Don't combine Tailwind `shadow-<color>` modifiers with the shadow scale.** `--shadow-*` is remapped onto the themed `--elev-*` ramp with colours baked in, so `shadow-accent/20` is ignored. Use `asc-shadow-accent`.
 9. **`layoutId` must be unique per mounted instance.** `Sidebar` mounts twice (desktop rail + mobile drawer) and `Tabs` can appear more than once per page — both scope their `layoutId`, and new shared-layout animations must too.
 10. **Backend `typescript@^7.0.2` vs. frontend `~6.0.2`** — don't assume identical behavior when touching build/tooling config across the two apps.
+11. **Never POST `FormData` through the `api` axios instance without overriding `Content-Type`.** The instance defaults to `application/json`, and axios 1.x *serialises FormData to JSON* when it sees a JSON content type — the file is silently never sent. Pass `headers: { "Content-Type": "multipart/form-data" }` (no boundary); axios then hands the header back to the browser, which fills the boundary in. `services/client-speech.service.ts` is the only current uploader.
 
 ---
 
