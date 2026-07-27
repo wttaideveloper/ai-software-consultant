@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Spinner, Textarea } from "@/components/ui";
+import { SpeechInput } from "@/client-portal/speech/speech-input";
 import {
   useNextDiscoveryQuestion,
   useStartDiscovery,
@@ -48,6 +49,7 @@ export function ClientQuestionsStep() {
 
   const [draftAnswer, setDraftAnswer] = useState("");
   const hasStartedRef = useRef(false);
+  const answerRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (hasStartedRef.current || conversation.length > 0 || isDiscoveryComplete) {
@@ -145,15 +147,34 @@ export function ClientQuestionsStep() {
         ) : null}
 
         {currentQuestion ? (
-          <Textarea
-            key={currentQuestion}
-            label={currentQuestion}
-            value={draftAnswer}
-            onChange={(event) => setDraftAnswer(event.target.value)}
-            rows={4}
-            placeholder="Type your answer..."
-            autoFocus
-          />
+          <>
+            <Textarea
+              key={currentQuestion}
+              ref={answerRef}
+              label={currentQuestion}
+              value={draftAnswer}
+              onChange={(event) => setDraftAnswer(event.target.value)}
+              rows={4}
+              placeholder="Type your answer..."
+              autoFocus
+            />
+
+            {/*
+              The same voice path as the project idea step, writing through
+              setDraftAnswer exactly as typing does — the submitted answer and
+              everything downstream of it are unchanged. Keyed on the question
+              like the textarea it feeds, so each question gets a fresh dictation
+              session: the hook's unmount cleanup releases the microphone, and a
+              mic left open on "Next" can never spill words into the next answer.
+            */}
+            <SpeechInput
+              key={`speech-${currentQuestion}`}
+              value={draftAnswer}
+              onChange={setDraftAnswer}
+              scrollTargetRef={answerRef}
+              idleLabel="Speak your answer"
+            />
+          </>
         ) : null}
       </div>
 

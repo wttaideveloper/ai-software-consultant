@@ -7,10 +7,11 @@ import { cn } from "@/utils/cn";
 import { EASE_OUT_EXPO } from "@/utils/motion";
 
 /**
- * "Speak your idea" — the typing alternative offered under a Client Portal
- * textarea. Non-technical clients describe a project far more easily out loud
- * than in writing, so this is a first-class second path into the same field,
- * not an afterthought.
+ * The typing alternative offered under a Client Portal textarea — "Speak your
+ * idea" on the project idea step, "Speak your answer" on every AI question.
+ * Non-technical clients describe a project far more easily out loud than in
+ * writing, so this is a first-class second path into the same field, not an
+ * afterthought.
  *
  * It is deliberately *additive*: the textarea stays exactly as it was, remains
  * fully editable while the microphone is live, and the value it produces flows
@@ -109,7 +110,7 @@ export function SpeechInput({
   );
 
   return (
-    <div className={cn("mt-5", className)}>
+    <div className={cn("mt-4", className)}>
       {/* ──────── OR ──────── */}
       <div className="flex items-center gap-3" aria-hidden>
         <span className="h-px flex-1 bg-border" />
@@ -117,7 +118,7 @@ export function SpeechInput({
         <span className="h-px flex-1 bg-border" />
       </div>
 
-      <div className="mt-4">
+      <div className="mt-3">
         <AnimatePresence mode="wait" initial={false}>
           {status === "listening"
             ? panel(
@@ -251,23 +252,32 @@ export function SpeechInput({
           {status === "idle"
             ? panel(
                 "idle",
-                <button
-                  type="button"
-                  onClick={start}
-                  aria-label={`${idleLabel} using your microphone`}
-                  className={cn(
-                    "group flex w-full items-center justify-center gap-3 rounded-xl border border-border bg-surface px-4 py-3.5",
-                    "text-sm font-medium text-foreground shadow-xs",
-                    "transition-[border-color,background-color,color,box-shadow] duration-200",
-                    "hover:border-accent/45 hover:bg-accent-subtle/45 hover:text-accent-text hover:shadow-sm",
-                    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-                  )}
-                >
-                  <span className="asc-gradient-subtle flex h-8 w-8 items-center justify-center rounded-full text-accent-text transition-transform duration-200 group-hover:scale-105">
-                    <Mic className="h-4 w-4" strokeWidth={1.9} />
-                  </span>
-                  {idleLabel}
-                </button>,
+                /*
+                  Idle is a compact centred pill, not a full-width slab: typing is
+                  the primary path and voice is the offer beside it, so it should
+                  read as an affordance rather than compete with the textarea for
+                  weight. The active states below stay full-width — those carry
+                  live status, a timer and controls, and do need the room.
+                */
+                <div className="flex justify-center">
+                  <button
+                    type="button"
+                    onClick={start}
+                    aria-label={`${idleLabel} using your microphone`}
+                    className={cn(
+                      "group inline-flex items-center gap-2 rounded-full border border-border bg-surface py-1.5 pr-4 pl-1.5",
+                      "text-sm font-medium text-foreground shadow-xs",
+                      "transition-[border-color,background-color,color,box-shadow] duration-200",
+                      "hover:border-accent/45 hover:bg-accent-subtle/45 hover:text-accent-text hover:shadow-sm",
+                      "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                    )}
+                  >
+                    <span className="asc-gradient-subtle flex h-7 w-7 items-center justify-center rounded-full text-accent-text transition-transform duration-200 group-hover:scale-105">
+                      <Mic className="h-3.5 w-3.5" strokeWidth={1.9} />
+                    </span>
+                    {idleLabel}
+                  </button>
+                </div>,
               )
             : null}
         </AnimatePresence>
