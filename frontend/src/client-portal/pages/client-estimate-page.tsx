@@ -1,4 +1,4 @@
-import { Calculator, RotateCcw } from "lucide-react";
+import { Calculator } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ClientLayout } from "@/client-portal/layouts/client-layout";
