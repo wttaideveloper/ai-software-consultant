@@ -23,7 +23,13 @@ import {
  * Shared style contract appended to every screen's prompt — the second half of the
  * CONCEPT_SCREENS prompt in prompt.builder.ts. Edit the two together.
  *
- * Two requirements are load-bearing here, for different reasons.
+ * Three requirements are load-bearing here, for different reasons.
+ *
+ * Framing comes first in the list on purpose. It is stated immediately after the screen
+ * description ends, which is the strongest position this directive has, because a
+ * cropped screen is the one defect that reads as broken rather than merely plain — and
+ * left to itself the model composes to fill a square canvas, cutting off the status bar
+ * and bottom navigation.
  *
  * Legible, real English text: gpt-image-1 can render typography well, but it drifts
  * toward invented, misspelled filler when not held to it — and garbled labels are
@@ -38,15 +44,18 @@ import {
  * instead makes the art direction above binding.
  */
 const IMAGE_STYLE_DIRECTIVE = [
-  "Render exactly the interface described above at flagship 2026 product quality — the standard of work a top-tier design studio would present to win a client, matching the polish of Stripe, Linear, Notion, Airbnb, Apple, Figma and Vercel without copying any of their branding.",
-  "The ART DIRECTION stated above is binding: use those exact hex colours, that light or dark mode, that typography character and that corner radius. Do NOT substitute your own palette, and do NOT fall back to a generic blue-and-white dashboard.",
+  "FRAMING, before anything else — the job is to PRESENT the interface, not to crop it. The entire interface must be visible inside the canvas with nothing cut off at any edge, laid out the way a design agency would present it in a case study. For a mobile app: one complete phone-proportioned device, portrait, straight on, centred, floating above a plain backdrop tinted from the palette with a soft shadow beneath it. The whole device is inside the frame with roughly 10-15% empty margin on all four sides; the full status bar and the complete top navigation are visible at the top of the screen, and the bottom navigation bar, home indicator or floating action button is complete at the bottom. Any hero photograph fills at most 40% of the screen's height — the interface, not the picture, is the subject. For web or desktop: the complete browser window including its frame, straight on and centred, with its full header, full sidebar and full footer visible, and a generous margin of empty backdrop on all four sides.",
+  "Never zoom in and never crop: this is not a close-up, not a detail shot, and not an edge-to-edge fill. No part of the interface, device body, or window frame may touch or extend past any edge of the image. Keep the device or window at its natural aspect ratio — never stretch it to fill the canvas, and never let a screen run off the top or bottom.",
+  "Render exactly the interface described above at flagship 2026 product quality — the standard of work an elite product team would ship, matching the craftsmanship of Linear, the Stripe dashboard, Airbnb, Shopify, Apple, Notion, Vercel and Arc Browser in attention to detail, without copying any of their branding or layouts.",
+  "The DESIGN SYSTEM stated above is binding: use those exact hex colours, that light or dark mode, that button style, that corner radius, that shadow depth, that typography and that icon style, on this screen and every other. Do NOT substitute your own palette, and do NOT fall back to a generic blue-and-white dashboard.",
   "Craft: a deliberate visual hierarchy with one clear focal point, generous whitespace, a consistent spacing rhythm, layered surfaces, crisp hairline borders, soft realistic multi-layer shadows, tasteful gradients or glass blur where the art direction calls for them, precise line-style icons, and a confident type scale pairing a large heading with calm supporting text.",
-  "Fill every region with realistic, specific content — real list rows, real metric values, real menu items, real form fields — never empty boxes, grey placeholder rectangles, or skeleton bars.",
+  "Fill every region with realistic, specific content — real list rows, real metric values, real menu items, real form fields — never empty boxes, grey placeholder rectangles, or skeleton bars. Any data must be believable and internally consistent: chart bars must agree with their axis and legend, a total must match the rows above it, and units must match their labels. No fake charts, no random statistics, no decorative graphs that mean nothing.",
   "ALL text in the interface MUST be real, correctly spelled English and match the labels described above. Every heading, button, menu item, tab, and form field must read as a genuine English word or phrase (for example: Login, Sign In, Email, Password, Continue, Search, Dashboard, Settings, Notifications, Cart, Checkout, Order Summary, Payment, Profile, Save, Cancel, Back).",
   "Absolutely NO invented words, misspellings, random letters or symbols, gibberish, lorem ipsum, or placeholder text, and NEVER render text as blurred or abstract bars. If unsure of a label, use a common correct English UI term.",
   "Never produce a wireframe, a low-fidelity sketch, a dated Bootstrap or Material-2 layout, a plain unstyled form, or a generic admin template.",
   "Photographic content (food, products, interiors, destinations) is encouraged where the screen calls for it and must look like professional editorial photography. Keep people incidental and small — no close-up human faces; simple circular avatar placeholders are fine. A tasteful flat vector spot illustration inside the interface is welcome for an empty state or onboarding panel, but the screen itself must be a real interface, never an illustration.",
-  "No logos, brand marks, company names, trademarks, or watermarks. No 3D renders, no cartoon styling, no abstract art, no device photography, no hands, no desk scenes, and no perspective tilt — render the screen straight on, with no drop shadow on the outer edge of the image itself.",
+  "No logos, brand marks, company names, trademarks, or watermarks. No 3D renders, no cartoon styling, no abstract art, no photographs of real devices, no hands, no desk scenes, and no perspective tilt — render the device or window flat and straight on. A soft shadow beneath the floating device is correct; the image itself must have no vignette, border, or shadow around its own outer edge.",
+  "Never optimise for artistic creativity or visual novelty. Optimise for believable, modern, production-quality product design — a screen a real team could ship today.",
 ].join(" ");
 
 /** One batch per IP per window — the cheap first line of defence. */
