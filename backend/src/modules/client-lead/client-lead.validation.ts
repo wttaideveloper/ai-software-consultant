@@ -38,7 +38,12 @@ const estimateInputSchema = z.object({
 const pricingBreakdownSchema = z.object({
   estimatedHours: z.number(),
   hourlyRate: z.number(),
-  complexityMultiplier: z.number(),
+  /**
+   * @deprecated Optional so both shapes validate: the engine no longer emits it,
+   * but a client running cached JS from before the change may still send it.
+   * Accepted and ignored rather than rejected.
+   */
+  complexityMultiplier: z.number().optional(),
   platformMultiplier: z.number(),
   baseCost: z.number(),
   developmentCost: z.number(),

@@ -1,18 +1,9 @@
-import {
-  Coins,
-  Gauge,
-  Landmark,
-  Layers,
-  Percent,
-  ShieldAlert,
-} from "lucide-react";
+import { Coins, Landmark, Layers, Percent, ShieldAlert } from "lucide-react";
 import { WorkspaceSection } from "@/components/shared/workspace-section";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import {
-  COST_COMPLEXITY_HINTS,
-  COST_COMPLEXITY_LABELS,
   COST_CURRENCY_LABELS,
   COST_DISCOUNT_TYPE_LABELS,
   COST_PLATFORM_LABELS,
@@ -23,7 +14,6 @@ import {
   COST_CURRENCIES,
   COST_DISCOUNT_TYPES,
   COST_TAX_TYPES,
-  type ComplexityMultiplier,
   type CostCurrency,
   type CostDiscountType,
   type CostSettings,
@@ -94,46 +84,15 @@ export function HourlyRatesSection({
   );
 }
 
-export function ComplexityMultipliersSection({
-  multipliers,
-  onChange,
-}: {
-  multipliers: ComplexityMultiplier[];
-  onChange: (next: ComplexityMultiplier[]) => void;
-}) {
-  return (
-    <WorkspaceSection
-      id="complexity"
-      icon={Gauge}
-      title="Complexity Multipliers"
-      description="How much harder work costs, by tier"
-    >
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {multipliers.map((item) => (
-          <Input
-            key={item.level}
-            label={COST_COMPLEXITY_LABELS[item.level]}
-            type="number"
-            min={1}
-            step={0.1}
-            hint={COST_COMPLEXITY_HINTS[item.level]}
-            error={multiplierError(item.multiplier)}
-            value={item.multiplier}
-            onChange={(event) =>
-              onChange(
-                multipliers.map((row) =>
-                  row.level === item.level
-                    ? { ...row, multiplier: Number(event.target.value) }
-                    : row,
-                ),
-              )
-            }
-          />
-        ))}
-      </div>
-    </WorkspaceSection>
-  );
-}
+/*
+ * There is deliberately no ComplexityMultipliersSection.
+ *
+ * Complexity multipliers were removed from the pricing engine because they
+ * double-counted complexity: the AI already reflects difficulty in the hours it
+ * returns, so scaling those hours by a complexity tier charged for it twice.
+ * Complexity is still shown on estimates as an informational label. Do not
+ * re-add an editor here — it would imply a pricing effect that no longer exists.
+ */
 
 export function PlatformMultipliersSection({
   multipliers,

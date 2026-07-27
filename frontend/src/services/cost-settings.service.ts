@@ -42,6 +42,10 @@ export const costSettingsService = {
     return response.data.data;
   },
 
+  /**
+   * @deprecated Complexity no longer affects price, so nothing calls this. Kept
+   * only while the deprecated backend endpoint exists.
+   */
   async updateComplexityMultipliers(
     multipliers: ComplexityMultiplier[],
   ): Promise<ComplexityMultiplier[]> {

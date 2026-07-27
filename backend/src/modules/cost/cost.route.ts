@@ -56,6 +56,12 @@ hourlyRatesRouter.patch(
   costSettingsController.updateHourlyRates,
 );
 
+/**
+ * @deprecated Complexity multipliers no longer affect any price — the engine
+ * stopped reading them (see cost.engine.ts). The endpoints remain so stored rows
+ * stay reachable and no existing caller 404s; the Admin UI no longer renders or
+ * writes them. Remove alongside the table in a later, deliberate cleanup.
+ */
 export const complexityMultipliersRouter = Router();
 
 complexityMultipliersRouter.get(

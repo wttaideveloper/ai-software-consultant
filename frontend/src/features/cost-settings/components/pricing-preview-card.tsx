@@ -2,18 +2,14 @@ import { Calculator, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  COST_COMPLEXITY_LABELS,
   COST_PLATFORM_LABELS,
   formatMoney,
 } from "@/features/cost-settings/cost-settings.labels";
 import { useCostPreview } from "@/features/cost-settings/hooks/use-cost-settings";
 import {
-  COST_COMPLEXITY_LEVELS,
   COST_PLATFORMS,
-  type CostComplexityLevel,
   type CostCurrency,
   type CostPlatform,
   type PreviewCostParams,
@@ -24,7 +20,6 @@ type PricingPreviewCardProps = {
   /** Scenario inputs owned by the page, so the card stays presentational. */
   scenario: {
     estimatedHours: number;
-    complexityLevel: CostComplexityLevel;
     platforms: CostPlatform[];
     hourlyRate?: number;
   };
@@ -106,7 +101,6 @@ export function PricingPreviewCard({
 }: PricingPreviewCardProps) {
   const params: PreviewCostParams = {
     estimatedHours: scenario.estimatedHours,
-    complexityLevel: scenario.complexityLevel,
     platforms: scenario.platforms,
     ...(scenario.hourlyRate ? { hourlyRate: scenario.hourlyRate } : {}),
     ...overrides,
@@ -141,7 +135,12 @@ export function PricingPreviewCard({
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+      {/*
+        Hours is the only effort input. There is no complexity control: the AI
+        already reflects complexity in the hours, so the price varies by hours,
+        rates, platforms, risk, discount and tax — nothing else.
+      */}
+      <div className="mt-4">
         <Input
           label="Estimated hours"
           type="number"
@@ -150,19 +149,6 @@ export function PricingPreviewCard({
           onChange={(event) =>
             onScenarioChange({ estimatedHours: Number(event.target.value) })
           }
-        />
-        <Select
-          label="Complexity"
-          value={scenario.complexityLevel}
-          onChange={(event) =>
-            onScenarioChange({
-              complexityLevel: event.target.value as CostComplexityLevel,
-            })
-          }
-          options={COST_COMPLEXITY_LEVELS.map((level) => ({
-            label: COST_COMPLEXITY_LABELS[level],
-            value: level,
-          }))}
         />
       </div>
 
@@ -225,7 +211,7 @@ export function PricingPreviewCard({
             />
             <Line
               label="Development cost"
-              hint={`× ${breakdown.complexityMultiplier} complexity × ${breakdown.platformMultiplier} platform`}
+              hint={`× ${breakdown.platformMultiplier} platform`}
               value={formatMoney(breakdown.developmentCost, symbolCurrency)}
             />
             <Line

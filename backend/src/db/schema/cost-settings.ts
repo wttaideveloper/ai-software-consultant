@@ -58,7 +58,21 @@ export const costHourlyRates = pgTable(
   ],
 );
 
-/** Price multiplier per complexity tier — Simple 1.0 … Enterprise 2.0. */
+/**
+ * Price multiplier per complexity tier — Simple 1.0 … Enterprise 2.0.
+ *
+ * @deprecated DEAD DATA — read by nothing in the pricing path.
+ *
+ * The engine stopped applying a complexity multiplier because it double-counted
+ * complexity: the AI already reflects difficulty in the hours it returns, so
+ * scaling those hours by a complexity tier charged for the same thing twice.
+ *
+ * The table and its rows are deliberately KEPT rather than dropped — existing
+ * organizations have configured values, and deleting them would be an
+ * irreversible data loss for a change that only needed to stop *reading* them.
+ * Drop the table (and `cost_complexity_level`) in a later, deliberate migration
+ * once nothing reads it and the retention window has passed.
+ */
 export const costComplexityMultipliers = pgTable(
   "cost_complexity_multipliers",
   {

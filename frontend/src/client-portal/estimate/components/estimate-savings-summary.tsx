@@ -25,7 +25,9 @@ function SummaryRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex items-baseline justify-between gap-4">
       <span className="text-sm text-foreground-soft">{label}</span>
-      <span className="asc-tabular text-sm font-medium text-foreground">{value}</span>
+      <span className="asc-tabular text-sm font-medium text-foreground">
+        {value}
+      </span>
     </div>
   );
 }
@@ -45,7 +47,8 @@ export function EstimateSavingsSummary({
   originalPricing,
   currentPricing,
 }: EstimateSavingsSummaryProps) {
-  const currency = currentPricing?.currency ?? originalPricing?.currency ?? "USD";
+  const currency =
+    currentPricing?.currency ?? originalPricing?.currency ?? "USD";
   const originalPrice = originalPricing?.breakdown.finalPrice ?? null;
   const currentPrice = currentPricing?.breakdown.finalPrice ?? null;
   const savings =
@@ -101,11 +104,14 @@ export function EstimateSavingsSummary({
           >
             <span className="flex items-center gap-2 text-sm font-medium text-success">
               <TrendingDown className="h-4 w-4" strokeWidth={1.85} />
-              You Save
+              Estimated Cost Reduction
             </span>
+
             <span className="asc-tabular text-sm font-semibold text-success">
-              Approximately{" "}
-              <CountUp value={savings} format={(value) => formatMoney(value, currency)} />
+              <CountUp
+                value={savings}
+                format={(value) => formatMoney(value, currency)}
+              />
             </span>
           </motion.div>
         ) : null}

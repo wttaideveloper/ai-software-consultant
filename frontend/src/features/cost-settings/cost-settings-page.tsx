@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  ComplexityMultipliersSection,
   DiscountSection,
   HourlyRatesSection,
   PlatformMultipliersSection,
@@ -19,18 +18,12 @@ import {
   useCostConfiguration,
   useSaveCostConfiguration,
 } from "@/features/cost-settings/hooks/use-cost-settings";
-import type {
-  CostComplexityLevel,
-  CostConfiguration,
-  CostPlatform,
-  CostSettings,
-} from "@/types";
+import type { CostConfiguration, CostPlatform, CostSettings } from "@/types";
 import { staggerContainer } from "@/utils/motion";
 
 /** The preview's opening scenario — a mid-sized web project. */
 const DEFAULT_SCENARIO = {
   estimatedHours: 320,
-  complexityLevel: "MEDIUM" as CostComplexityLevel,
   platforms: ["WEB"] as CostPlatform[],
 };
 
@@ -87,7 +80,8 @@ export function CostSettingsPage() {
 
     saveConfiguration.mutate({
       hourlyRates: draft.hourlyRates,
-      complexityMultipliers: draft.complexityMultipliers,
+      // complexityMultipliers is deliberately not sent: it no longer affects any
+      // price and has no editor, so writing it back would be a pointless write.
       platformMultipliers: draft.platformMultipliers,
       settings: {
         riskBufferPercentage: draft.settings.riskBufferPercentage,
@@ -180,15 +174,6 @@ export function CostSettingsPage() {
             currencySymbol={draft.settings.currencySymbol}
             onChange={(hourlyRates) =>
               setDraft((current) => (current ? { ...current, hourlyRates } : current))
-            }
-          />
-
-          <ComplexityMultipliersSection
-            multipliers={draft.complexityMultipliers}
-            onChange={(complexityMultipliers) =>
-              setDraft((current) =>
-                current ? { ...current, complexityMultipliers } : current,
-              )
             }
           />
 

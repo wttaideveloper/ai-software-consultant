@@ -60,6 +60,12 @@ export type CostSettings = {
 };
 
 export type HourlyRate = { role: CostRole; hourlyRate: number };
+/**
+ * @deprecated Not used in pricing. The engine stopped applying a complexity
+ * multiplier — the AI already reflects complexity in the hours it returns, so
+ * multiplying again double-counted it. Type retained while the deprecated
+ * endpoint and stored rows exist.
+ */
 export type ComplexityMultiplier = {
   level: CostComplexityLevel;
   multiplier: number;
@@ -73,6 +79,7 @@ export type PlatformMultiplier = {
 export type CostConfiguration = {
   settings: CostSettings;
   hourlyRates: HourlyRate[];
+  /** @deprecated Still returned by the API, rendered and saved by nothing. */
   complexityMultipliers: ComplexityMultiplier[];
   platformMultipliers: PlatformMultiplier[];
 };
@@ -81,9 +88,9 @@ export type CostConfiguration = {
 export type CostBreakdown = {
   estimatedHours: number;
   hourlyRate: number;
-  complexityMultiplier: number;
   platformMultiplier: number;
   baseCost: number;
+  /** hours × rate × platform premium. No complexity multiplier is applied. */
   developmentCost: number;
   riskBufferPercentage: number;
   riskBufferAmount: number;
@@ -99,6 +106,7 @@ export type CostBreakdown = {
 export type CostPreview = {
   currency: CostCurrency;
   currencySymbol: string;
+  /** Informational label only — it does not influence any figure in `breakdown`. */
   complexityLevel: CostComplexityLevel;
   platforms: CostPlatform[];
   /** Platform labels that aren't priced — surfaced, never silently dropped. */
@@ -122,7 +130,6 @@ export type PreviewCostParams = {
   estimatedHours: number;
   hourlyRate?: number;
   role?: CostRole;
-  complexityLevel?: CostComplexityLevel;
   platforms?: CostPlatform[];
   riskBufferPercentage?: number;
   discountType?: CostDiscountType;

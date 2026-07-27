@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { costSettingsService } from "@/services/cost-settings.service";
 import type {
-  ComplexityMultiplier,
   CostConfiguration,
   HourlyRate,
   PlatformMultiplier,
@@ -44,12 +43,15 @@ export function useCostPreview(params: PreviewCostParams, enabled = true) {
 /**
  * Saves the whole rate card.
  *
- * One mutation rather than four buttons: the page has a single Save, and the
- * four endpoints are applied in sequence so a validation failure on, say, the
- * multipliers leaves the earlier writes already applied — which the toast says
- * plainly rather than pretending the save was atomic. (Cross-table atomicity
- * would need a single composite endpoint; the four resource endpoints are the
- * documented API.)
+ * One mutation rather than three buttons: the page has a single Save, and the
+ * three endpoints are applied in sequence so a validation failure on, say, the
+ * platform multipliers leaves the earlier writes already applied — which the
+ * toast says plainly rather than pretending the save was atomic. (Cross-table
+ * atomicity would need a single composite endpoint; the resource endpoints are
+ * the documented API.)
+ *
+ * Complexity multipliers are no longer written: they have no editor and no
+ * effect on price.
  */
 export function useSaveCostConfiguration() {
   const queryClient = useQueryClient();
@@ -58,16 +60,10 @@ export function useSaveCostConfiguration() {
     mutationFn: async (input: {
       settings?: UpdateCostSettingsPayload;
       hourlyRates?: HourlyRate[];
-      complexityMultipliers?: ComplexityMultiplier[];
       platformMultipliers?: PlatformMultiplier[];
     }) => {
       if (input.hourlyRates?.length) {
         await costSettingsService.updateHourlyRates(input.hourlyRates);
-      }
-      if (input.complexityMultipliers?.length) {
-        await costSettingsService.updateComplexityMultipliers(
-          input.complexityMultipliers,
-        );
       }
       if (input.platformMultipliers?.length) {
         await costSettingsService.updatePlatformMultipliers(

@@ -66,7 +66,11 @@ export type ClientLeadEstimate = {
 export type ClientLeadPricingBreakdown = {
   estimatedHours: number;
   hourlyRate: number;
-  complexityMultiplier: number;
+  /**
+   * @deprecated Only present on leads quoted before complexity multipliers were
+   * removed from the pricing engine. Never written for new leads.
+   */
+  complexityMultiplier?: number;
   platformMultiplier: number;
   baseCost: number;
   developmentCost: number;

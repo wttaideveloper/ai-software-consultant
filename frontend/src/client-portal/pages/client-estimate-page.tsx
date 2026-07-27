@@ -29,15 +29,25 @@ export function ClientEstimatePage() {
 
   const features = useClientConsultationStore((state) => state.features);
   const platforms = useClientConsultationStore((state) => state.platforms);
-  const otherPlatform = useClientConsultationStore((state) => state.otherPlatform);
+  const otherPlatform = useClientConsultationStore(
+    (state) => state.otherPlatform,
+  );
   const estimate = useClientConsultationStore((state) => state.estimate);
   const complexity = useClientConsultationStore((state) => state.complexity);
-  const recommendedTeam = useClientConsultationStore((state) => state.recommendedTeam);
+  const recommendedTeam = useClientConsultationStore(
+    (state) => state.recommendedTeam,
+  );
   const techStack = useClientConsultationStore((state) => state.techStack);
   const pricing = useClientConsultationStore((state) => state.pricing);
-  const featureBreakdown = useClientConsultationStore((state) => state.featureBreakdown);
-  const toggleFeatureIncluded = useClientConsultationStore((state) => state.toggleFeatureIncluded);
-  const setCurrentPricing = useClientConsultationStore((state) => state.setCurrentPricing);
+  const featureBreakdown = useClientConsultationStore(
+    (state) => state.featureBreakdown,
+  );
+  const toggleFeatureIncluded = useClientConsultationStore(
+    (state) => state.toggleFeatureIncluded,
+  );
+  const setCurrentPricing = useClientConsultationStore(
+    (state) => state.setCurrentPricing,
+  );
 
   const generateEstimate = useGenerateClientEstimate();
   const hasGeneratedRef = useRef(false);
@@ -51,7 +61,10 @@ export function ClientEstimatePage() {
   /** Effort of the features still switched on — the input the live reprice keys on. */
   const currentHours = useMemo(
     () =>
-      featureBreakdown.reduce((total, item) => (item.included ? total + item.hours : total), 0),
+      featureBreakdown.reduce(
+        (total, item) => (item.included ? total + item.hours : total),
+        0,
+      ),
     [featureBreakdown],
   );
 
@@ -95,13 +108,21 @@ export function ClientEstimatePage() {
   const requestGeneration = () => {
     if (features.length === 0) return;
     generateEstimate.mutate({
-      features: features.map(({ name, category, description, priority, complexity: featureComplexity }) => ({
-        name,
-        category,
-        description,
-        priority,
-        complexity: featureComplexity,
-      })),
+      features: features.map(
+        ({
+          name,
+          category,
+          description,
+          priority,
+          complexity: featureComplexity,
+        }) => ({
+          name,
+          category,
+          description,
+          priority,
+          complexity: featureComplexity,
+        }),
+      ),
       // Wizard-selected platforms drive the Cost Engine's platform premium; the AI
       // is only asked for effort. Same labels the live reprice uses, so generation
       // and every subsequent toggle price against identical platforms.
@@ -133,7 +154,11 @@ export function ClientEstimatePage() {
           icon={Calculator}
           title="No features yet"
           description="Detected features are needed before a project estimate can be generated."
-          action={<Button onClick={() => navigate("/features")}>Go to features</Button>}
+          action={
+            <Button onClick={() => navigate("/features")}>
+              Go to features
+            </Button>
+          }
         />
       </ClientLayout>
     );
@@ -142,9 +167,12 @@ export function ClientEstimatePage() {
   return (
     <ClientLayout>
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Project Estimate</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          Project Estimate
+        </h1>
         <p className="mt-1.5 text-sm text-muted">
-          Generated from your feature list. Toggle features off and your estimated cost updates instantly.
+          Generated from your feature list. Toggle features off and your
+          estimated cost updates instantly.
         </p>
 
         <div className="mt-6">
@@ -163,7 +191,9 @@ export function ClientEstimatePage() {
 
           {!isLoading && generateEstimate.isError && !estimate ? (
             <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border py-16 text-center">
-              <p className="text-sm text-muted">Something went wrong generating the estimate.</p>
+              <p className="text-sm text-muted">
+                Something went wrong generating the estimate.
+              </p>
               <button
                 type="button"
                 className="text-sm font-medium text-accent hover:text-accent-hover"
@@ -179,7 +209,9 @@ export function ClientEstimatePage() {
               <ProjectCostCard
                 pricing={currentPricing}
                 isUpdating={canReprice && priceQuery.isFetching}
-                noFeaturesSelected={featureBreakdown.length > 0 && currentHours === 0}
+                noFeaturesSelected={
+                  featureBreakdown.length > 0 && currentHours === 0
+                }
               />
 
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -191,11 +223,19 @@ export function ClientEstimatePage() {
                 <MetricCard label="Complexity" value={complexity ?? "—"} />
                 <MetricCard
                   label="Recommended Team"
-                  value={recommendedTeam ? `${recommendedTeam} member${recommendedTeam === 1 ? "" : "s"}` : "—"}
+                  value={
+                    recommendedTeam
+                      ? `${recommendedTeam} member${recommendedTeam === 1 ? "" : "s"}`
+                      : "—"
+                  }
                 />
                 <MetricCard
                   label="Technology Stack"
-                  value={techStack && techStack.length > 0 ? techStack.join(", ") : "Not available"}
+                  value={
+                    techStack && techStack.length > 0
+                      ? techStack.join(", ")
+                      : "Not available"
+                  }
                   unavailable={!techStack || techStack.length === 0}
                 />
               </div>
@@ -216,7 +256,9 @@ export function ClientEstimatePage() {
                     <FeatureBreakdownRow
                       key={item.featureId}
                       item={item}
-                      onToggleIncluded={() => toggleFeatureIncluded(item.featureId)}
+                      onToggleIncluded={() =>
+                        toggleFeatureIncluded(item.featureId)
+                      }
                     />
                   ))}
                 </div>
@@ -240,7 +282,9 @@ export function ClientEstimatePage() {
 
               {estimate.risks.length > 0 ? (
                 <div>
-                  <h2 className="text-sm font-semibold tracking-tight text-foreground-soft">Risks</h2>
+                  <h2 className="text-sm font-semibold tracking-tight text-foreground-soft">
+                    Risks
+                  </h2>
                   <ul className="mt-3 flex flex-col gap-1.5 text-sm text-foreground-soft">
                     {estimate.risks.map((item) => (
                       <li key={item} className="flex gap-2">
@@ -261,21 +305,20 @@ export function ClientEstimatePage() {
           or share state with the estimate. See client-mockups-page.tsx.
         */}
         <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6">
-          <Button type="button" variant="secondary" onClick={() => navigate("/features")}>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => navigate("/features")}
+          >
             Back
           </Button>
 
           <div className="flex items-center gap-3">
             <Button
               type="button"
-              variant="outline"
-              onClick={() => setIsRegenerateConfirmOpen(true)}
-              disabled={!estimate || generateEstimate.isPending}
+              onClick={() => navigate("/mockups")}
+              disabled={!estimate}
             >
-              <RotateCcw className="h-4 w-4" />
-              Regenerate
-            </Button>
-            <Button type="button" onClick={() => navigate("/mockups")} disabled={!estimate}>
               Continue
             </Button>
           </div>

@@ -238,11 +238,17 @@ export class CostSettingsService {
    * else a blended rate (the mean of the configured roles). Blended is the
    * honest default when effort has not been split by discipline: the AI returns
    * total hours, not hours per role.
+   *
+   * `complexityLevel` is carried through to the response as a LABEL ONLY. It has
+   * not affected the price since complexity multipliers were removed from the
+   * engine — the AI already reflects complexity in the hours it returns, so
+   * multiplying by a tier on top of that charged for it twice.
    */
   async priceEstimate(
     organizationId: string,
     input: {
       estimatedHours: number;
+      /** Informational only — reported back on the DTO, never priced. */
       complexityLevel?: CostComplexityLevel;
       /** Enum keys, or free-text labels resolved via the alias table. */
       platforms?: CostPlatform[];
@@ -257,10 +263,9 @@ export class CostSettingsService {
   ): Promise<CostPreviewDto> {
     const config = await this.getConfiguration(organizationId);
 
+    // Reported on the DTO for display/reporting; deliberately not looked up
+    // against config.complexityMultipliers, which is deprecated dead data.
     const complexityLevel = input.complexityLevel ?? "MEDIUM";
-    const complexityMultiplier =
-      config.complexityMultipliers.find((row) => row.level === complexityLevel)
-        ?.multiplier ?? 1;
 
     const resolvedLabels = input.platformLabels
       ? resolvePlatformKeys(input.platformLabels)
@@ -313,7 +318,6 @@ export class CostSettingsService {
       estimatedHours: input.estimatedHours,
       rateCard: {
         hourlyRate,
-        complexityMultiplier,
         platformMultiplier,
         riskBufferPercentage:
           input.riskBufferPercentage ?? config.settings.riskBufferPercentage,
@@ -342,7 +346,6 @@ export class CostSettingsService {
   ): Promise<CostPreviewDto> {
     return this.priceEstimate(organizationId, {
       estimatedHours: query.estimatedHours,
-      complexityLevel: query.complexityLevel,
       platforms: query.platforms,
       hourlyRate: query.hourlyRate,
       role: query.role,
@@ -360,8 +363,12 @@ export class CostSettingsService {
   }
 
   /**
-   * Prices what the AI produced. The only translation point between the model's
-   * LOW/MEDIUM/HIGH complexity and the four pricing tiers.
+   * Prices what the AI produced.
+   *
+   * The model's LOW/MEDIUM/HIGH is translated to the four-tier vocabulary purely
+   * so the estimate can display a consistent label — it no longer selects a
+   * multiplier. Price depends only on hours, rates, platforms, risk, discount
+   * and tax.
    */
   async priceAiEstimate(
     organizationId: string,

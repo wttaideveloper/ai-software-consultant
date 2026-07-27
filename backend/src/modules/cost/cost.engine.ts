@@ -1,8 +1,4 @@
-import {
-  PLATFORM_LABEL_ALIASES,
-  type CostComplexityLevel,
-  type CostPlatform,
-} from "./cost.constants.js";
+import { PLATFORM_LABEL_ALIASES, type CostPlatform } from "./cost.constants.js";
 
 /**
  * The pricing engine.
@@ -13,7 +9,7 @@ import {
  * the same calculation.
  *
  * ─── The formula ────────────────────────────────────────────────────────────
- *   development = hours × hourlyRate × complexityMultiplier × platformMultiplier
+ *   development = hours × hourlyRate × platformMultiplier
  *   risk        = development × riskBuffer%
  *   subtotal    = development + risk
  *   discount    = capped by maxDiscount%
@@ -24,11 +20,19 @@ import {
  * Order matters and is fixed here rather than at each call site: risk is charged
  * on the work, discount is granted on what the client would otherwise pay, and
  * tax is charged on what they actually pay.
+ *
+ * ─── Why there is no complexity multiplier ──────────────────────────────────
+ * There used to be one, between the base cost and the platform premium. It was
+ * removed because it double-counted complexity: the AI already prices complexity
+ * INTO the hours it returns — a harder project is estimated at more hours — so
+ * multiplying those hours again by a complexity tier charged for the same thing
+ * twice. Complexity survives as an informational label on the estimate (see
+ * CostPreviewDto.complexityLevel); it no longer moves money. Do not reintroduce
+ * a multiplier here without first changing what the AI is asked to return.
  */
 
 export type CostRateCard = {
   hourlyRate: number;
-  complexityMultiplier: number;
   platformMultiplier: number;
   riskBufferPercentage: number;
   taxEnabled: boolean;
@@ -50,11 +54,10 @@ export type CostCalculationInput = {
 export type CostBreakdown = {
   estimatedHours: number;
   hourlyRate: number;
-  complexityMultiplier: number;
   platformMultiplier: number;
   /** hours × rate, before any multiplier — shown so the maths is auditable. */
   baseCost: number;
-  /** After complexity and platform multipliers. */
+  /** After the platform premium. */
   developmentCost: number;
   riskBufferPercentage: number;
   riskBufferAmount: number;
@@ -131,9 +134,7 @@ export function calculateCost({
   const hours = Math.max(0, estimatedHours);
   const baseCost = round2(hours * rateCard.hourlyRate);
 
-  const developmentCost = round2(
-    baseCost * rateCard.complexityMultiplier * rateCard.platformMultiplier,
-  );
+  const developmentCost = round2(baseCost * rateCard.platformMultiplier);
 
   const riskBufferAmount = round2(
     developmentCost * (rateCard.riskBufferPercentage / 100),
@@ -163,7 +164,6 @@ export function calculateCost({
   return {
     estimatedHours: hours,
     hourlyRate: rateCard.hourlyRate,
-    complexityMultiplier: rateCard.complexityMultiplier,
     platformMultiplier: rateCard.platformMultiplier,
     baseCost,
     developmentCost,
@@ -177,6 +177,3 @@ export function calculateCost({
     finalPrice: round2(taxable + taxAmount),
   };
 }
-
-/** Complexity tiers a caller may price against, for exhaustive UI rendering. */
-export type { CostComplexityLevel };

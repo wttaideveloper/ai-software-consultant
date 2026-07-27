@@ -198,7 +198,7 @@ The old consultation widgets (status totals, recent consultations, AI progress, 
 `modules/cost/` turns effort into money. **The AI is never asked for a cost** — it returns hours, complexity and a breakdown; `cost.engine.ts` prices them from the organization's rate card, so pricing policy is data an admin owns rather than a number a model invents.
 
 ```
-development = hours × hourlyRate × complexityMultiplier × platformMultiplier
+development = hours × hourlyRate × platformMultiplier
 risk        = development × riskBuffer%
 subtotal    = development + risk
 discount    = capped by maxDiscount%      (a FIXED discount is capped too)
@@ -207,9 +207,11 @@ finalPrice  = subtotal − discount + tax
 ```
 
 - **`cost.engine.ts` is pure** — no DB, no AI, no clock. That is what makes the live preview and a real estimate provably the same calculation. Every published figure is rounded to 2dp so a breakdown's parts sum to its total.
+- **There is no complexity multiplier, deliberately.** One used to sit between base cost and the platform premium; it was removed because it **double-counted complexity** — the AI already reflects difficulty in the hours it returns, so scaling those hours by a complexity tier charged for the same thing twice. Price now depends only on hours, rates, platforms, risk, discount and tax. Do not reintroduce one without first changing what the AI is asked to return.
+- **Complexity survives as a label.** `AI_COMPLEXITY_TO_COST_LEVEL` still maps the model's LOW/MEDIUM/HIGH onto the four-tier vocabulary for `CostPreviewDto.complexityLevel`, estimate summaries and the frozen lead snapshot — display and reporting only, never money. ENTERPRISE remains unreachable from an AI signal.
+- **`cost_complexity_multipliers` is deprecated dead data.** The table, its rows, `DEFAULT_COMPLEXITY_MULTIPLIERS`, and `GET|PATCH /api/complexity-multipliers` are all retained so configured values are not destroyed and no caller 404s — but nothing reads them, and the Admin UI has no editor. Drop them in a later, deliberate migration.
 - **Multi-platform** uses additive premiums, `1 + Σ(multiplier − 1)`, not a product: a 1.0 platform adds nothing, more platforms always cost more, and three 1.4× platforms come to 2.2× rather than 2.74×.
 - **Rate resolution**: explicit rate → the named role's rate → a blended mean of all roles (`rateBasis` says which was used). The AI returns total hours, not hours per discipline, so blended is the honest default.
-- **Complexity vocabularies differ.** The AI reports LOW/MEDIUM/HIGH; pricing has four tiers. `AI_COMPLEXITY_TO_COST_LEVEL` in `cost.constants.ts` is the only translation point, and ENTERPRISE is deliberately unreachable from an AI signal.
 - **Platform labels** (free text from leads/consultations) resolve through `PLATFORM_LABEL_ALIASES`; anything unrecognised is returned as `unpricedPlatforms` rather than silently priced as Web.
 - **Defaults are provisioned lazily** on an organization's first read (`ensureDefaults`, `onConflictDoNothing` on every table) — a fresh install must not look broken because nobody ran a seed.
 - **Estimation integration**: `estimation.service.ts` calls `costSettingsService.priceAiEstimate()` and returns `pricing` on the DTO. It is **derived at read time, not stored** — a rate-card change reprices open estimates, and freezing a price is the proposal's job. A pricing failure logs and yields `pricing: null` rather than breaking the estimate.
@@ -366,7 +368,7 @@ POST         /api/features/match
 GET|PATCH    /api/cost-settings                           risk, currency, tax, discount rules
 GET          /api/cost-settings/preview                    live calculator; calculates, persists nothing
 GET|PATCH    /api/hourly-rates                             per-role rates (batch save)
-GET|PATCH    /api/complexity-multipliers                   per-tier multipliers (batch save)
+GET|PATCH    /api/complexity-multipliers                   DEPRECATED — no pricing effect
 GET|PATCH    /api/platform-multipliers                     per-platform multipliers (batch save)
 
 # Lead proposals — versioned proposals for a client lead (authorize(PROPOSAL_*)):

@@ -78,6 +78,11 @@ export const updateHourlyRatesSchema = z.object({
 
 export type UpdateHourlyRatesInput = z.infer<typeof updateHourlyRatesSchema>;
 
+/**
+ * @deprecated Complexity multipliers no longer affect any price — the engine
+ * stopped reading them. Kept so the existing endpoint and stored rows continue
+ * to work; delete together with the table when the data is no longer needed.
+ */
 export const updateComplexityMultipliersSchema = z.object({
   multipliers: z
     .array(
@@ -118,7 +123,8 @@ export const previewCostQuerySchema = z.object({
   /** Explicit rate wins; otherwise the role's rate; otherwise a blended rate. */
   hourlyRate: z.coerce.number().positive().optional(),
   role: z.enum(costRoleEnum.enumValues).optional(),
-  complexityLevel: z.enum(costComplexityLevelEnum.enumValues).optional(),
+  // No complexityLevel: complexity does not affect price, so the preview has
+  // nothing to vary by and the control was removed from the UI.
   /**
    * Repeatable query param (?platforms=WEB&platforms=IOS). A single value
    * arrives as a string, so it is normalized to an array before validation.

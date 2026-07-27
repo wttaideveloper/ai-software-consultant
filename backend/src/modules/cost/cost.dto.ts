@@ -46,6 +46,12 @@ export type PlatformMultiplierDto = {
 export type CostConfigurationDto = {
   settings: CostSettingsDto;
   hourlyRates: HourlyRateDto[];
+  /**
+   * @deprecated No longer used in pricing. Complexity multipliers double-counted
+   * complexity (the AI already reflects it in the hours it returns), so the
+   * engine stopped reading them. Still returned, and still stored, so existing
+   * rows and any external reader keep working — remove once nothing consumes it.
+   */
   complexityMultipliers: ComplexityMultiplierDto[];
   platformMultipliers: PlatformMultiplierDto[];
 };
@@ -58,6 +64,10 @@ export type CostConfigurationDto = {
 export type CostPreviewDto = {
   currency: CostCurrency;
   currencySymbol: string;
+  /**
+   * Informational only. Retained for display, reporting and the frozen lead
+   * snapshot — it has no effect on any figure in `breakdown`.
+   */
   complexityLevel: CostComplexityLevel;
   platforms: CostPlatform[];
   /** Platform labels the caller supplied that are not priced — never silently dropped. */

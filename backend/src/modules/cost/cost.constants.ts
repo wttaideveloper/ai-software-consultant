@@ -28,6 +28,12 @@ export const DEFAULT_HOURLY_RATES: Record<CostRole, string> = {
   AI_DEVELOPMENT: "2000.00",
 };
 
+/**
+ * @deprecated Not used in pricing. Complexity multipliers were removed from the
+ * engine because they double-counted complexity — the AI already reflects it in
+ * the hours it returns. Still provisioned so the deprecated table and endpoint
+ * keep behaving consistently for existing installs.
+ */
 export const DEFAULT_COMPLEXITY_MULTIPLIERS: Record<CostComplexityLevel, string> = {
   SIMPLE: "1.000",
   MEDIUM: "1.200",
@@ -54,12 +60,13 @@ export const CURRENCY_SYMBOLS: Record<CostCurrency, string> = {
 };
 
 /**
- * The AI reports complexity as LOW/MEDIUM/HIGH (`feature_complexity`); pricing
- * has four tiers. This is the only place the two vocabularies meet.
+ * The AI reports complexity as LOW/MEDIUM/HIGH (`feature_complexity`); the
+ * four-tier vocabulary is what estimates and reports display. This is the only
+ * place the two meet.
  *
- * ENTERPRISE is deliberately unreachable from an AI signal: it is a commercial
- * judgement about the engagement, not something a model can infer from a
- * requirement summary, so it stays a manual override.
+ * Purely a display/reporting translation — complexity has not influenced price
+ * since multipliers were removed from the engine. ENTERPRISE remains unreachable
+ * from an AI signal: it is a commercial judgement, not something a model infers.
  */
 export const AI_COMPLEXITY_TO_COST_LEVEL: Record<
   "LOW" | "MEDIUM" | "HIGH",

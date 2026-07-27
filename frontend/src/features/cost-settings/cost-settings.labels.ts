@@ -21,22 +21,18 @@ export const COST_ROLE_LABELS: Record<CostRole, string> = {
   AI_DEVELOPMENT: "AI Development",
 };
 
+/**
+ * Display names for the complexity tier reported on an estimate.
+ *
+ * Informational only — complexity does not affect price. The per-tier pricing
+ * hints that used to sit beside this were removed with the multipliers, since
+ * they described a pricing effect that no longer exists.
+ */
 export const COST_COMPLEXITY_LABELS: Record<CostComplexityLevel, string> = {
   SIMPLE: "Simple",
   MEDIUM: "Medium",
   COMPLEX: "Complex",
   ENTERPRISE: "Enterprise",
-};
-
-/**
- * ENTERPRISE has no AI counterpart on purpose — the model reports LOW/MEDIUM/
- * HIGH, which map to Simple/Medium/Complex. Enterprise is a commercial call.
- */
-export const COST_COMPLEXITY_HINTS: Record<CostComplexityLevel, string> = {
-  SIMPLE: "AI complexity: Low",
-  MEDIUM: "AI complexity: Medium",
-  COMPLEX: "AI complexity: High",
-  ENTERPRISE: "Manual selection only",
 };
 
 export const COST_PLATFORM_LABELS: Record<CostPlatform, string> = {
