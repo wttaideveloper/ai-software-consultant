@@ -20,21 +20,33 @@ import {
 } from "./client-mockups.validation.js";
 
 /**
- * Shared style contract appended to every screen's prompt.
+ * Shared style contract appended to every screen's prompt — the second half of the
+ * CONCEPT_SCREENS prompt in prompt.builder.ts. Edit the two together.
  *
- * The single hardest requirement is legible, real English text: gpt-image-1 can
- * render typography well, but it drifts toward invented, misspelled filler when
- * not held to it — and garbled labels are exactly what makes a concept preview
- * look unprofessional. The per-screen prompt supplies the literal labels to draw;
- * this directive enforces that they be rendered as real, correctly spelled words.
+ * Two requirements are load-bearing here, for different reasons.
+ *
+ * Legible, real English text: gpt-image-1 can render typography well, but it drifts
+ * toward invented, misspelled filler when not held to it — and garbled labels are
+ * exactly what makes a concept preview look unprofessional. The per-screen prompt
+ * supplies the literal labels to draw; this directive enforces that they be rendered
+ * as real, correctly spelled words.
+ *
+ * Deference to the per-screen art direction: the planner chooses a palette per project,
+ * but the image model has a strong prior toward a generic blue-and-white dashboard and
+ * will quietly revert to it. Restating any house palette here would guarantee that every
+ * project looks identical, so this directive deliberately names NO colours of its own and
+ * instead makes the art direction above binding.
  */
 const IMAGE_STYLE_DIRECTIVE = [
-  "High-fidelity, production-quality user interface design of a single modern application screen — the quality an expert product designer would ship, comparable to Figma community templates, Dribbble, Linear, Stripe, Notion, and Apple's design standards. Not a wireframe, not low-detail.",
-  "Realistic modern layout: clean spacing, clear visual hierarchy, rounded cards, soft subtle shadows, consistent line-style iconography, professional typography, and realistic navigation.",
+  "Render exactly the interface described above at flagship 2026 product quality — the standard of work a top-tier design studio would present to win a client, matching the polish of Stripe, Linear, Notion, Airbnb, Apple, Figma and Vercel without copying any of their branding.",
+  "The ART DIRECTION stated above is binding: use those exact hex colours, that light or dark mode, that typography character and that corner radius. Do NOT substitute your own palette, and do NOT fall back to a generic blue-and-white dashboard.",
+  "Craft: a deliberate visual hierarchy with one clear focal point, generous whitespace, a consistent spacing rhythm, layered surfaces, crisp hairline borders, soft realistic multi-layer shadows, tasteful gradients or glass blur where the art direction calls for them, precise line-style icons, and a confident type scale pairing a large heading with calm supporting text.",
+  "Fill every region with realistic, specific content — real list rows, real metric values, real menu items, real form fields — never empty boxes, grey placeholder rectangles, or skeleton bars.",
   "ALL text in the interface MUST be real, correctly spelled English and match the labels described above. Every heading, button, menu item, tab, and form field must read as a genuine English word or phrase (for example: Login, Sign In, Email, Password, Continue, Search, Dashboard, Settings, Notifications, Cart, Checkout, Order Summary, Payment, Profile, Save, Cancel, Back).",
   "Absolutely NO invented words, misspellings, random letters or symbols, gibberish, lorem ipsum, or placeholder text, and NEVER render text as blurred or abstract bars. If unsure of a label, use a common correct English UI term.",
-  "Flat, modern, professional colour palette with strong contrast and generous whitespace.",
-  "No logos, brand marks, company names, trademarks, or watermarks. Avoid photorealistic human faces and stock-photo people (simple circular avatar placeholders are fine). No 3D renders, no cartoon or illustration style, no abstract art, and no drop shadow on the outer frame.",
+  "Never produce a wireframe, a low-fidelity sketch, a dated Bootstrap or Material-2 layout, a plain unstyled form, or a generic admin template.",
+  "Photographic content (food, products, interiors, destinations) is encouraged where the screen calls for it and must look like professional editorial photography. Keep people incidental and small — no close-up human faces; simple circular avatar placeholders are fine. A tasteful flat vector spot illustration inside the interface is welcome for an empty state or onboarding panel, but the screen itself must be a real interface, never an illustration.",
+  "No logos, brand marks, company names, trademarks, or watermarks. No 3D renders, no cartoon styling, no abstract art, no device photography, no hands, no desk scenes, and no perspective tilt — render the screen straight on, with no drop shadow on the outer edge of the image itself.",
 ].join(" ");
 
 /** One batch per IP per window — the cheap first line of defence. */
