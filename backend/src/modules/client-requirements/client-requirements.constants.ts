@@ -35,4 +35,4 @@ export const DEFAULT_QUESTION_COUNT = 9;
  */
 export const MAX_QUESTIONS_HARD_CAP = 15;
 
-export const PROMPT_VERSION = "1.1.0";
+export const PROMPT_VERSION = "1.2.0";

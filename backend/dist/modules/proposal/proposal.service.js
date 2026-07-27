@@ -10,7 +10,7 @@ const ai_orchestrator_js_1 = require("../ai/ai.orchestrator.js");
 const prompt_constants_js_1 = require("../prompts/prompt.constants.js");
 const proposal_repository_js_1 = require("./proposal.repository.js");
 const proposal_validation_js_1 = require("./proposal.validation.js");
-const PROMPT_VERSION = "1.0.0";
+const PROMPT_VERSION = "1.1.0";
 function toProposalDto(proposal) {
     return {
         id: proposal.id,

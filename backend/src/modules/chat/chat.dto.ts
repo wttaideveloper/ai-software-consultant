@@ -37,11 +37,19 @@ export type DiscoveryTopics = {
   fileUploads: DiscoveryTopicStatus;
   locationMaps: DiscoveryTopicStatus;
   thirdPartyApis: DiscoveryTopicStatus;
+  aiFeatures: DiscoveryTopicStatus;
   // Group C — optional; never blocks completion, missing ones become assumptions.
-  timeline: DiscoveryTopicStatus;
-  budget: DiscoveryTopicStatus;
+  //
+  // Timeline and Budget were deliberately removed from this set: the client is
+  // never asked how long the project should take or what it should cost. Those
+  // are commercial decisions the consultancy makes afterwards, and the system
+  // derives them from the requirements (estimation.service.ts for effort,
+  // cost.engine.ts for price). Do not reintroduce them as discovery topics —
+  // a topic here is, by definition, something the AI is allowed to ask about.
   deployment: DiscoveryTopicStatus;
   security: DiscoveryTopicStatus;
+  compliance: DiscoveryTopicStatus;
+  performance: DiscoveryTopicStatus;
   scalability: DiscoveryTopicStatus;
   futureEnhancements: DiscoveryTopicStatus;
 };

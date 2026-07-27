@@ -17,6 +17,14 @@ const discoveryTopicStatusSchema = zod_1.z.enum([
     "missing",
     "not_applicable",
 ]);
+/**
+ * A topic added after assistant messages were already being persisted. Defaulted
+ * rather than required so an in-flight conversation, whose stored `metadata.topics`
+ * predates the key, still parses and keeps its Group A/B progress instead of being
+ * reset to a blank topic map on the next turn. Removed keys (timeline, budget) need
+ * no such handling — Zod strips unknown keys.
+ */
+const newTopicSchema = discoveryTopicStatusSchema.default("missing");
 exports.discoveryTopicsSchema = zod_1.z.object({
     // Group A
     projectOverview: discoveryTopicStatusSchema,
@@ -35,11 +43,13 @@ exports.discoveryTopicsSchema = zod_1.z.object({
     fileUploads: discoveryTopicStatusSchema,
     locationMaps: discoveryTopicStatusSchema,
     thirdPartyApis: discoveryTopicStatusSchema,
-    // Group C
-    timeline: discoveryTopicStatusSchema,
-    budget: discoveryTopicStatusSchema,
+    aiFeatures: newTopicSchema,
+    // Group C — no timeline/budget here by design; see the note on DiscoveryTopics
+    // in chat.dto.ts.
     deployment: discoveryTopicStatusSchema,
     security: discoveryTopicStatusSchema,
+    compliance: newTopicSchema,
+    performance: newTopicSchema,
     scalability: discoveryTopicStatusSchema,
     futureEnhancements: discoveryTopicStatusSchema,
 });

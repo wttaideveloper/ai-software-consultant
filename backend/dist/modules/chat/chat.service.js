@@ -10,7 +10,7 @@ const ai_orchestrator_js_1 = require("../ai/ai.orchestrator.js");
 const prompt_constants_js_1 = require("../prompts/prompt.constants.js");
 const chat_repository_js_1 = require("./chat.repository.js");
 const chat_validation_js_1 = require("./chat.validation.js");
-const PROMPT_VERSION = "1.3.0";
+const PROMPT_VERSION = "1.4.0";
 const DISCOVERY_COMPLETE_MESSAGE = "Thank you. I now have sufficient information to prepare the project requirements.";
 const GROUP_A_TOPICS = [
     "projectOverview",
@@ -37,12 +37,21 @@ const GROUP_B_TIER2_TOPICS = [
     "fileUploads",
     "locationMaps",
     "thirdPartyApis",
+    "aiFeatures",
 ];
+/**
+ * Timeline and Budget used to head this list. They were removed because a topic
+ * here is something the AI is licensed to ask the client about, and the client is
+ * never asked how long the project should take or what it should cost — the system
+ * derives effort in estimation.service.ts and price in cost.engine.ts once the
+ * requirements are known. Compliance and Performance took their place as genuine
+ * requirement topics. Do not reintroduce a commercial topic here.
+ */
 const GROUP_C_TOPICS = [
-    "timeline",
-    "budget",
     "deployment",
     "security",
+    "compliance",
+    "performance",
     "scalability",
     "futureEnhancements",
 ];
@@ -63,10 +72,11 @@ const DISCOVERY_TOPIC_LABELS = {
     fileUploads: "File Uploads",
     locationMaps: "Location/Maps",
     thirdPartyApis: "Third-party APIs",
-    timeline: "Timeline",
-    budget: "Budget",
+    aiFeatures: "AI Features",
     deployment: "Deployment",
     security: "Security",
+    compliance: "Compliance",
+    performance: "Performance Expectations",
     scalability: "Scalability",
     futureEnhancements: "Future Enhancements",
 };
@@ -258,13 +268,15 @@ class ChatService {
                     id: organization.id,
                     name: organization.name,
                 },
+                // budgetRange and timeline are deliberately not passed. They remain on the
+                // consultation record as consultant-owned CRM fields, but discovery must not
+                // see them: anchoring the interview on a commercial figure is what led the
+                // AI to ask the client to confirm or revise it.
                 consultation: {
                     id: consultation.id,
                     title: consultation.title,
                     industry: consultation.industry,
                     projectType: consultation.projectType,
-                    budgetRange: consultation.budgetRange,
-                    timeline: consultation.timeline,
                     status: consultation.status,
                 },
                 conversationHistory,

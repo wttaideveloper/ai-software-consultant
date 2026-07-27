@@ -55,7 +55,7 @@ const STEPS: Array<{ icon: LucideIcon; title: string; description: string }> = [
   {
     icon: MessageSquareText,
     title: "Describe your idea",
-    description: "Tell us what you want to build, your timeline, and target platforms.",
+    description: "Tell us what you want to build and which platforms you need it on.",
   },
   {
     icon: Sparkles,

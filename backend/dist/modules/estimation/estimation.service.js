@@ -11,7 +11,7 @@ const cost_service_js_1 = require("../cost/cost.service.js");
 const prompt_constants_js_1 = require("../prompts/prompt.constants.js");
 const estimation_repository_js_1 = require("./estimation.repository.js");
 const estimation_validation_js_1 = require("./estimation.validation.js");
-const PROMPT_VERSION = "1.0.0";
+const PROMPT_VERSION = "1.1.0";
 function toEstimationDto(estimation, pricing = null) {
     return {
         pricing,

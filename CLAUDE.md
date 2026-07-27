@@ -246,6 +246,18 @@ It is **its own Client Portal step at `/mockups`** (`client-mockups-page.tsx`), 
 - `frontend/src/client-portal/requirements-wizard/question-plan.ts` **mirrors** those counts, because the portal must show "1 of N" while question one is still in flight. The backend constants are the source of truth — **change one, change both**. The discovery endpoints' response shape (`{ question, completed }`) is deliberately untouched by this.
 - Progress is derived from the transcript (`conversation.filter(role === "assistant").length`), so there is no counter to drift out of sync with the interview. `QuestionProgress` renders on that step only — the later single-screen steps have nothing to count through.
 
+### Discovery never asks about money or dates
+
+**No discovery prompt may ask the client for a budget, cost, price, timeline, launch/delivery date, or project duration.** Discovery establishes *what* to build; the system derives *how long* (`estimation.service.ts` → `estimatedHours`/`estimatedWeeks`/`teamSize`) and *how much* (`cost.engine.ts` from the org's rate card). Asking the client to supply either invites them to anchor a number the consultancy is supposed to decide.
+
+This is enforced in both discovery prompts in `prompt.builder.ts` — `CLIENT_REQUIREMENT_DISCOVERY` (Client Portal wizard) and `CONSULTATION` (admin chat) — which carry an explicit prohibition plus a "if the client volunteers a budget or a date, acknowledge and move on, never follow up" clause.
+
+- **`{{budgetRange}}` and `{{timeline}}` are referenced by no template.** `injectConsultationContext` still populates them (they stay on `ConsultationPromptContext` and `RESERVED_TEMPLATE_VARIABLES` for compatibility), but an unreferenced variable never reaches the model, so nothing feeds a commercial figure into an AI call. Re-adding either placeholder to a template silently reintroduces the anchoring.
+- **The consultation record keeps its `budgetRange`/`timeline` columns.** They are consultant-owned CRM fields set in the admin Consultation form — not something a client is asked. `chat.service.ts` deliberately omits them from the consultation context it passes to discovery.
+- **`DiscoveryTopics` has no `timeline` or `budget` key** (`chat.dto.ts` / `chat.validation.ts` / `chat.service.ts`'s `GROUP_C_TOPICS`). A topic in that map is by definition something the AI may ask about, so a commercial topic must never be added back. `compliance` and `performance` replaced them in Group C, and `aiFeatures` joined Group B Tier 2. Their removal also stops `buildFinalAssumptions()` emitting "Assumed default approach for Budget/Timeline".
+- **New topic keys are defaulted, not required, in `discoveryTopicsSchema`** (`newTopicSchema`). Assistant messages persisted before a key existed still parse out of `metadata.topics`, so an in-flight consultation keeps its Group A/B progress instead of resetting. Removed keys need no such handling — Zod strips unknown keys.
+- `ESTIMATION` and `PROPOSAL` were cleaned of the same anchoring: estimation is told to derive effort purely from requirements, and the proposal is told to take its timeline from the supplied estimation and never refer to a client-given budget or date. Their JSON contracts are unchanged.
+
 ### Proposals
 
 A client lead has **many proposal versions** (`lead_proposals`), not one draft, and **versions are never overwritten or lost**.

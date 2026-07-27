@@ -19,7 +19,7 @@ import {
   type UpdateEstimationInput,
 } from "./estimation.validation.js";
 
-const PROMPT_VERSION = "1.0.0";
+const PROMPT_VERSION = "1.1.0";
 
 function toEstimationDto(
   estimation: ProjectEstimationRecord,
