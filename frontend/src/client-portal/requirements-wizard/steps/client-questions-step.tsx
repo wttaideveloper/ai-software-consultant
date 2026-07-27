@@ -5,6 +5,8 @@ import {
   useNextDiscoveryQuestion,
   useStartDiscovery,
 } from "@/client-portal/requirements-wizard/hooks/use-client-discovery";
+import { QuestionProgress } from "@/client-portal/requirements-wizard/components/question-progress";
+import { resolveQuestionCount } from "@/client-portal/requirements-wizard/question-plan";
 import {
   REQUIREMENTS_WIZARD_BASE_PATH,
   REQUIREMENTS_WIZARD_COMPLETE_PATH,
@@ -16,11 +18,14 @@ import { useWizardNavigation } from "@/client-portal/wizard/use-wizard-navigatio
 import { useClientConsultationStore } from "@/store/client-consultation.store";
 
 /**
- * No hardcoded questions and no fixed count: the first question comes from
- * POST /api/client/questions/start, and every subsequent one from
- * POST /api/client/questions/next — the AI alone decides both the content and
- * when enough information has been gathered (`completed: true`), at which point
+ * No hardcoded questions: the first comes from POST /api/client/questions/start and
+ * every subsequent one from POST /api/client/questions/next — the AI decides all of
+ * the content, and the server ends the interview (`completed: true`), at which point
  * this step hands off to Requirement Summary automatically.
+ *
+ * How MANY questions is not the AI's call, though: it follows from the consultation
+ * length the client picked, which is what makes a countable "X of N" possible at all.
+ * The count is resolved from that choice, never hardcoded — see question-plan.ts.
  */
 export function ClientQuestionsStep() {
   const navigate = useNavigate();
@@ -84,12 +89,31 @@ export function ClientQuestionsStep() {
 
   const isLoadingFirstQuestion = startDiscovery.isPending && !currentQuestion;
 
+  const totalQuestions = resolveQuestionCount(consultationTime);
+  /**
+   * Every assistant turn in the transcript is one question asked, so the count of
+   * them IS the current position — no separate counter to drift out of sync with
+   * the conversation. Floored at 1 so the very first screen reads "1 of N" while
+   * question one is still being generated, rather than "0 of N".
+   */
+  const questionNumber = Math.max(
+    conversation.filter((turn) => turn.role === "assistant").length,
+    1,
+  );
+  const showProgress = Boolean(currentQuestion) || isLoadingFirstQuestion;
+
   return (
     <div>
       <h1 className="text-xl font-semibold tracking-tight text-foreground">AI Questions</h1>
       <p className="mt-1.5 text-sm text-muted">
         A few follow-up questions personalized to your project idea.
       </p>
+
+      {showProgress ? (
+        <div className="mt-5">
+          <QuestionProgress current={questionNumber} total={totalQuestions} />
+        </div>
+      ) : null}
 
       <div className="mt-6">
         {isLoadingFirstQuestion ? (

@@ -233,6 +233,15 @@ It is **its own Client Portal step at `/mockups`** (`client-mockups-page.tsx`), 
 - **Caching identity is `consultationKey`**, a UUID minted client-side into the sessionStorage wizard state. The portal has no server-side consultation (see `client-leads.ts`), so this is the only thing that makes "generate once, never on refresh" possible without accounts. `reset()` mints a fresh one, so a new consultation never inherits the previous one's mockups.
 - **Strictly downstream of the estimate.** Its own module, endpoint, table, query and now route; gated on a resolved estimate (no estimate → the page renders an EmptyState back to `/estimate` and spends nothing); never touches `client-estimate.*`, the cost engine, or proposal generation. A mockup failure degrades to a retry panel and nothing else.
 
+### AI discovery questions (Client Portal)
+
+`modules/client-requirements/` runs the wizard's AI interview. **The consultation length the client picks decides how many questions they get** — `CONSULTATION_TIME_QUESTION_COUNTS` in `client-requirements.constants.ts` (2 min → 5, 5 min → 9, 10 min → 13; unknown → 9; clamped by `MAX_QUESTIONS_HARD_CAP`).
+
+- **The count is enforced in `nextQuestion()`, not just asked for in the prompt.** It used to live only as `{{questionGuidance}}` text with a single global ceiling in code, so a model that talked past its budget ran *every* interview to that ceiling and all three length options came out identical. Prompt guidance sets intent; the service is what actually stops the interview.
+- **One exact figure per option, never a range** — the number is also the denominator of the portal's "AI Question X of N", and a range would make that a guess. The prompt is correspondingly instructed to ask all N and *not* to stop early.
+- `frontend/src/client-portal/requirements-wizard/question-plan.ts` **mirrors** those counts, because the portal must show "1 of N" while question one is still in flight. The backend constants are the source of truth — **change one, change both**. The discovery endpoints' response shape (`{ question, completed }`) is deliberately untouched by this.
+- Progress is derived from the transcript (`conversation.filter(role === "assistant").length`), so there is no counter to drift out of sync with the interview. `QuestionProgress` renders on that step only — the later single-screen steps have nothing to count through.
+
 ### Proposals
 
 A client lead has **many proposal versions** (`lead_proposals`), not one draft, and **versions are never overwritten or lost**.

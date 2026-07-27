@@ -4,8 +4,8 @@ import { logger } from "../../shared/logger/logger.js";
 import { aiOrchestrator } from "../ai/ai.orchestrator.js";
 import { PROMPT_TYPES } from "../prompts/prompt.constants.js";
 import {
-  CONSULTATION_TIME_QUESTION_LIMITS,
-  DEFAULT_QUESTION_LIMIT,
+  CONSULTATION_TIME_QUESTION_COUNTS,
+  DEFAULT_QUESTION_COUNT,
   MAX_QUESTIONS_HARD_CAP,
 } from "./client-requirements.constants.js";
 import type { ClientDiscoveryQuestionDto } from "./client-requirements.dto.js";
@@ -46,6 +46,18 @@ function buildPlatformsSummary(platforms: string[], otherPlatform?: string): str
   return items.join(", ");
 }
 
+/**
+ * The chosen consultation length, resolved to the exact number of questions the
+ * interview should run to. This is the only place the mapping is applied, so the
+ * prompt, the server-side stop and the count the client is shown can't disagree.
+ */
+function resolveQuestionCount(consultationTime: string): number {
+  const configured =
+    CONSULTATION_TIME_QUESTION_COUNTS[consultationTime.trim()] ?? DEFAULT_QUESTION_COUNT;
+
+  return Math.min(configured, MAX_QUESTIONS_HARD_CAP);
+}
+
 function buildContextVariables(
   input: {
     projectIdea: string;
@@ -55,15 +67,15 @@ function buildContextVariables(
   },
   questionsAskedSoFar: number,
 ): Record<string, string | number> {
-  const limit = CONSULTATION_TIME_QUESTION_LIMITS[input.consultationTime] ?? DEFAULT_QUESTION_LIMIT;
+  const totalQuestions = resolveQuestionCount(input.consultationTime);
 
   return {
     projectIdea: input.projectIdea,
     consultationTime: input.consultationTime,
     platforms: buildPlatformsSummary(input.platforms, input.otherPlatform),
-    questionGuidance: limit.guidance,
-    maxQuestions: limit.maxQuestions,
+    totalQuestions,
     questionsAskedSoFar,
+    questionsRemaining: Math.max(totalQuestions - questionsAskedSoFar, 0),
   };
 }
 
@@ -142,7 +154,14 @@ export class ClientRequirementsService {
   async nextQuestion(input: NextClientDiscoveryInput): Promise<ClientDiscoveryQuestionDto> {
     const questionsAsked = input.conversation.filter((turn) => turn.role === "assistant").length;
 
-    if (questionsAsked >= MAX_QUESTIONS_HARD_CAP) {
+    /**
+     * The stop is enforced here, not just asked for in the prompt. Previously only a
+     * single global ceiling was applied in code while the per-duration limit lived in
+     * the prompt as guidance, so a model that talked past it ran every interview to
+     * that global ceiling — a 2-minute consultation and a 10-minute one came out the
+     * same length. Charging the AI call before checking would also be wasteful.
+     */
+    if (questionsAsked >= resolveQuestionCount(input.consultationTime)) {
       return { question: null, completed: true };
     }
 
