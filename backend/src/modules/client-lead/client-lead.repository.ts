@@ -88,6 +88,7 @@ export class ClientLeadRepository {
         country: data.country ?? null,
         preferredContactMethod: data.preferredContactMethod,
         notes: data.notes ?? null,
+        consultationMode: data.consultationMode,
         projectIdea: data.projectIdea,
         consultationTime: data.consultationTime,
         platforms: data.platforms,

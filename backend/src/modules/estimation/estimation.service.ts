@@ -6,7 +6,12 @@ import { AI_PROVIDERS } from "../ai/ai.constants.js";
 import { aiOrchestrator } from "../ai/ai.orchestrator.js";
 import type { AIResponse } from "../ai/ai.types.js";
 import { costSettingsService } from "../cost/cost.service.js";
+import { normalizeConsultationMode } from "../../shared/constants/consultation-mode.js";
 import { PROMPT_TYPES } from "../prompts/prompt.constants.js";
+import {
+  normalizeEstimateForMode,
+  type ModeNormalizedEstimate,
+} from "./estimation.mode.js";
 import type { EstimationDto } from "./estimation.dto.js";
 import {
   estimationRepository,
@@ -33,6 +38,7 @@ function toEstimationDto(
     requirementSummaryId: estimation.requirementSummaryId,
     estimatedHours: estimation.estimatedHours,
     estimatedWeeks: estimation.estimatedWeeks,
+    modePlan: estimation.modePlan,
     estimatedTeamSize: estimation.estimatedTeamSize,
     complexity: estimation.complexity,
     confidenceScore: Number(estimation.confidenceScore),
@@ -256,6 +262,7 @@ export class EstimationService {
           title: consultation.title,
           industry: consultation.industry,
           projectType: consultation.projectType,
+          consultationMode: consultation.consultationMode,
           budgetRange: consultation.budgetRange,
           timeline: consultation.timeline,
           status: consultation.status,
@@ -291,10 +298,13 @@ export class EstimationService {
       );
     }
 
-    let parsedEstimation: ReturnType<typeof parseEstimationPayload>;
+    let parsedEstimation: ModeNormalizedEstimate;
 
     try {
-      parsedEstimation = parseEstimationPayload(aiResponse.message.content);
+      parsedEstimation = normalizeEstimateForMode(
+        parseEstimationPayload(aiResponse.message.content),
+        normalizeConsultationMode(consultation.consultationMode),
+      );
     } catch (error) {
       await estimationRepository.createAiGeneration({
         organizationId,
@@ -328,13 +338,22 @@ export class EstimationService {
         const payload = {
           requirementSummaryId: requirementSummary.id,
           estimatedHours: Math.round(parsedEstimation.estimatedHours),
-          estimatedWeeks: Math.round(parsedEstimation.estimatedWeeks),
+          // Null only for MAINTENANCE, which has no delivery date.
+          estimatedWeeks:
+            parsedEstimation.estimatedWeeks === null
+              ? null
+              : Math.round(parsedEstimation.estimatedWeeks),
           estimatedTeamSize: parsedEstimation.teamSize,
           complexity: parsedEstimation.complexity,
           confidenceScore: parsedEstimation.confidence.toFixed(4),
           assumptions: formatAssumptions(parsedEstimation.assumptions),
           risks: parsedEstimation.risks,
           breakdown: parsedEstimation.breakdown,
+          modePlan: {
+            maintenancePlan: parsedEstimation.maintenancePlan ?? null,
+            migrationPlan: parsedEstimation.migrationPlan ?? null,
+            enhancementImpact: parsedEstimation.enhancementImpact ?? null,
+          },
           generatedBy: "AI" as const,
         };
 

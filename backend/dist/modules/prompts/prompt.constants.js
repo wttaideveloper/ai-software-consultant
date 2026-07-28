@@ -34,4 +34,22 @@ exports.RESERVED_TEMPLATE_VARIABLES = {
     BUDGET_RANGE: "budgetRange",
     TIMELINE: "timeline",
     USER_MESSAGE: "userMessage",
+    /**
+     * Consultation Mode. Expanded from a single `consultationMode` input by
+     * PromptBuilder from CONSULTATION_MODE_PROFILES — callers never assemble these
+     * strings themselves, which is what keeps the four engagement types defined in
+     * exactly one place (consultation-mode.profiles.ts).
+     */
+    CONSULTATION_MODE: "consultationMode",
+    MODE_LABEL: "modeLabel",
+    MODE_CONTEXT: "modeContext",
+    MODE_DISCOVERY_FOCUS: "modeDiscoveryFocus",
+    MODE_DISCOVERY_DIRECTIVE: "modeDiscoveryDirective",
+    MODE_SUMMARY_DIRECTIVE: "modeSummaryDirective",
+    MODE_FEATURE_CATEGORIES: "modeFeatureCategories",
+    MODE_FEATURE_DIRECTIVE: "modeFeatureDirective",
+    MODE_ESTIMATION_DIRECTIVE: "modeEstimationDirective",
+    MODE_TECH_STACK_DIRECTIVE: "modeTechStackDirective",
+    MODE_PROPOSAL_TITLE: "modeProposalTitle",
+    MODE_PROPOSAL_DIRECTIVE: "modeProposalDirective",
 };

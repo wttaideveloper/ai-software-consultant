@@ -5,6 +5,7 @@ import { ClientLayout } from "@/client-portal/layouts/client-layout";
 import { EstimateSavingsSummary } from "@/client-portal/estimate/components/estimate-savings-summary";
 import { FeatureBreakdownRow } from "@/client-portal/estimate/components/feature-breakdown-row";
 import { MetricCard } from "@/client-portal/estimate/components/metric-card";
+import { ModeEstimateDetails } from "@/client-portal/estimate/components/mode-estimate-details";
 import { ProjectCostCard } from "@/client-portal/estimate/components/project-cost-card";
 import {
   TIMELINE_RANGE_HELPER_TEXT,
@@ -28,6 +29,10 @@ export function ClientEstimatePage() {
   const navigate = useNavigate();
 
   const features = useClientConsultationStore((state) => state.features);
+  const consultationMode = useClientConsultationStore(
+    (state) => state.consultationMode,
+  );
+  const monthlyPricing = useClientConsultationStore((state) => state.monthlyPricing);
   const platforms = useClientConsultationStore((state) => state.platforms);
   const otherPlatform = useClientConsultationStore(
     (state) => state.otherPlatform,
@@ -101,13 +106,24 @@ export function ClientEstimatePage() {
     setCurrentPricing(currentPricing);
   }, [currentPricing, setCurrentPricing]);
 
-  const timelineDisplay = estimate
-    ? formatWeekRange(toWeekRange(estimate.estimatedWeeks))
-    : "—";
+  /**
+   * A support engagement has no delivery weeks (estimatedWeeks is null), so this
+   * card reports its recurring capacity instead. Showing "0 weeks" — or worse, a
+   * made-up window — is exactly what Consultation Mode exists to prevent.
+   */
+  const isSupportEngagement = Boolean(estimate?.maintenancePlan);
+  const timelineLabel = isSupportEngagement ? "Support Capacity" : "Timeline";
+  const timelineDisplay =
+    estimate?.estimatedWeeks != null
+      ? formatWeekRange(toWeekRange(estimate.estimatedWeeks))
+      : estimate?.maintenancePlan
+        ? `${estimate.maintenancePlan.supportHoursPerMonth} hrs / month`
+        : "—";
 
   const requestGeneration = () => {
     if (features.length === 0) return;
     generateEstimate.mutate({
+      consultationMode,
       features: features.map(
         ({
           name,
@@ -207,7 +223,10 @@ export function ClientEstimatePage() {
           {estimate ? (
             <div className="flex flex-col gap-8">
               <ProjectCostCard
-                pricing={currentPricing}
+                label={
+                  isSupportEngagement ? "Monthly Cost Estimate" : "Project Cost"
+                }
+                pricing={isSupportEngagement ? monthlyPricing : currentPricing}
                 isUpdating={canReprice && priceQuery.isFetching}
                 noFeaturesSelected={
                   featureBreakdown.length > 0 && currentHours === 0
@@ -216,9 +235,13 @@ export function ClientEstimatePage() {
 
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <MetricCard
-                  label="Timeline"
+                  label={timelineLabel}
                   value={timelineDisplay}
-                  hint={TIMELINE_RANGE_HELPER_TEXT}
+                  hint={
+                    isSupportEngagement
+                      ? "Recurring capacity, not a delivery date."
+                      : TIMELINE_RANGE_HELPER_TEXT
+                  }
                 />
                 <MetricCard label="Complexity" value={complexity ?? "—"} />
                 <MetricCard
@@ -239,6 +262,10 @@ export function ClientEstimatePage() {
                   unavailable={!techStack || techStack.length === 0}
                 />
               </div>
+
+              {/* The engagement-specific half: SLA and scope for support, phases
+                  and rollback for a migration, impact for an enhancement. */}
+              <ModeEstimateDetails estimate={estimate} />
 
               <EstimateSavingsSummary
                 originalHours={originalHours}

@@ -1,11 +1,25 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.clientMockupSetStatusEnum = exports.clientPreferredContactMethodEnum = exports.costDiscountTypeEnum = exports.costTaxTypeEnum = exports.costCurrencyEnum = exports.costPlatformEnum = exports.costComplexityLevelEnum = exports.costRoleEnum = exports.clientLeadStatusEnum = exports.leadProposalStatusEnum = exports.proposalStatusEnum = exports.featureComplexityEnum = exports.featurePriorityEnum = exports.requirementSummaryGeneratedByEnum = exports.requirementSummaryStatusEnum = exports.aiGenerationStatusEnum = exports.messageSenderTypeEnum = exports.verificationTokenTypeEnum = void 0;
+exports.clientMockupSetStatusEnum = exports.clientPreferredContactMethodEnum = exports.costDiscountTypeEnum = exports.costTaxTypeEnum = exports.costCurrencyEnum = exports.costPlatformEnum = exports.costComplexityLevelEnum = exports.costRoleEnum = exports.clientLeadStatusEnum = exports.leadProposalStatusEnum = exports.proposalStatusEnum = exports.featureComplexityEnum = exports.featurePriorityEnum = exports.requirementSummaryGeneratedByEnum = exports.requirementSummaryStatusEnum = exports.aiGenerationStatusEnum = exports.messageSenderTypeEnum = exports.consultationModeEnum = exports.verificationTokenTypeEnum = void 0;
 const pg_core_1 = require("drizzle-orm/pg-core");
 exports.verificationTokenTypeEnum = (0, pg_core_1.pgEnum)("verification_token_type", [
     "EMAIL_VERIFY",
     "PASSWORD_RESET",
     "INVITATION",
+]);
+/**
+ * The kind of engagement a consultation represents. Mirrors CONSULTATION_MODES in
+ * shared/constants/consultation-mode.ts — that file is the application-side source
+ * of truth and this enum is its database projection; change one, change both.
+ *
+ * Columns using it are NOT NULL DEFAULT 'NEW_PROJECT' so every pre-existing row
+ * backfills to the only engagement type the platform could previously express.
+ */
+exports.consultationModeEnum = (0, pg_core_1.pgEnum)("consultation_mode", [
+    "NEW_PROJECT",
+    "FEATURE_ENHANCEMENT",
+    "MAINTENANCE",
+    "MODERNIZATION",
 ]);
 exports.messageSenderTypeEnum = (0, pg_core_1.pgEnum)("message_sender_type", [
     "user",

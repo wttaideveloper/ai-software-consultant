@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.consultations = void 0;
 const pg_core_1 = require("drizzle-orm/pg-core");
+const enums_js_1 = require("./enums.js");
 const helpers_js_1 = require("./helpers.js");
 const organizations_js_1 = require("./organizations.js");
 const users_js_1 = require("./users.js");
@@ -18,6 +19,15 @@ exports.consultations = (0, pg_core_1.pgTable)("consultations", {
     }),
     title: (0, pg_core_1.varchar)("title", { length: 255 }).notNull(),
     status: (0, pg_core_1.varchar)("status", { length: 64 }).notNull().default("draft"),
+    /**
+     * Drives the entire downstream pipeline (discovery questions, feature
+     * categories, estimate shape, proposal template, mockup gating) — not a label.
+     * Defaulted so consultations created before this column existed keep working
+     * as the new-build consultations they always were.
+     */
+    consultationMode: (0, enums_js_1.consultationModeEnum)("consultation_mode")
+        .notNull()
+        .default("NEW_PROJECT"),
     industry: (0, pg_core_1.varchar)("industry", { length: 128 }),
     projectType: (0, pg_core_1.varchar)("project_type", { length: 128 }),
     budgetRange: (0, pg_core_1.varchar)("budget_range", { length: 128 }),

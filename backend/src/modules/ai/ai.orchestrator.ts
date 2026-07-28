@@ -1,4 +1,5 @@
 import { config } from "../../config/env.js";
+import type { ConsultationMode } from "../../shared/constants/consultation-mode.js";
 import { logger } from "../../shared/logger/logger.js";
 import {
   PROMPT_TYPES,
@@ -38,6 +39,12 @@ export type GenerateStandaloneReplyInput = {
   promptType: PromptType;
   conversationHistory: ConversationPromptMessage[];
   userMessage: string;
+  /**
+   * Engagement type driving the prompt. The main reason this exists on the
+   * standalone path: the Client Portal has no consultation record to carry it,
+   * yet its whole pipeline is mode-specific. Omitted resolves to NEW_PROJECT.
+   */
+  consultationMode?: ConsultationMode | string | null;
   model?: AIModel;
   maxTokens?: number;
   temperature?: number;
@@ -80,12 +87,14 @@ export class AIOrchestrator {
       promptType: input.promptType,
       model,
       userMessage: input.userMessage,
+      consultationMode: input.consultationMode,
       conversationHistory: input.conversationHistory,
       maxTokens: input.maxTokens,
       temperature: input.temperature,
       variables: input.variables,
       metadata: {
         promptType: input.promptType,
+        consultationMode: input.consultationMode ?? null,
         ...input.metadata,
       },
     });

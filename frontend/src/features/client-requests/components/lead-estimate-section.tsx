@@ -118,7 +118,12 @@ export function LeadEstimateSection({
   const costDisplay = pricing
     ? formatPriceRange(toPriceRange(pricing.breakdown.finalPrice), pricing.currency)
     : "Not available";
-  const timelineDisplay = formatWeekRange(toWeekRange(estimate.estimatedWeeks));
+  const timelineDisplay =
+    estimate.estimatedWeeks === null
+      ? estimate.maintenancePlan
+        ? `${estimate.maintenancePlan.supportHoursPerMonth} hrs / month`
+        : "Ongoing"
+      : formatWeekRange(toWeekRange(estimate.estimatedWeeks));
 
   return (
     <WorkspaceSection

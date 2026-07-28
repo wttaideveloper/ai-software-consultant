@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { config } from "../../config/env.js";
 import { HTTP_STATUS } from "../../shared/constants/http-status.js";
+import { evaluateMockupEligibility } from "./mockup-policy.js";
 import { AppError } from "../../shared/errors/app-error.js";
 import { logger } from "../../shared/logger/logger.js";
 import { SlidingWindowCounter } from "../../shared/rate-limit/sliding-window.js";
@@ -138,6 +139,7 @@ export class ClientMockupsService {
 
     return {
       status: set.status,
+      notApplicableReason: null,
       images: images.map((image) => ({
         id: image.id,
         screenName: image.screenName,
@@ -162,6 +164,18 @@ export class ClientMockupsService {
     context: MockupRequestContext,
   ): Promise<ClientMockupSetDto> {
     this.assertEnabled();
+
+    /**
+     * The engagement gate, checked first and before anything billable: no set is
+     * claimed, no budget consumed, no AI call made. A maintenance or migration
+     * engagement that never asked for UI work must cost nothing here.
+     */
+    const eligibility = this.assertMockupsApply(input);
+    if (!eligibility.eligible) {
+      return this.emptyDto("NOT_APPLICABLE", {
+        notApplicableReason: eligibility.reason,
+      });
+    }
 
     const requirementsHash = this.hashRequirements(input);
     const existing = await clientMockupsRepository.findSetByConsultationKey(
@@ -207,6 +221,16 @@ export class ClientMockupsService {
   ): Promise<ClientMockupSetDto> {
     this.assertEnabled();
 
+    // Same gate as requestGeneration: a regenerate is just as billable, so an
+    // engagement that does not warrant concepts must not be able to buy them by
+    // pressing Regenerate instead of Generate.
+    const eligibility = this.assertMockupsApply(input);
+    if (!eligibility.eligible) {
+      return this.emptyDto("NOT_APPLICABLE", {
+        notApplicableReason: eligibility.reason,
+      });
+    }
+
     const requirementsHash = this.hashRequirements(input);
     const existing = await clientMockupsRepository.findSetByConsultationKey(
       input.consultationKey,
@@ -249,6 +273,23 @@ export class ClientMockupsService {
 
   // ── internals ──────────────────────────────────────────────────────────
 
+  /**
+   * Runs the engagement-type policy over what the client actually described.
+   * Feature names and categories join the summary as evidence: a work item
+   * categorised "UI" is as clear a request for interface work as a sentence is.
+   */
+  private assertMockupsApply(input: GenerateMockupsInput) {
+    return evaluateMockupEligibility({
+      consultationMode: input.consultationMode,
+      requirementSummary: input.requirementSummary,
+      featureLabels: input.features.flatMap((feature) => [
+        feature.name,
+        feature.category,
+        feature.description,
+      ]),
+    });
+  }
+
   private assertEnabled(): void {
     if (!config.MOCKUPS_ENABLED) {
       throw new AppError(
@@ -264,6 +305,7 @@ export class ClientMockupsService {
   ): ClientMockupSetDto {
     return {
       status,
+      notApplicableReason: null,
       images: [],
       stale: false,
       regenerationsUsed: 0,
@@ -286,6 +328,10 @@ export class ClientMockupsService {
    */
   private hashRequirements(input: GenerateMockupsInput): string {
     const canonical = JSON.stringify({
+      // Part of the fingerprint because the engagement type changes what the
+      // screens depict (new product vs. an addition to an existing one), so a
+      // batch generated under a different mode is genuinely stale.
+      mode: input.consultationMode,
       summary: input.requirementSummary,
       features: input.features.map((f) => `${f.name}|${f.complexity}|${f.priority}`).sort(),
       platforms: [...input.platforms].sort(),
@@ -394,6 +440,7 @@ export class ClientMockupsService {
   private async planScreens(input: GenerateMockupsInput) {
     const response = await aiOrchestrator.generateStandaloneReply({
       promptType: PROMPT_TYPES.CONCEPT_SCREENS,
+      consultationMode: input.consultationMode,
       conversationHistory: [],
       userMessage: [
         "REQUIREMENT SUMMARY:",

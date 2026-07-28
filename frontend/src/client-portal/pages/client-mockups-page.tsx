@@ -75,7 +75,16 @@ export function ClientMockupsPage() {
 
   const set = mockups.set;
   const hasImages = (set?.images.length ?? 0) > 0;
-  const isDisabled = set?.status === "DISABLED";
+  /**
+   * Two different reasons to render the same calm "not available, carry on" panel:
+   * DISABLED means the operator has image generation switched off; NOT_APPLICABLE
+   * means this engagement type doesn't warrant concept screens (a maintenance
+   * contract, or a migration that keeps its interface). Both must never block the
+   * proposal, and neither is an error — so they share one branch, differing only
+   * in the explanation the server supplies.
+   */
+  const isNotApplicable = set?.status === "NOT_APPLICABLE";
+  const isDisabled = set?.status === "DISABLED" || isNotApplicable;
   const isInitialLoading = !set && mockups.isLoading;
 
   return (
@@ -101,11 +110,14 @@ export function ClientMockupsPage() {
               </div>
               <div>
                 <p className="text-sm font-medium text-foreground">
-                  Visual previews aren't available right now
+                  {isNotApplicable
+                    ? "Concept screens aren't part of this engagement"
+                    : "Visual previews aren't available right now"}
                 </p>
                 <p className="mt-1 max-w-sm text-sm text-muted text-pretty">
-                  No problem — your estimate and proposal aren't affected. You can
-                  continue to request your proposal.
+                  {isNotApplicable && set?.notApplicableReason
+                    ? `${set.notApplicableReason} Your estimate and proposal aren't affected.`
+                    : "No problem — your estimate and proposal aren't affected. You can continue to request your proposal."}
                 </p>
               </div>
             </div>

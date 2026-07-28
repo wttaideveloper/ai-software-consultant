@@ -1,5 +1,6 @@
 import type {
   EstimationBreakdownItem,
+  EstimationModePlan,
   EstimationRisk,
 } from "../../db/schema/project-estimations.js";
 import type { CostPreviewDto } from "../cost/cost.dto.js";
@@ -10,7 +11,10 @@ export type EstimationDto = {
   consultationId: string;
   requirementSummaryId: string;
   estimatedHours: number;
-  estimatedWeeks: number;
+  /** Null for a MAINTENANCE engagement — no delivery date exists to report. */
+  estimatedWeeks: number | null;
+  /** Engagement-specific detail; null for NEW_PROJECT and pre-mode estimates. */
+  modePlan: EstimationModePlan | null;
   estimatedTeamSize: number;
   complexity: "LOW" | "MEDIUM" | "HIGH";
   confidenceScore: number;

@@ -24,6 +24,35 @@ export type EstimationBreakdownItem = {
   hours: number;
 };
 
+/**
+ * The engagement-specific half of an estimate, stored as one nullable jsonb
+ * column rather than a dozen typed columns.
+ *
+ * The three shapes are mutually exclusive (decided by the consultation's mode)
+ * and are read as a unit for display, never queried or aggregated on — which is
+ * exactly the case jsonb is for. Typed columns would mean nine nullable fields,
+ * eight of which are always null, plus a migration for every future mode.
+ */
+export type EstimationModePlan = {
+  maintenancePlan?: {
+    engagementType: string;
+    supportHoursPerMonth: number;
+    priorityLevel: string;
+    suggestedSla: string;
+    supportScope: string[];
+  } | null;
+  migrationPlan?: {
+    phases: Array<{ name: string; description: string; hours: number }>;
+    rollbackStrategy: string;
+    downtimeEstimate: string;
+  } | null;
+  enhancementImpact?: {
+    impactAnalysis: string[];
+    dependencies: string[];
+    affectedModules: string[];
+  } | null;
+};
+
 export const projectEstimations = pgTable(
   "project_estimations",
   {
@@ -38,7 +67,12 @@ export const projectEstimations = pgTable(
       .notNull()
       .references(() => requirementSummaries.id, { onDelete: "cascade" }),
     estimatedHours: integer("estimated_hours").notNull(),
-    estimatedWeeks: integer("estimated_weeks").notNull(),
+    /**
+     * Nullable since Consultation Mode: a MAINTENANCE engagement has no delivery
+     * date, so a number here would be fabricated. Every other mode still writes
+     * one, enforced in code by estimation.mode.ts rather than by the column.
+     */
+    estimatedWeeks: integer("estimated_weeks"),
     estimatedTeamSize: integer("estimated_team_size").notNull(),
     complexity: featureComplexityEnum("complexity").notNull(),
     confidenceScore: numeric("confidence_score", {
@@ -48,6 +82,8 @@ export const projectEstimations = pgTable(
     assumptions: text("assumptions").notNull(),
     risks: jsonb("risks").$type<EstimationRisk[]>().notNull(),
     breakdown: jsonb("breakdown").$type<EstimationBreakdownItem[]>().notNull(),
+    /** Null for NEW_PROJECT and for every estimate produced before Consultation Mode. */
+    modePlan: jsonb("mode_plan").$type<EstimationModePlan>(),
     generatedBy: requirementSummaryGeneratedByEnum("generated_by")
       .notNull()
       .default("AI"),

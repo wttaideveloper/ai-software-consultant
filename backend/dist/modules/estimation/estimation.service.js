@@ -8,7 +8,9 @@ const logger_js_1 = require("../../shared/logger/logger.js");
 const ai_constants_js_1 = require("../ai/ai.constants.js");
 const ai_orchestrator_js_1 = require("../ai/ai.orchestrator.js");
 const cost_service_js_1 = require("../cost/cost.service.js");
+const consultation_mode_js_1 = require("../../shared/constants/consultation-mode.js");
 const prompt_constants_js_1 = require("../prompts/prompt.constants.js");
+const estimation_mode_js_1 = require("./estimation.mode.js");
 const estimation_repository_js_1 = require("./estimation.repository.js");
 const estimation_validation_js_1 = require("./estimation.validation.js");
 const PROMPT_VERSION = "1.1.0";
@@ -21,6 +23,7 @@ function toEstimationDto(estimation, pricing = null) {
         requirementSummaryId: estimation.requirementSummaryId,
         estimatedHours: estimation.estimatedHours,
         estimatedWeeks: estimation.estimatedWeeks,
+        modePlan: estimation.modePlan,
         estimatedTeamSize: estimation.estimatedTeamSize,
         complexity: estimation.complexity,
         confidenceScore: Number(estimation.confidenceScore),
@@ -164,6 +167,7 @@ class EstimationService {
                     title: consultation.title,
                     industry: consultation.industry,
                     projectType: consultation.projectType,
+                    consultationMode: consultation.consultationMode,
                     budgetRange: consultation.budgetRange,
                     timeline: consultation.timeline,
                     status: consultation.status,
@@ -196,7 +200,7 @@ class EstimationService {
         }
         let parsedEstimation;
         try {
-            parsedEstimation = parseEstimationPayload(aiResponse.message.content);
+            parsedEstimation = (0, estimation_mode_js_1.normalizeEstimateForMode)(parseEstimationPayload(aiResponse.message.content), (0, consultation_mode_js_1.normalizeConsultationMode)(consultation.consultationMode));
         }
         catch (error) {
             await estimation_repository_js_1.estimationRepository.createAiGeneration({
@@ -224,13 +228,21 @@ class EstimationService {
             const payload = {
                 requirementSummaryId: requirementSummary.id,
                 estimatedHours: Math.round(parsedEstimation.estimatedHours),
-                estimatedWeeks: Math.round(parsedEstimation.estimatedWeeks),
+                // Null only for MAINTENANCE, which has no delivery date.
+                estimatedWeeks: parsedEstimation.estimatedWeeks === null
+                    ? null
+                    : Math.round(parsedEstimation.estimatedWeeks),
                 estimatedTeamSize: parsedEstimation.teamSize,
                 complexity: parsedEstimation.complexity,
                 confidenceScore: parsedEstimation.confidence.toFixed(4),
                 assumptions: formatAssumptions(parsedEstimation.assumptions),
                 risks: parsedEstimation.risks,
                 breakdown: parsedEstimation.breakdown,
+                modePlan: {
+                    maintenancePlan: parsedEstimation.maintenancePlan ?? null,
+                    migrationPlan: parsedEstimation.migrationPlan ?? null,
+                    enhancementImpact: parsedEstimation.enhancementImpact ?? null,
+                },
                 generatedBy: "AI",
             };
             if (existing) {

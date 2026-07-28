@@ -4,7 +4,7 @@ import type {
   ClientFeature,
   ClientPreferredContactMethod,
 } from "@/store/client-consultation.store";
-import type { ApiSuccessResponse, CostPreview } from "@/types";
+import type { ApiSuccessResponse, ConsultationMode, CostPreview } from "@/types";
 
 export type CreateClientLeadPayload = {
   name: string;
@@ -16,6 +16,7 @@ export type CreateClientLeadPayload = {
   preferredContactMethod: ClientPreferredContactMethod;
   notes?: string;
 
+  consultationMode: ConsultationMode;
   projectIdea: string;
   consultationTime: string;
   platforms: string[];

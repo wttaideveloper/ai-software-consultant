@@ -2,6 +2,7 @@ import { jsonb, index, pgTable, text, uuid, varchar } from "drizzle-orm/pg-core"
 import {
   clientLeadStatusEnum,
   clientPreferredContactMethodEnum,
+  consultationModeEnum,
   featureComplexityEnum,
   featurePriorityEnum,
 } from "./enums.js";
@@ -25,16 +26,61 @@ export type ClientLeadEstimateBreakdownItem = {
   hours: number;
 };
 
-/** Snapshot of the client's estimate at submission time — mirrors the reused Estimation AI contract. */
+/**
+ * The mode-specific halves of an estimate, frozen exactly as the client saw them.
+ *
+ * Each is present only for the consultation mode that produces it, so all three
+ * are optional: a NEW_PROJECT lead carries none of them, and every lead submitted
+ * before Consultation Mode shipped carries none either. Field types are widened
+ * to plain strings for the same reason ClientLeadPricing widens its enums — this
+ * is a historical record, not a live typed value.
+ */
+export type ClientLeadMaintenancePlan = {
+  engagementType: string;
+  supportHoursPerMonth: number;
+  priorityLevel: string;
+  suggestedSla: string;
+  supportScope: string[];
+};
+
+export type ClientLeadMigrationPhase = {
+  name: string;
+  description: string;
+  hours: number;
+};
+
+export type ClientLeadMigrationPlan = {
+  phases: ClientLeadMigrationPhase[];
+  rollbackStrategy: string;
+  downtimeEstimate: string;
+};
+
+export type ClientLeadEnhancementImpact = {
+  impactAnalysis: string[];
+  dependencies: string[];
+  affectedModules: string[];
+};
+
+/**
+ * Snapshot of the client's estimate at submission time — mirrors the reused
+ * Estimation AI contract.
+ *
+ * `estimatedWeeks` is nullable because a MAINTENANCE engagement deliberately has
+ * no delivery timeline: there is nothing being delivered on a date, so a number
+ * there would be fabricated. Leads from the other three modes always carry one.
+ */
 export type ClientLeadEstimate = {
   estimatedHours: number;
-  estimatedWeeks: number;
+  estimatedWeeks: number | null;
   teamSize: number;
   complexity: (typeof featureComplexityEnum.enumValues)[number];
   confidence: number;
   assumptions: string[];
   risks: string[];
   breakdown: ClientLeadEstimateBreakdownItem[];
+  maintenancePlan?: ClientLeadMaintenancePlan | null;
+  migrationPlan?: ClientLeadMigrationPlan | null;
+  enhancementImpact?: ClientLeadEnhancementImpact | null;
 };
 
 /** The Cost Engine breakdown the client was shown — stored verbatim (see ClientLeadPricing). */
@@ -103,6 +149,16 @@ export const clientLeads = pgTable(
       .notNull()
       .default("EMAIL"),
     notes: text("notes"),
+
+    /**
+     * The engagement type this request was captured under. Persisted on the lead
+     * (not just used transiently by the portal) so the Admin can see which kind of
+     * engagement a request is, and so the proposal generated from it picks the
+     * right template. Defaulted for leads submitted before the feature existed.
+     */
+    consultationMode: consultationModeEnum("consultation_mode")
+      .notNull()
+      .default("NEW_PROJECT"),
 
     projectIdea: text("project_idea").notNull(),
     consultationTime: varchar("consultation_time", { length: 32 }).notNull(),

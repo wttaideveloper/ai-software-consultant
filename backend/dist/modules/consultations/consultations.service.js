@@ -15,6 +15,7 @@ function toConsultationDto(consultation) {
         status: consultation.status,
         industry: consultation.industry,
         projectType: consultation.projectType,
+        consultationMode: consultation.consultationMode,
         budgetRange: consultation.budgetRange,
         timeline: consultation.timeline,
         startedAt: consultation.startedAt,
@@ -73,6 +74,7 @@ class ConsultationsService {
             status: "draft",
             industry: input.industry ?? null,
             projectType: input.projectType ?? null,
+            consultationMode: input.consultationMode,
             budgetRange: input.budgetRange ?? null,
             timeline: input.timeline ?? null,
         });

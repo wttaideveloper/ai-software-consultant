@@ -24,6 +24,7 @@ function toListItemDto(lead: ClientLeadRecord): ClientLeadListItemDto {
     email: lead.email,
     company: lead.company,
     phone: lead.phone,
+    consultationMode: lead.consultationMode,
     consultationTime: lead.consultationTime,
     platforms: lead.platforms,
     otherPlatform: lead.otherPlatform,

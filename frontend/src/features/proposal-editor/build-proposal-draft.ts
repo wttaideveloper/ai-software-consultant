@@ -3,7 +3,19 @@ import {
   deriveProposalEstimate,
   formatProposalEstimate,
 } from "@/features/proposal-editor/proposal-estimate";
-import type { ClientLeadDetail } from "@/types";
+import type { ClientLeadDetail, ConsultationMode } from "@/types";
+
+/**
+ * Mirrors `proposalTitle` in the backend's consultation-mode.profiles.ts. Kept in
+ * sync deliberately: the AI-written proposal and this client-side prefill must
+ * name the same document, or the admin sees two different titles for one deal.
+ */
+const PROPOSAL_TITLE_BY_MODE: Record<ConsultationMode, string> = {
+  NEW_PROJECT: "Project Proposal",
+  FEATURE_ENHANCEMENT: "Feature Enhancement Proposal",
+  MAINTENANCE: "Maintenance & Support Agreement",
+  MODERNIZATION: "Migration Proposal",
+};
 
 /**
  * Builds the initial proposal draft from a lead's three AI artefacts:
@@ -47,10 +59,19 @@ function buildExecutiveSummary(lead: ClientLeadDetail): string {
       ? ` The solution targets ${platforms.join(", ")}.`
       : "";
 
+  const effortWindow =
+    estimate.estimatedWeeks !== null
+      ? ` across approximately ${estimate.estimatedWeeks} week${estimate.estimatedWeeks === 1 ? "" : "s"}`
+      : estimate.maintenancePlan
+        ? `, delivered as ${estimate.maintenancePlan.supportHoursPerMonth} hours of support per month`
+        : "";
+
   return [
     `${client} is seeking a partner to deliver the project outlined below.${platformSentence}`,
     "",
-    `Based on our discovery process we have identified ${includedCount} in-scope feature${includedCount === 1 ? "" : "s"}, with an estimated effort of ${estimate.estimatedHours} development hours across approximately ${estimate.estimatedWeeks} week${estimate.estimatedWeeks === 1 ? "" : "s"}. We recommend a team of ${estimate.teamSize}. Overall delivery complexity is assessed as ${estimate.complexity.toLowerCase()}, at ${confidence}% confidence.`,
+    // Effort is phrased as a delivery window for a project and as recurring
+    // capacity for a support engagement — the latter has no weeks to quote.
+    `Based on our discovery process we have identified ${includedCount} in-scope item${includedCount === 1 ? "" : "s"}, with an estimated effort of ${estimate.estimatedHours} hours${effortWindow}. We recommend a team of ${estimate.teamSize}. Overall complexity is assessed as ${estimate.complexity.toLowerCase()}, at ${confidence}% confidence.`,
     "",
     "This proposal sets out the scope, timeline, team structure, assumptions and commercial basis for the engagement.",
   ].join("\n");
@@ -92,7 +113,26 @@ function buildDeliverables(lead: ClientLeadDetail): string[] {
 }
 
 function buildTimeline(lead: ClientLeadDetail): string {
-  const { estimatedWeeks, breakdown } = lead.estimate;
+  const { estimatedWeeks, breakdown, maintenancePlan } = lead.estimate;
+
+  /**
+   * A support engagement is not delivered on a date, so it gets an engagement
+   * model and a review cadence instead of a duration and phase schedule. Writing
+   * "Estimated duration: null weeks" — or inventing one — is exactly what
+   * Consultation Mode exists to prevent.
+   */
+  if (estimatedWeeks === null) {
+    if (!maintenancePlan) {
+      return "Ongoing engagement — no fixed delivery date.";
+    }
+
+    return [
+      `Engagement model: ${maintenancePlan.engagementType.replace(/_/g, " ").toLowerCase()}.`,
+      `Monthly capacity: ${maintenancePlan.supportHoursPerMonth} hours.`,
+      `Service level: ${maintenancePlan.suggestedSla}`,
+    ].join("\n");
+  }
+
   const header = `Estimated duration: ${estimatedWeeks} week${estimatedWeeks === 1 ? "" : "s"} from kick-off.`;
 
   if (breakdown.length === 0) {
@@ -116,8 +156,13 @@ function buildTimeline(lead: ClientLeadDetail): string {
 function buildTeamStructure(lead: ClientLeadDetail): string {
   const { teamSize, estimatedWeeks } = lead.estimate;
 
+  const duration =
+    estimatedWeeks !== null
+      ? ` over ${estimatedWeeks} week${estimatedWeeks === 1 ? "" : "s"}`
+      : " on an ongoing basis";
+
   return [
-    `Recommended team size: ${teamSize} concurrent contributor${teamSize === 1 ? "" : "s"} over ${estimatedWeeks} week${estimatedWeeks === 1 ? "" : "s"}.`,
+    `Recommended team size: ${teamSize} concurrent contributor${teamSize === 1 ? "" : "s"}${duration}.`,
     "",
     "Proposed roles:",
     "- Engagement lead — scope, planning and client communication",
@@ -154,7 +199,9 @@ export function buildProposalDraft(lead: ClientLeadDetail): LeadProposalDraft {
   const client = lead.company ?? lead.name;
 
   return {
-    title: `${client} — Project Proposal`,
+    // The document is named for the engagement it covers. A support contract
+    // titled "Project Proposal" misdescribes what the client is being offered.
+    title: `${client} — ${PROPOSAL_TITLE_BY_MODE[lead.consultationMode] ?? "Project Proposal"}`,
     executiveSummary: buildExecutiveSummary(lead),
     scopeOfWork: buildScopeOfWork(lead),
     deliverables: buildDeliverables(lead),

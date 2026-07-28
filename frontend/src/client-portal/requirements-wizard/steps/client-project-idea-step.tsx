@@ -10,6 +10,7 @@ import {
   REQUIREMENTS_WIZARD_STEPS,
 } from "@/client-portal/requirements-wizard/requirements-wizard.config";
 import { useClientConsultationStore } from "@/store/client-consultation.store";
+import { getConsultationModeOption } from "@/types/consultation-mode";
 
 export function ClientProjectIdeaStep() {
   const { goNext, isFirstStep } = useWizardNavigation(
@@ -19,17 +20,31 @@ export function ClientProjectIdeaStep() {
   );
   const projectIdea = useClientConsultationStore((state) => state.projectIdea);
   const setProjectIdea = useClientConsultationStore((state) => state.setProjectIdea);
+  const consultationMode = useClientConsultationStore(
+    (state) => state.consultationMode,
+  );
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  /**
+   * The heading, helper text and placeholder all come from the chosen engagement
+   * type. "What would you like to build?" is the wrong question to put in front
+   * of someone whose production system is falling over — they have nothing to
+   * build, and answering it honestly would poison every downstream AI step.
+   */
+  const modeOption = getConsultationModeOption(consultationMode);
 
   const isValid = projectIdea.trim().length > 0;
 
   return (
     <div>
-      <h1 className="text-xl font-semibold tracking-tight text-foreground">
-        What would you like to build?
+      <p className="text-xs font-medium uppercase tracking-wide text-accent-text">
+        <span aria-hidden="true">{modeOption.emoji}</span> {modeOption.label}
+      </p>
+      <h1 className="mt-1 text-xl font-semibold tracking-tight text-foreground">
+        {modeOption.ideaStepTitle}
       </h1>
       <p className="mt-1.5 text-sm text-muted">
-        Describe your idea in your own words — type it, or say it out loud.
+        {modeOption.ideaStepDescription} Type it, or say it out loud.
       </p>
 
       <div className="mt-6">
@@ -38,7 +53,7 @@ export function ClientProjectIdeaStep() {
           value={projectIdea}
           onChange={(event) => setProjectIdea(event.target.value)}
           rows={8}
-          placeholder="e.g. An app that helps small gyms manage class bookings and memberships..."
+          placeholder={modeOption.ideaPlaceholder}
         />
 
         {/*

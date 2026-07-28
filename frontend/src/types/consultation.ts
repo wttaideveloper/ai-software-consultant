@@ -1,3 +1,5 @@
+import type { ConsultationMode } from "./consultation-mode";
+
 export type ConsultationStatus = "draft" | "in_progress" | "completed" | "cancelled";
 
 export type Consultation = {
@@ -9,6 +11,7 @@ export type Consultation = {
   status: ConsultationStatus;
   industry: string | null;
   projectType: string | null;
+  consultationMode: ConsultationMode;
   budgetRange: string | null;
   timeline: string | null;
   startedAt: string | null;
@@ -41,6 +44,7 @@ export type CreateConsultationPayload = {
   title: string;
   industry?: string | null;
   projectType?: string | null;
+  consultationMode?: ConsultationMode;
   budgetRange?: string | null;
   timeline?: string | null;
 };
@@ -49,6 +53,7 @@ export type UpdateConsultationPayload = {
   title?: string;
   industry?: string | null;
   projectType?: string | null;
+  consultationMode?: ConsultationMode;
   budgetRange?: string | null;
   timeline?: string | null;
   status?: ConsultationStatus;

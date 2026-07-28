@@ -19,7 +19,12 @@ exports.projectEstimations = (0, pg_core_1.pgTable)("project_estimations", {
         .notNull()
         .references(() => requirement_summaries_js_1.requirementSummaries.id, { onDelete: "cascade" }),
     estimatedHours: (0, pg_core_1.integer)("estimated_hours").notNull(),
-    estimatedWeeks: (0, pg_core_1.integer)("estimated_weeks").notNull(),
+    /**
+     * Nullable since Consultation Mode: a MAINTENANCE engagement has no delivery
+     * date, so a number here would be fabricated. Every other mode still writes
+     * one, enforced in code by estimation.mode.ts rather than by the column.
+     */
+    estimatedWeeks: (0, pg_core_1.integer)("estimated_weeks"),
     estimatedTeamSize: (0, pg_core_1.integer)("estimated_team_size").notNull(),
     complexity: (0, enums_js_1.featureComplexityEnum)("complexity").notNull(),
     confidenceScore: (0, pg_core_1.numeric)("confidence_score", {
@@ -29,6 +34,8 @@ exports.projectEstimations = (0, pg_core_1.pgTable)("project_estimations", {
     assumptions: (0, pg_core_1.text)("assumptions").notNull(),
     risks: (0, pg_core_1.jsonb)("risks").$type().notNull(),
     breakdown: (0, pg_core_1.jsonb)("breakdown").$type().notNull(),
+    /** Null for NEW_PROJECT and for every estimate produced before Consultation Mode. */
+    modePlan: (0, pg_core_1.jsonb)("mode_plan").$type(),
     generatedBy: (0, enums_js_1.requirementSummaryGeneratedByEnum)("generated_by")
         .notNull()
         .default("AI"),

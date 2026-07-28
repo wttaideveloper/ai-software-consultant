@@ -6,7 +6,12 @@ import { useNavigate, useParams } from "react-router-dom";
 import { SectionError } from "@/components/shared/section-error";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Badge } from "@/components/ui";
 import { ClientLeadStatusBadge } from "@/features/client-requests/components/client-lead-status-badge";
+import {
+  getConsultationModeLabel,
+  getConsultationModeOption,
+} from "@/types/consultation-mode";
 import { LeadActivityTimeline } from "@/features/client-requests/components/lead-activity-timeline";
 import { LeadClientInfoCard } from "@/features/client-requests/components/lead-client-info-card";
 import { LeadDetailsSkeleton } from "@/features/client-requests/components/lead-details-skeleton";
@@ -175,6 +180,12 @@ export function ClientRequestDetailsPage() {
                   {lead.name}
                 </h1>
                 <ClientLeadStatusBadge status={lead.status} />
+                {/* Which engagement this request is — it decides how the whole
+                    record should be read, so it sits beside the status. */}
+                <Badge variant="accent">
+                  {getConsultationModeOption(lead.consultationMode).emoji}{" "}
+                  {getConsultationModeLabel(lead.consultationMode)}
+                </Badge>
               </div>
             </div>
           </div>

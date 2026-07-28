@@ -3,6 +3,7 @@ import type {
   ClientLeadFeature,
   ClientLeadPricing,
 } from "../../db/schema/client-leads.js";
+import type { ConsultationMode } from "../../shared/constants/consultation-mode.js";
 import type { ClientLeadStatus } from "./client-lead.repository.js";
 
 export type ClientLeadResponseDto = {
@@ -35,6 +36,8 @@ export type ClientLeadListItemDto = {
   email: string;
   company: string | null;
   phone: string | null;
+  /** Engagement type — drives how the Admin reads the request and which proposal template applies. */
+  consultationMode: ConsultationMode;
   consultationTime: string;
   platforms: string[];
   otherPlatform: string | null;

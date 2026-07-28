@@ -54,10 +54,14 @@ export function useGenerateClientEstimate() {
           assumptions: data.assumptions,
           risks: data.risks,
           breakdown: data.breakdown,
+          maintenancePlan: data.maintenancePlan,
+          migrationPlan: data.migrationPlan,
+          enhancementImpact: data.enhancementImpact,
         },
         featureBreakdown: buildFeatureBreakdown(features, data.estimatedHours, previousIncluded),
         techStack: data.techStack,
         pricing: data.pricing,
+        monthlyPricing: data.monthlyPricing,
       });
     },
     onError: (error) => {

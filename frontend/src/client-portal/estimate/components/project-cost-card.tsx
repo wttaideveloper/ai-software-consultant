@@ -17,6 +17,11 @@ type ProjectCostCardProps = {
   isUpdating?: boolean;
   /** Every feature switched off: there is no scope left to price. */
   noFeaturesSelected?: boolean;
+  /**
+   * What the figure is called. A support engagement is quoted per month, not as
+   * a project total, so "Project Cost" would misdescribe it.
+   */
+  label?: string;
 };
 
 /**
@@ -27,6 +32,7 @@ type ProjectCostCardProps = {
  */
 export function ProjectCostCard({
   pricing,
+  label = "Project Cost",
   isUpdating,
   noFeaturesSelected,
 }: ProjectCostCardProps) {
@@ -51,7 +57,7 @@ export function ProjectCostCard({
             <Wallet className="h-4.5 w-4.5" strokeWidth={1.85} />
           </div>
           <p className="text-xs font-semibold uppercase tracking-wide text-accent-text">
-            Project Cost
+            {label}
           </p>
         </div>
         {isUpdating ? (

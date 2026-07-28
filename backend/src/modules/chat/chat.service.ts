@@ -417,6 +417,7 @@ export class ChatService {
           title: consultation.title,
           industry: consultation.industry,
           projectType: consultation.projectType,
+          consultationMode: consultation.consultationMode,
           status: consultation.status,
         },
         conversationHistory,

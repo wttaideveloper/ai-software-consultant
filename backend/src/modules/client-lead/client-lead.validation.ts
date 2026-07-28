@@ -4,6 +4,7 @@ import {
   MAX_PAGE_SIZE,
 } from "../../shared/constants/app.js";
 import { clientLeadStatusEnum } from "../../db/schema/enums.js";
+import { consultationModeSchema } from "../../shared/constants/consultation-mode.js";
 
 const featureInputSchema = z.object({
   name: z.string().trim().min(1),
@@ -19,15 +20,47 @@ const estimateBreakdownItemSchema = z.object({
   hours: z.number(),
 });
 
+const maintenancePlanInputSchema = z.object({
+  engagementType: z.string(),
+  supportHoursPerMonth: z.number(),
+  priorityLevel: z.string(),
+  suggestedSla: z.string(),
+  supportScope: z.array(z.string()).default([]),
+});
+
+const migrationPlanInputSchema = z.object({
+  phases: z.array(
+    z.object({
+      name: z.string(),
+      description: z.string(),
+      hours: z.number(),
+    }),
+  ),
+  rollbackStrategy: z.string(),
+  downtimeEstimate: z.string(),
+});
+
+const enhancementImpactInputSchema = z.object({
+  impactAnalysis: z.array(z.string()).default([]),
+  dependencies: z.array(z.string()).default([]),
+  affectedModules: z.array(z.string()).default([]),
+});
+
 const estimateInputSchema = z.object({
   estimatedHours: z.number(),
-  estimatedWeeks: z.number(),
+  /** Null for a support engagement, which has no delivery date. */
+  estimatedWeeks: z.number().nullable().default(null),
   teamSize: z.number(),
   complexity: z.enum(["LOW", "MEDIUM", "HIGH"]),
   confidence: z.number().min(0).max(1),
   assumptions: z.array(z.string()),
   risks: z.array(z.string()),
   breakdown: z.array(estimateBreakdownItemSchema),
+  // Engagement-specific halves; exactly one is sent, and none for NEW_PROJECT or
+  // for a lead submitted before Consultation Mode existed.
+  maintenancePlan: maintenancePlanInputSchema.nullish(),
+  migrationPlan: migrationPlanInputSchema.nullish(),
+  enhancementImpact: enhancementImpactInputSchema.nullish(),
 });
 
 /**
@@ -77,6 +110,8 @@ export const createClientLeadSchema = z.object({
   preferredContactMethod: z.enum(["EMAIL", "PHONE", "WHATSAPP"]).default("EMAIL"),
   notes: z.string().trim().optional(),
 
+  /** Engagement type this request was captured under; older clients omit it. */
+  consultationMode: consultationModeSchema,
   projectIdea: z.string().trim().min(1, "Project idea is required"),
   consultationTime: z.string().trim().min(1, "Consultation time is required"),
   platforms: z.array(z.string()).min(1, "At least one platform is required"),

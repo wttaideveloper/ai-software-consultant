@@ -35,6 +35,9 @@ export function useConceptMockups(input: {
   enabled: boolean;
 }) {
   const consultationKey = useClientConsultationStore((state) => state.consultationKey);
+  const consultationMode = useClientConsultationStore(
+    (state) => state.consultationMode,
+  );
   const queryClient = useQueryClient();
 
   const query = useQuery({
@@ -48,6 +51,9 @@ export function useConceptMockups(input: {
   });
 
   const buildPayload = (): GenerateMockupsPayload => ({
+    // The server decides whether this engagement gets concepts at all; sending
+    // the mode is what lets it answer NOT_APPLICABLE without spending anything.
+    consultationMode,
     consultationKey,
     requirementSummary: input.requirementSummary ?? "",
     features: input.features,

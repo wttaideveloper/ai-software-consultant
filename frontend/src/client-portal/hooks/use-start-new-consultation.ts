@@ -1,25 +1,23 @@
 import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  REQUIREMENTS_WIZARD_BASE_PATH,
-  REQUIREMENTS_WIZARD_STEPS,
-} from "@/client-portal/requirements-wizard/requirements-wizard.config";
+import { CONSULTATION_MODE_PATH } from "@/client-portal/client-nav-config";
 import { clearClientConsultation } from "@/store/client-consultation.store";
-
-const FIRST_STEP_PATH = `${REQUIREMENTS_WIZARD_BASE_PATH}/${REQUIREMENTS_WIZARD_STEPS[0].path}`;
 
 /**
  * The Client Portal's single "start over" entry point: discards any previous
- * consultation (in-memory + persisted) and sends the visitor to step one.
+ * consultation (in-memory + persisted) and sends the visitor to the engagement
+ * type chooser.
  *
- * Navigates to the first step explicitly rather than to the wizard index, which
- * would resume at the last-viewed step — the opposite of what's wanted here.
+ * It lands on mode selection rather than the wizard's first step because the mode
+ * is now the first thing a consultation needs — every question after it depends
+ * on which engagement type was picked. Navigating anywhere inside the wizard
+ * would silently keep whatever mode the previous visit used.
  */
 export function useStartNewConsultation() {
   const navigate = useNavigate();
 
   return useCallback(() => {
     clearClientConsultation();
-    navigate(FIRST_STEP_PATH);
+    navigate(CONSULTATION_MODE_PATH);
   }, [navigate]);
 }

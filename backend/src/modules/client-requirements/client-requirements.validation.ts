@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { consultationModeSchema } from "../../shared/constants/consultation-mode.js";
 
 const conversationTurnSchema = z.object({
   role: z.enum(["assistant", "user"]),
@@ -6,6 +7,7 @@ const conversationTurnSchema = z.object({
 });
 
 export const startClientDiscoverySchema = z.object({
+  consultationMode: consultationModeSchema,
   projectIdea: z.string().trim().min(1, "Project idea is required"),
   consultationTime: z.string().trim().min(1, "Consultation time is required"),
   platforms: z.array(z.string()).min(1, "At least one platform is required"),
@@ -13,6 +15,7 @@ export const startClientDiscoverySchema = z.object({
 });
 
 export const nextClientDiscoverySchema = z.object({
+  consultationMode: consultationModeSchema,
   projectIdea: z.string().trim().min(1, "Project idea is required"),
   consultationTime: z.string().trim().min(1, "Consultation time is required"),
   platforms: z.array(z.string()).min(1, "At least one platform is required"),

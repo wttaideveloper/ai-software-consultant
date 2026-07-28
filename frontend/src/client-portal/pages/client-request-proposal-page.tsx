@@ -34,6 +34,9 @@ export function ClientRequestProposalPage() {
   const navigate = useNavigate();
 
   const projectIdea = useClientConsultationStore((state) => state.projectIdea);
+  const consultationMode = useClientConsultationStore(
+    (state) => state.consultationMode,
+  );
   const consultationTime = useClientConsultationStore((state) => state.consultationTime);
   const platforms = useClientConsultationStore((state) => state.platforms);
   const otherPlatform = useClientConsultationStore((state) => state.otherPlatform);
@@ -84,6 +87,7 @@ export function ClientRequestProposalPage() {
         country: values.country || undefined,
         preferredContactMethod: values.preferredContactMethod,
         notes: values.notes || undefined,
+        consultationMode,
         projectIdea,
         consultationTime: consultationTime ?? "",
         platforms,
@@ -139,7 +143,18 @@ export function ClientRequestProposalPage() {
       )
     : "Not available";
 
-  const timelineDisplay = formatWeekRange(toWeekRange(estimate.estimatedWeeks));
+  /**
+   * Mirrors the Estimate page: a support engagement has no delivery weeks, so it
+   * reports recurring capacity and quotes a monthly figure instead of a project
+   * total. The client must see the same framing on both screens.
+   */
+  const isSupportEngagement = Boolean(estimate.maintenancePlan);
+  const timelineDisplay =
+    estimate.estimatedWeeks != null
+      ? formatWeekRange(toWeekRange(estimate.estimatedWeeks))
+      : estimate.maintenancePlan
+        ? `${estimate.maintenancePlan.supportHoursPerMonth} hrs / month`
+        : "—";
 
   return (
     <ClientLayout>
@@ -153,15 +168,19 @@ export function ClientRequestProposalPage() {
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <MetricCard
-            label="Estimated Cost"
+            label={isSupportEngagement ? "Monthly Cost" : "Estimated Cost"}
             value={costRangeDisplay}
             unavailable={!currentPricing}
             hint={currentPricing ? PRICE_RANGE_HELPER_TEXT : undefined}
           />
           <MetricCard
-            label="Timeline"
+            label={isSupportEngagement ? "Support Capacity" : "Timeline"}
             value={timelineDisplay}
-            hint={TIMELINE_RANGE_HELPER_TEXT}
+            hint={
+              isSupportEngagement
+                ? "Recurring capacity, not a delivery date."
+                : TIMELINE_RANGE_HELPER_TEXT
+            }
           />
           <MetricCard label="Complexity" value={complexity ?? "—"} />
           <MetricCard

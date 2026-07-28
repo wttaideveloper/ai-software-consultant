@@ -56,6 +56,7 @@ export { detectedFeatures } from "./detected-features.js";
 export { projectEstimations } from "./project-estimations.js";
 export type {
   EstimationBreakdownItem,
+  EstimationModePlan,
   EstimationRisk,
 } from "./project-estimations.js";
 export { projectProposals } from "./project-proposals.js";

@@ -10,6 +10,7 @@ export * from "./auth";
 export * from "./chat";
 export * from "./client-lead";
 export * from "./consultation";
+export * from "./consultation-mode";
 export * from "./cost";
 export * from "./estimation";
 export * from "./feature";

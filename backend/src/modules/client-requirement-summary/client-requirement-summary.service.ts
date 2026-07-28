@@ -84,6 +84,7 @@ export class ClientRequirementSummaryService {
     try {
       const response = await aiOrchestrator.generateStandaloneReply({
         promptType: PROMPT_TYPES.REQUIREMENT_SUMMARY,
+        consultationMode: input.consultationMode,
         conversationHistory: [],
         userMessage: buildTranscript(input),
         variables: {

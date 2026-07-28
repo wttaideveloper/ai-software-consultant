@@ -1,7 +1,14 @@
 import { api } from "@/services/api";
-import type { ApiSuccessResponse, FeatureComplexity, FeaturePriority } from "@/types";
+import type {
+  ApiSuccessResponse,
+  ConsultationMode,
+  FeatureComplexity,
+  FeaturePriority,
+} from "@/types";
 
 export type GenerateClientFeaturesPayload = {
+  /** Decides the category vocabulary the AI may use (Bug Fix / Migration Phase / ...). */
+  consultationMode: ConsultationMode;
   summary: string;
 };
 

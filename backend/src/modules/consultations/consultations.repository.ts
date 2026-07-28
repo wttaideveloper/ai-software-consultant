@@ -1,3 +1,4 @@
+import type { ConsultationMode } from "../../shared/constants/consultation-mode.js";
 import {
   and,
   asc,
@@ -29,6 +30,7 @@ export type CreateConsultationData = {
   status: string;
   industry: string | null;
   projectType: string | null;
+  consultationMode: ConsultationMode;
   budgetRange: string | null;
   timeline: string | null;
 };
@@ -37,6 +39,7 @@ export type UpdateConsultationData = {
   title?: string;
   industry?: string | null;
   projectType?: string | null;
+  consultationMode?: ConsultationMode;
   budgetRange?: string | null;
   timeline?: string | null;
   status?: string;
@@ -134,6 +137,7 @@ export class ConsultationsRepository {
         status: data.status,
         industry: data.industry,
         projectType: data.projectType,
+        consultationMode: data.consultationMode,
         budgetRange: data.budgetRange,
         timeline: data.timeline,
       })

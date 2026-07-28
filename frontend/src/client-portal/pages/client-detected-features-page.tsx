@@ -22,6 +22,9 @@ export function ClientDetectedFeaturesPage() {
   const navigate = useNavigate();
 
   const summary = useClientConsultationStore((state) => state.summary);
+  const consultationMode = useClientConsultationStore(
+    (state) => state.consultationMode,
+  );
   const platforms = useClientConsultationStore((state) => state.platforms);
   const otherPlatform = useClientConsultationStore((state) => state.otherPlatform);
   const features = useClientConsultationStore((state) => state.features);
@@ -38,7 +41,7 @@ export function ClientDetectedFeaturesPage() {
 
   const requestGeneration = () => {
     if (!summary) return;
-    generateFeatures.mutate({ summary });
+    generateFeatures.mutate({ consultationMode, summary });
   };
 
   useEffect(() => {

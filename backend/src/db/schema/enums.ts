@@ -6,6 +6,21 @@ export const verificationTokenTypeEnum = pgEnum("verification_token_type", [
   "INVITATION",
 ]);
 
+/**
+ * The kind of engagement a consultation represents. Mirrors CONSULTATION_MODES in
+ * shared/constants/consultation-mode.ts — that file is the application-side source
+ * of truth and this enum is its database projection; change one, change both.
+ *
+ * Columns using it are NOT NULL DEFAULT 'NEW_PROJECT' so every pre-existing row
+ * backfills to the only engagement type the platform could previously express.
+ */
+export const consultationModeEnum = pgEnum("consultation_mode", [
+  "NEW_PROJECT",
+  "FEATURE_ENHANCEMENT",
+  "MAINTENANCE",
+  "MODERNIZATION",
+]);
+
 export const messageSenderTypeEnum = pgEnum("message_sender_type", [
   "user",
   "assistant",

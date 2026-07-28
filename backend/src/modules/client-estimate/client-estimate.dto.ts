@@ -1,4 +1,10 @@
+import type { ConsultationMode } from "../../shared/constants/consultation-mode.js";
 import type { CostPreviewDto } from "../cost/cost.dto.js";
+import type {
+  AiEnhancementImpact,
+  AiMaintenancePlan,
+  AiMigrationPlan,
+} from "../estimation/estimation.validation.js";
 
 export type ClientEstimateBreakdownItem = {
   category: string;
@@ -6,8 +12,14 @@ export type ClientEstimateBreakdownItem = {
 };
 
 export type ClientEstimateResponseDto = {
+  /** Echoed back so the client renders the estimate in the shape it asked for. */
+  consultationMode: ConsultationMode;
   estimatedHours: number;
-  estimatedWeeks: number;
+  /**
+   * Null for a MAINTENANCE engagement, which has no delivery date — see
+   * estimation.mode.ts. Always a number for the other three modes.
+   */
+  estimatedWeeks: number | null;
   teamSize: number;
   complexity: "LOW" | "MEDIUM" | "HIGH";
   confidence: number;
@@ -23,4 +35,17 @@ export type ClientEstimateResponseDto = {
    * still renders without a price.
    */
   pricing: CostPreviewDto | null;
+  /**
+   * Engagement-specific detail. Exactly one is non-null, decided by
+   * `consultationMode`; NEW_PROJECT carries none.
+   */
+  maintenancePlan: AiMaintenancePlan | null;
+  migrationPlan: AiMigrationPlan | null;
+  enhancementImpact: AiEnhancementImpact | null;
+  /**
+   * The recurring monthly cost of a support engagement, priced by the same Cost
+   * Engine from `maintenancePlan.supportHoursPerMonth`. Non-null only for
+   * MAINTENANCE — every other mode quotes a one-off project cost in `pricing`.
+   */
+  monthlyPricing: CostPreviewDto | null;
 };

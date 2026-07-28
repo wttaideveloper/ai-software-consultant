@@ -61,6 +61,7 @@ export class ClientFeaturesService {
     try {
       const response = await aiOrchestrator.generateStandaloneReply({
         promptType: PROMPT_TYPES.FEATURE_DETECTION,
+        consultationMode: input.consultationMode,
         conversationHistory: [],
         userMessage: input.summary,
       });

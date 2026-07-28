@@ -60,6 +60,7 @@ class ConsultationsRepository {
             status: data.status,
             industry: data.industry,
             projectType: data.projectType,
+            consultationMode: data.consultationMode,
             budgetRange: data.budgetRange,
             timeline: data.timeline,
         })

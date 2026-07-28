@@ -8,6 +8,7 @@ import {
   projectEstimations,
   requirementSummaries,
   type EstimationBreakdownItem,
+  type EstimationModePlan,
   type EstimationRisk,
 } from "../../db/schema/index.js";
 
@@ -23,7 +24,8 @@ export type CreateEstimationData = {
   consultationId: string;
   requirementSummaryId: string;
   estimatedHours: number;
-  estimatedWeeks: number;
+  estimatedWeeks: number | null;
+  modePlan: EstimationModePlan | null;
   estimatedTeamSize: number;
   complexity: "LOW" | "MEDIUM" | "HIGH";
   confidenceScore: string;
@@ -37,7 +39,8 @@ export type CreateEstimationData = {
 export type UpdateEstimationData = {
   requirementSummaryId?: string;
   estimatedHours?: number;
-  estimatedWeeks?: number;
+  estimatedWeeks?: number | null;
+  modePlan?: EstimationModePlan | null;
   estimatedTeamSize?: number;
   complexity?: "LOW" | "MEDIUM" | "HIGH";
   confidenceScore?: string;

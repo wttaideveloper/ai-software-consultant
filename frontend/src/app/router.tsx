@@ -13,6 +13,11 @@ import { AppLayout } from "@/layouts/app-layout";
  */
 
 // Client Portal
+const ClientConsultationModePage = lazy(() =>
+  import("@/client-portal/pages/client-consultation-mode-page").then((m) => ({
+    default: m.ClientConsultationModePage,
+  })),
+);
 const RequirementsWizardIndexRedirect = lazy(() =>
   import("@/client-portal/requirements-wizard/requirements-wizard-index-redirect").then(
     (m) => ({ default: m.RequirementsWizardIndexRedirect }),
@@ -163,6 +168,13 @@ export function AppRouter() {
       <Routes>
         {/* Public Client Portal — no authentication required, independent of the Admin Portal below. */}
         <Route path="/" element={<ClientLandingPage />} />
+
+        {/*
+          Engagement type first. The wizard below assumes a mode has been chosen;
+          arriving at /requirements directly simply uses the stored one, which
+          defaults to NEW_PROJECT exactly as the portal behaved before.
+        */}
+        <Route path="/start" element={<ClientConsultationModePage />} />
 
         <Route path="/requirements" element={<RequirementsWizardLayout />}>
           <Route index element={<RequirementsWizardIndexRedirect />} />

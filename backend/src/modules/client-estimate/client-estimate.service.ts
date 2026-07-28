@@ -4,6 +4,7 @@ import { logger } from "../../shared/logger/logger.js";
 import { aiOrchestrator } from "../ai/ai.orchestrator.js";
 import type { CostPreviewDto } from "../cost/cost.dto.js";
 import { costSettingsService } from "../cost/cost.service.js";
+import { normalizeEstimateForMode } from "../estimation/estimation.mode.js";
 import { aiEstimationPayloadSchema } from "../estimation/estimation.validation.js";
 import { PROMPT_TYPES } from "../prompts/prompt.constants.js";
 import { clientEstimateRepository } from "./client-estimate.repository.js";
@@ -72,6 +73,7 @@ export class ClientEstimateService {
     try {
       const response = await aiOrchestrator.generateStandaloneReply({
         promptType: PROMPT_TYPES.ESTIMATION,
+        consultationMode: input.consultationMode,
         conversationHistory: [],
         userMessage: buildFeaturesPrompt(input.features),
       });
@@ -94,23 +96,49 @@ export class ClientEstimateService {
         );
       }
 
+      // Reconciles the payload with the engagement type it was asked for — see
+      // estimation.mode.ts. Shared with the admin pipeline so both apply one rule.
+      const estimate = normalizeEstimateForMode(
+        validated.data,
+        input.consultationMode,
+      );
+
       const pricing = await this.priceEstimate({
-        estimatedHours: validated.data.estimatedHours,
-        complexity: validated.data.complexity,
+        estimatedHours: estimate.estimatedHours,
+        complexity: estimate.complexity,
         platformLabels: input.platforms ?? [],
       });
 
+      /**
+       * A support engagement is quoted per month, not per project. The recurring
+       * figure is the same Cost Engine applied to the AI's own monthly capacity —
+       * the AI supplies hours, the rate card supplies the money, exactly as
+       * everywhere else.
+       */
+      const monthlyPricing = estimate.maintenancePlan
+        ? await this.priceEstimate({
+            estimatedHours: estimate.maintenancePlan.supportHoursPerMonth,
+            complexity: estimate.complexity,
+            platformLabels: input.platforms ?? [],
+          })
+        : null;
+
       return {
-        estimatedHours: validated.data.estimatedHours,
-        estimatedWeeks: validated.data.estimatedWeeks,
-        teamSize: validated.data.teamSize,
-        complexity: validated.data.complexity,
-        confidence: validated.data.confidence,
-        assumptions: validated.data.assumptions,
-        risks: validated.data.risks,
-        breakdown: validated.data.breakdown,
-        techStack: validated.data.techStack ?? null,
+        consultationMode: input.consultationMode,
+        estimatedHours: estimate.estimatedHours,
+        estimatedWeeks: estimate.estimatedWeeks,
+        teamSize: estimate.teamSize,
+        complexity: estimate.complexity,
+        confidence: estimate.confidence,
+        assumptions: estimate.assumptions,
+        risks: estimate.risks,
+        breakdown: estimate.breakdown,
+        techStack: estimate.techStack ?? null,
         pricing,
+        maintenancePlan: estimate.maintenancePlan ?? null,
+        migrationPlan: estimate.migrationPlan ?? null,
+        enhancementImpact: estimate.enhancementImpact ?? null,
+        monthlyPricing,
       };
     } catch (error) {
       logger.error(`Client estimation failed: ${resolveSafeErrorMessage(error)}`);

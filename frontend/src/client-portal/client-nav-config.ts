@@ -1,3 +1,10 @@
+/**
+ * Where a consultation begins: the engagement type chooser. Not one of
+ * CLIENT_PORTAL_STEPS below — it is the entry point into the flow, the same way
+ * the landing page is, and the step indicator should not count it.
+ */
+export const CONSULTATION_MODE_PATH = "/start";
+
 export type ClientStep = {
   path: string;
   label: string;

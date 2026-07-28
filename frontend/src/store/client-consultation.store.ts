@@ -1,6 +1,12 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import type { CostPreview, FeatureComplexity, FeaturePriority } from "@/types";
+import {
+  DEFAULT_CONSULTATION_MODE,
+  type ConsultationMode,
+  type CostPreview,
+  type FeatureComplexity,
+  type FeaturePriority,
+} from "@/types";
 
 /**
  * Structure only for fields not yet backed by a real flow — no business logic here.
@@ -80,15 +86,45 @@ export type ClientEstimateBreakdownItem = {
  * project cost is never part of this — it is priced separately by the Cost Engine
  * and kept in `pricing`, so the AI is never the source of a number the client pays.
  */
+/** Present only for a MAINTENANCE engagement — see the estimate DTO on the backend. */
+export type ClientMaintenancePlan = {
+  engagementType: "ONE_TIME_FIX" | "MONTHLY_RETAINER" | "ONGOING_SUPPORT";
+  supportHoursPerMonth: number;
+  priorityLevel: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  suggestedSla: string;
+  supportScope: string[];
+};
+
+/** Present only for a MODERNIZATION engagement. */
+export type ClientMigrationPlan = {
+  phases: Array<{ name: string; description: string; hours: number }>;
+  rollbackStrategy: string;
+  downtimeEstimate: string;
+};
+
+/** Present only for a FEATURE_ENHANCEMENT engagement. */
+export type ClientEnhancementImpact = {
+  impactAnalysis: string[];
+  dependencies: string[];
+  affectedModules: string[];
+};
+
 export type ClientEstimate = {
   estimatedHours: number;
-  estimatedWeeks: number;
+  /**
+   * Null for a MAINTENANCE engagement: a support arrangement has no delivery
+   * date, so there is no number to show. Always present for the other modes.
+   */
+  estimatedWeeks: number | null;
   teamSize: number;
   complexity: FeatureComplexity;
   confidence: number;
   assumptions: string[];
   risks: string[];
   breakdown: ClientEstimateBreakdownItem[];
+  maintenancePlan: ClientMaintenancePlan | null;
+  migrationPlan: ClientMigrationPlan | null;
+  enhancementImpact: ClientEnhancementImpact | null;
 };
 
 /** One row of the Estimate step's per-feature display. `hours` is the feature's share of the AI's total effort (split by complexity) and drives the live Project Cost as rows are toggled. */
@@ -102,6 +138,18 @@ export type ClientFeatureBreakdownItem = {
 };
 
 export type ClientConsultationState = {
+  /**
+   * The kind of engagement this consultation is — chosen on the mode selection
+   * screen before the wizard starts, and sent with every AI request from here on.
+   *
+   * Not a display preference: it decides which questions get asked, which feature
+   * categories come back, what the estimate contains, which proposal template is
+   * used and whether concept screens are generated at all. A session persisted
+   * before this field existed simply has no key for it, and Zustand's persist
+   * merge keeps the initial value — so an in-progress visit resumes as
+   * NEW_PROJECT, which is what it always was.
+   */
+  consultationMode: ConsultationMode;
   /**
    * Stable id for this consultation, minted once and kept for the whole visit.
    *
@@ -135,6 +183,8 @@ export type ClientConsultationState = {
   techStack: string[] | null;
   /** Final project cost from the Cost Engine (never the AI) at the AI's full hours; null until priced, or on a pricing failure. */
   pricing: CostPreview | null;
+  /** Recurring monthly cost for a MAINTENANCE engagement; null for every other mode. */
+  monthlyPricing: CostPreview | null;
   /**
    * The price after the client's feature toggles — exactly what the Estimate page
    * is showing. Persisted so later steps (the Proposal) can *present* the figure
@@ -147,6 +197,8 @@ export type ClientConsultationState = {
 };
 
 type ClientConsultationActions = {
+  /** Also clears discovery: questions already asked belong to the previous mode. */
+  setConsultationMode: (value: ConsultationMode) => void;
   setCurrentStep: (value: string | null) => void;
   setProjectIdea: (value: string) => void;
   setConsultationTime: (value: string | null) => void;
@@ -171,6 +223,8 @@ type ClientConsultationActions = {
     featureBreakdown: ClientFeatureBreakdownItem[];
     techStack: string[] | null;
     pricing: CostPreview | null;
+    /** Recurring monthly cost of a support engagement; null for every other mode. */
+    monthlyPricing: CostPreview | null;
   }) => void;
   /** Records the repriced figure the Estimate page is displaying, so every later step presents the same number. */
   setCurrentPricing: (value: CostPreview | null) => void;
@@ -200,6 +254,7 @@ function createConsultationKey(): string {
 }
 
 const INITIAL_STATE: ClientConsultationState = {
+  consultationMode: DEFAULT_CONSULTATION_MODE,
   consultationKey: createConsultationKey(),
   currentStep: null,
   projectIdea: "",
@@ -218,6 +273,7 @@ const INITIAL_STATE: ClientConsultationState = {
   recommendedTeam: null,
   techStack: null,
   pricing: null,
+  monthlyPricing: null,
   currentPricing: null,
   featureBreakdown: [],
   contactInfo: {
@@ -238,6 +294,16 @@ export const useClientConsultationStore = create<
   persist(
     (set) => ({
       ...INITIAL_STATE,
+      // Switching mode invalidates the interview: the questions already asked
+      // were generated for a different engagement type, and feeding them to the
+      // new one would produce a transcript that contradicts itself.
+      setConsultationMode: (value) =>
+        set({
+          consultationMode: value,
+          conversation: [],
+          currentQuestion: null,
+          isDiscoveryComplete: false,
+        }),
       setCurrentStep: (value) => set({ currentStep: value }),
       setProjectIdea: (value) => set({ projectIdea: value }),
       setConsultationTime: (value) => set({ consultationTime: value }),
@@ -276,10 +342,24 @@ export const useClientConsultationStore = create<
         })),
       removeFeature: (id) =>
         set((state) => ({ features: state.features.filter((feature) => feature.id !== id) })),
-      applyEstimateResult: ({ estimate, featureBreakdown, techStack, pricing }) =>
+      applyEstimateResult: ({
+        estimate,
+        featureBreakdown,
+        techStack,
+        pricing,
+        monthlyPricing,
+      }) =>
         set({
           estimate,
-          timeline: `${estimate.estimatedWeeks} week${estimate.estimatedWeeks === 1 ? "" : "s"}`,
+          monthlyPricing,
+          // A support engagement reports its recurring capacity instead of a
+          // delivery window — there is no date to count down to.
+          timeline:
+            estimate.estimatedWeeks === null
+              ? estimate.maintenancePlan
+                ? `${estimate.maintenancePlan.supportHoursPerMonth} hrs / month`
+                : null
+              : `${estimate.estimatedWeeks} week${estimate.estimatedWeeks === 1 ? "" : "s"}`,
           complexity: estimate.complexity,
           recommendedTeam: estimate.teamSize,
           techStack,

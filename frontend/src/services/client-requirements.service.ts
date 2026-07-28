@@ -1,8 +1,10 @@
 import { api } from "@/services/api";
 import type { ClientConversationTurn } from "@/store/client-consultation.store";
-import type { ApiSuccessResponse } from "@/types";
+import type { ApiSuccessResponse, ConsultationMode } from "@/types";
 
 export type StartDiscoveryPayload = {
+  /** Decides which questions the AI asks — see consultation-mode.profiles.ts server-side. */
+  consultationMode: ConsultationMode;
   projectIdea: string;
   consultationTime: string;
   platforms: string[];

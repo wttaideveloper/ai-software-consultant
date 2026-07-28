@@ -137,6 +137,7 @@ export class ClientRequirementsService {
     try {
       const response = await aiOrchestrator.generateStandaloneReply({
         promptType: PROMPT_TYPES.CLIENT_REQUIREMENT_DISCOVERY,
+        consultationMode: input.consultationMode,
         conversationHistory: [],
         userMessage: "Begin the discovery interview. Ask your first question now.",
         variables: buildContextVariables(input, 0),
@@ -168,6 +169,7 @@ export class ClientRequirementsService {
     try {
       const response = await aiOrchestrator.generateStandaloneReply({
         promptType: PROMPT_TYPES.CLIENT_REQUIREMENT_DISCOVERY,
+        consultationMode: input.consultationMode,
         conversationHistory: [],
         userMessage: buildTranscript(input.conversation, input.currentAnswer),
         variables: buildContextVariables(input, questionsAsked),

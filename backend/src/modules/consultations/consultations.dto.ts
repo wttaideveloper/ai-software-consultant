@@ -1,3 +1,5 @@
+import type { ConsultationMode } from "../../shared/constants/consultation-mode.js";
+
 export type ConsultationDto = {
   id: string;
   organizationId: string;
@@ -7,6 +9,7 @@ export type ConsultationDto = {
   status: string;
   industry: string | null;
   projectType: string | null;
+  consultationMode: ConsultationMode;
   budgetRange: string | null;
   timeline: string | null;
   startedAt: Date | null;

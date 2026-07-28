@@ -33,12 +33,14 @@ class AIOrchestrator {
             promptType: input.promptType,
             model,
             userMessage: input.userMessage,
+            consultationMode: input.consultationMode,
             conversationHistory: input.conversationHistory,
             maxTokens: input.maxTokens,
             temperature: input.temperature,
             variables: input.variables,
             metadata: {
                 promptType: input.promptType,
+                consultationMode: input.consultationMode ?? null,
                 ...input.metadata,
             },
         });

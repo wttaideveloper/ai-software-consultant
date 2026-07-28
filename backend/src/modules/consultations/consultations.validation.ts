@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { consultationModeSchema } from "../../shared/constants/consultation-mode.js";
 import {
   DEFAULT_PAGE_SIZE,
   MAX_PAGE_SIZE,
@@ -36,6 +37,8 @@ export const createConsultationSchema = z.object({
     .max(255, "Title must be at most 255 characters"),
   industry: z.string().trim().max(128).nullish(),
   projectType: z.string().trim().max(128).nullish(),
+  /** Engagement type. Defaulted, so a caller that omits it creates a new-build consultation exactly as before. */
+  consultationMode: consultationModeSchema,
   budgetRange: z.string().trim().max(128).nullish(),
   timeline: z.string().trim().max(128).nullish(),
   assignedTo: z.string().uuid("assignedTo must be a valid UUID").nullish(),
@@ -51,6 +54,9 @@ export const updateConsultationSchema = z
       .optional(),
     industry: z.string().trim().max(128).nullish(),
     projectType: z.string().trim().max(128).nullish(),
+    // Optional on update (no default): omitting it must leave the stored mode
+    // alone rather than silently resetting an engagement to NEW_PROJECT.
+    consultationMode: consultationModeSchema.optional(),
     budgetRange: z.string().trim().max(128).nullish(),
     timeline: z.string().trim().max(128).nullish(),
     status: z.enum(consultationStatuses).optional(),

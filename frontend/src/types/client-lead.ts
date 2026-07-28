@@ -1,3 +1,5 @@
+import type { ConsultationMode } from "./consultation-mode";
+
 /**
  * Admin-side view of a Client Portal submission (the `client_leads` table).
  *
@@ -21,6 +23,8 @@ export type ClientLead = {
   email: string;
   company: string | null;
   phone: string | null;
+  /** Engagement type this request was captured under; older leads default to NEW_PROJECT. */
+  consultationMode: ConsultationMode;
   consultationTime: string;
   platforms: string[];
   otherPlatform: string | null;
@@ -53,7 +57,8 @@ export type ClientLeadEstimateBreakdownItem = {
 
 export type ClientLeadEstimate = {
   estimatedHours: number;
-  estimatedWeeks: number;
+  /** Null for a MAINTENANCE engagement — a support arrangement has no delivery date. */
+  estimatedWeeks: number | null;
   teamSize: number;
   complexity: ClientLeadFeatureComplexity;
   /** 0–1. Rendered as a percentage. */
@@ -61,6 +66,24 @@ export type ClientLeadEstimate = {
   assumptions: string[];
   risks: string[];
   breakdown: ClientLeadEstimateBreakdownItem[];
+  /** Engagement-specific detail; exactly one is set, and none for a new build. */
+  maintenancePlan?: {
+    engagementType: string;
+    supportHoursPerMonth: number;
+    priorityLevel: string;
+    suggestedSla: string;
+    supportScope: string[];
+  } | null;
+  migrationPlan?: {
+    phases: Array<{ name: string; description: string; hours: number }>;
+    rollbackStrategy: string;
+    downtimeEstimate: string;
+  } | null;
+  enhancementImpact?: {
+    impactAnalysis: string[];
+    dependencies: string[];
+    affectedModules: string[];
+  } | null;
 };
 
 export type ClientLeadPricingBreakdown = {

@@ -44,6 +44,9 @@ export function ClientRequirementSummaryPage() {
   const navigate = useNavigate();
 
   const projectIdea = useClientConsultationStore((state) => state.projectIdea);
+  const consultationMode = useClientConsultationStore(
+    (state) => state.consultationMode,
+  );
   const platforms = useClientConsultationStore((state) => state.platforms);
   const otherPlatform = useClientConsultationStore(
     (state) => state.otherPlatform,
@@ -76,6 +79,7 @@ export function ClientRequirementSummaryPage() {
     // the existing summary; the initial generation must not (see isRegenerating).
     setRegenerateRequested(regenerate);
     generateSummary.mutate({
+      consultationMode,
       projectIdea,
       platforms,
       otherPlatform: otherPlatform || undefined,

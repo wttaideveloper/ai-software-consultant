@@ -1,10 +1,16 @@
 import { api } from "@/services/api";
 import type {
   ApiSuccessResponse,
+  ConsultationMode,
   CostPreview,
   FeatureComplexity,
   FeaturePriority,
 } from "@/types";
+import type {
+  ClientEnhancementImpact,
+  ClientMaintenancePlan,
+  ClientMigrationPlan,
+} from "@/store/client-consultation.store";
 
 export type EstimateFeatureInput = {
   name: string;
@@ -15,14 +21,18 @@ export type EstimateFeatureInput = {
 };
 
 export type GenerateClientEstimatePayload = {
+  /** Decides the estimate's shape — a support engagement returns no delivery weeks. */
+  consultationMode: ConsultationMode;
   features: EstimateFeatureInput[];
   /** Wizard-selected platform labels — priced server-side by the Cost Engine. */
   platforms?: string[];
 };
 
 export type GenerateClientEstimateResponse = {
+  consultationMode: ConsultationMode;
   estimatedHours: number;
-  estimatedWeeks: number;
+  /** Null for MAINTENANCE — a support engagement has no delivery date. */
+  estimatedWeeks: number | null;
   teamSize: number;
   complexity: FeatureComplexity;
   confidence: number;
@@ -33,6 +43,12 @@ export type GenerateClientEstimateResponse = {
   techStack: string[] | null;
   /** Final project cost from the Cost Engine (never the AI), or null on a pricing failure. */
   pricing: CostPreview | null;
+  /** Exactly one is non-null, decided by consultationMode; NEW_PROJECT carries none. */
+  maintenancePlan: ClientMaintenancePlan | null;
+  migrationPlan: ClientMigrationPlan | null;
+  enhancementImpact: ClientEnhancementImpact | null;
+  /** Recurring monthly cost of a support engagement, priced from support hours/month. */
+  monthlyPricing: CostPreview | null;
 };
 
 /** Effort + complexity for a live reprice — no features, no AI, just the Cost Engine. */

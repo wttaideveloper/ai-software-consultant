@@ -8,6 +8,7 @@ import { Select } from "@/components/ui/select";
 import { CONSULTATION_STATUS_OPTIONS } from "@/features/consultations/consultation-status";
 import {
   CONSULTATION_FORM_DEFAULTS,
+  CONSULTATION_MODE_SELECT_OPTIONS,
   consultationFormSchema,
   type ConsultationFormValues,
 } from "@/features/consultations/consultations.schema";
@@ -55,6 +56,7 @@ export function ConsultationFormModal({
         title: consultation.title,
         industry: toFieldValue(consultation.industry),
         projectType: toFieldValue(consultation.projectType),
+        consultationMode: consultation.consultationMode,
         budgetRange: toFieldValue(consultation.budgetRange),
         timeline: toFieldValue(consultation.timeline),
         status: consultation.status,
@@ -69,6 +71,7 @@ export function ConsultationFormModal({
       title: values.title,
       industry: values.industry?.trim() || undefined,
       projectType: values.projectType?.trim() || undefined,
+      consultationMode: values.consultationMode,
       budgetRange: values.budgetRange?.trim() || undefined,
       timeline: values.timeline?.trim() || undefined,
     };
@@ -120,6 +123,13 @@ export function ConsultationFormModal({
             placeholder="Web app, Mobile app…"
             error={errors.projectType?.message}
             {...register("projectType")}
+          />
+          <Select
+            label="Consultation mode"
+            hint="Decides which questions the AI asks and what the estimate contains."
+            options={CONSULTATION_MODE_SELECT_OPTIONS}
+            error={errors.consultationMode?.message}
+            {...register("consultationMode")}
           />
           <Input
             label="Budget range"

@@ -142,6 +142,7 @@ class FeatureDetectionService {
                     title: consultation.title,
                     industry: consultation.industry,
                     projectType: consultation.projectType,
+                    consultationMode: consultation.consultationMode,
                     budgetRange: consultation.budgetRange,
                     timeline: consultation.timeline,
                     status: consultation.status,

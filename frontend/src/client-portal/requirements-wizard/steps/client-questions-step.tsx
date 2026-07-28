@@ -37,6 +37,9 @@ export function ClientQuestionsStep() {
   );
 
   const projectIdea = useClientConsultationStore((state) => state.projectIdea);
+  const consultationMode = useClientConsultationStore(
+    (state) => state.consultationMode,
+  );
   const consultationTime = useClientConsultationStore((state) => state.consultationTime);
   const platforms = useClientConsultationStore((state) => state.platforms);
   const otherPlatform = useClientConsultationStore((state) => state.otherPlatform);
@@ -57,6 +60,7 @@ export function ClientQuestionsStep() {
     }
     hasStartedRef.current = true;
     startDiscovery.mutate({
+      consultationMode,
       projectIdea,
       consultationTime: consultationTime ?? "",
       platforms,
@@ -78,6 +82,7 @@ export function ClientQuestionsStep() {
 
     nextQuestion.mutate(
       {
+        consultationMode,
         projectIdea,
         consultationTime: consultationTime ?? "",
         platforms,
@@ -133,6 +138,7 @@ export function ClientQuestionsStep() {
               onClick={() => {
                 hasStartedRef.current = false;
                 startDiscovery.mutate({
+                  consultationMode,
                   projectIdea,
                   consultationTime: consultationTime ?? "",
                   platforms,

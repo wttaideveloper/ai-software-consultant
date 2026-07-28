@@ -1,5 +1,10 @@
 import { api, API_BASE_URL } from "@/services/api";
-import type { ApiSuccessResponse, FeatureComplexity, FeaturePriority } from "@/types";
+import type {
+  ApiSuccessResponse,
+  ConsultationMode,
+  FeatureComplexity,
+  FeaturePriority,
+} from "@/types";
 
 export type MockupFeatureInput = {
   name: string;
@@ -10,6 +15,8 @@ export type MockupFeatureInput = {
 };
 
 export type GenerateMockupsPayload = {
+  /** Gates generation entirely: maintenance and non-redesign migrations spend nothing. */
+  consultationMode: ConsultationMode;
   consultationKey: string;
   requirementSummary: string;
   features: MockupFeatureInput[];
@@ -35,10 +42,13 @@ export type ClientMockupSetStatus =
   | "PENDING"
   | "READY"
   | "FAILED"
-  | "DISABLED";
+  | "DISABLED"
+  /** This engagement type does not warrant concept screens; see notApplicableReason. */
+  | "NOT_APPLICABLE";
 
 export type ClientMockupSet = {
   status: ClientMockupSetStatus;
+  notApplicableReason: string | null;
   images: ClientMockupImage[];
   stale: boolean;
   regenerationsUsed: number;

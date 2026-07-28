@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { featureComplexityEnum, featurePriorityEnum } from "../../db/schema/enums.js";
+import { consultationModeSchema } from "../../shared/constants/consultation-mode.js";
 
 /**
  * The cache identity for one Client Portal visit. A UUID rather than free text so
@@ -18,6 +19,11 @@ const mockupFeatureSchema = z.object({
 
 export const generateMockupsSchema = z.object({
   consultationKey: consultationKeySchema,
+  /**
+   * Decides whether this engagement gets concept screens at all — evaluated
+   * server-side before anything billable happens (see mockup-policy.ts).
+   */
+  consultationMode: consultationModeSchema,
   requirementSummary: z.string().trim().min(1, "A requirement summary is required").max(40_000),
   // Bounded so one request cannot inflate the planning prompt arbitrarily.
   features: z.array(mockupFeatureSchema).min(1, "At least one feature is required").max(60),

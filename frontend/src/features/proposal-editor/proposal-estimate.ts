@@ -45,7 +45,12 @@ export function deriveProposalEstimate(lead: ClientLeadDetail): ProposalProjectE
   const { estimate, pricing, techStack } = lead;
 
   const costRange = pricing ? toPriceRange(pricing.breakdown.finalPrice) : null;
-  const weekRange = toWeekRange(estimate.estimatedWeeks);
+  // Null weeks (a support engagement) collapses to a 0-0 range, which the
+  // editor renders as "not applicable" rather than a fabricated window.
+  const weekRange =
+    estimate.estimatedWeeks === null
+      ? { min: 0, max: 0 }
+      : toWeekRange(estimate.estimatedWeeks);
 
   return {
     currency: pricing?.currency ?? DEFAULT_CURRENCY,
