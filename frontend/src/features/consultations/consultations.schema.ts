@@ -5,9 +5,13 @@ import {
   DEFAULT_CONSULTATION_MODE,
 } from "@/types/consultation-mode";
 
-/** Built from the shared registry so the admin form can never offer a mode the backend rejects. */
+/**
+ * Built from the shared registry so the admin form can never offer a mode the
+ * backend rejects. Label only — a native `<option>` renders no markup, so the
+ * registry's icon has nowhere to go here.
+ */
 export const CONSULTATION_MODE_SELECT_OPTIONS = CONSULTATION_MODE_OPTIONS.map(
-  (option) => ({ value: option.mode, label: `${option.emoji} ${option.label}` }),
+  (option) => ({ value: option.mode, label: option.label }),
 );
 
 export const consultationFormSchema = z.object({

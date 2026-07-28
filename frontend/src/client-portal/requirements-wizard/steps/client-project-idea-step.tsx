@@ -10,6 +10,7 @@ import {
   REQUIREMENTS_WIZARD_STEPS,
 } from "@/client-portal/requirements-wizard/requirements-wizard.config";
 import { useClientConsultationStore } from "@/store/client-consultation.store";
+import { ConsultationModeBadge } from "@/components/shared/consultation-mode-badge";
 import { getConsultationModeOption } from "@/types/consultation-mode";
 
 export function ClientProjectIdeaStep() {
@@ -37,10 +38,8 @@ export function ClientProjectIdeaStep() {
 
   return (
     <div>
-      <p className="text-xs font-medium uppercase tracking-wide text-accent-text">
-        <span aria-hidden="true">{modeOption.emoji}</span> {modeOption.label}
-      </p>
-      <h1 className="mt-1 text-xl font-semibold tracking-tight text-foreground">
+      <ConsultationModeBadge mode={consultationMode} />
+      <h1 className="mt-3 text-xl font-semibold tracking-tight text-foreground">
         {modeOption.ideaStepTitle}
       </h1>
       <p className="mt-1.5 text-sm text-muted">

@@ -1,3 +1,6 @@
+import { Blocks, RefreshCw, Rocket, Wrench } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+
 /**
  * The client-side half of Consultation Mode.
  *
@@ -30,8 +33,16 @@ export const CONSULTATION_MODE_VALUES = Object.values(CONSULTATION_MODES) as [
 
 export type ConsultationModeOption = {
   mode: ConsultationMode;
-  /** Rendered as text, not an icon component — these are the emoji the brief specifies. */
-  emoji: string;
+  /**
+   * A real icon component, not an emoji.
+   *
+   * Emoji render as whatever glyph the visitor's OS ships — 🆕 draws as a flat
+   * blue "NEW" sticker on Windows, which reads as a badge rather than an icon and
+   * breaks the set's visual consistency. Lucide icons inherit `currentColor` and
+   * stroke width, so they theme with the rest of the design system. Same pattern
+   * as `layouts/nav-config.ts`.
+   */
+  icon: LucideIcon;
   label: string;
   description: string;
   examples: string[];
@@ -44,7 +55,7 @@ export type ConsultationModeOption = {
 export const CONSULTATION_MODE_OPTIONS: ConsultationModeOption[] = [
   {
     mode: CONSULTATION_MODES.NEW_PROJECT,
-    emoji: "🆕",
+    icon: Blocks,
     label: "Build a New Project",
     description: "Build a brand-new application from scratch.",
     examples: ["Food Delivery App", "CRM", "Hospital System", "E-commerce Website"],
@@ -56,7 +67,7 @@ export const CONSULTATION_MODE_OPTIONS: ConsultationModeOption[] = [
   },
   {
     mode: CONSULTATION_MODES.FEATURE_ENHANCEMENT,
-    emoji: "🚀",
+    icon: Rocket,
     label: "Enhance an Existing Project",
     description:
       "You already have a working application and want to add new features to it.",
@@ -75,7 +86,7 @@ export const CONSULTATION_MODE_OPTIONS: ConsultationModeOption[] = [
   },
   {
     mode: CONSULTATION_MODES.MAINTENANCE,
-    emoji: "🔧",
+    icon: Wrench,
     label: "Maintenance & Support",
     description:
       "You need ongoing maintenance, bug fixing, upgrades, monitoring or optimisation.",
@@ -96,7 +107,7 @@ export const CONSULTATION_MODE_OPTIONS: ConsultationModeOption[] = [
   },
   {
     mode: CONSULTATION_MODES.MODERNIZATION,
-    emoji: "🔄",
+    icon: RefreshCw,
     label: "Modernization & Migration",
     description: "Upgrade or migrate an existing system to a newer stack or platform.",
     examples: [
