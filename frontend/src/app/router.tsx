@@ -1,5 +1,6 @@
 import { Suspense, lazy } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
+import { CLIENT_MOCKUPS_ENABLED } from "@/client-portal/client-nav-config";
 import { ProtectedRoute } from "@/app/protected-route";
 import { PublicRoute } from "@/app/public-route";
 import { ClientLandingPage } from "@/client-portal/pages/client-landing-page";
@@ -187,8 +188,23 @@ export function AppRouter() {
         <Route path="/summary" element={<ClientRequirementSummaryPage />} />
         <Route path="/features" element={<ClientDetectedFeaturesPage />} />
         <Route path="/estimate" element={<ClientEstimatePage />} />
-        {/* Concept mockups sit between the estimate and the proposal request. */}
-        <Route path="/mockups" element={<ClientMockupsPage />} />
+        {/*
+          Concept mockups sit between the estimate and the proposal request, and
+          are currently hidden from the flow (CLIENT_MOCKUPS_ENABLED). The route
+          stays mounted either way: while hidden it redirects into the flow, so a
+          bookmarked or back-buttoned /mockups can never strand a visitor on a
+          step the indicator no longer shows. `replace` keeps it out of history.
+        */}
+        <Route
+          path="/mockups"
+          element={
+            CLIENT_MOCKUPS_ENABLED ? (
+              <ClientMockupsPage />
+            ) : (
+              <Navigate to="/request-proposal" replace />
+            )
+          }
+        />
         <Route path="/request-proposal" element={<ClientRequestProposalPage />} />
         <Route path="/proposal-sent" element={<ClientProposalSentPage />} />
         <Route path="/gift" element={<ClientGiftPage />} />

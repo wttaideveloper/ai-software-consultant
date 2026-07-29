@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
+import { getPreviousStepPath } from "@/client-portal/client-nav-config";
 import { ClientLayout } from "@/client-portal/layouts/client-layout";
 import { MetricCard } from "@/client-portal/estimate/components/metric-card";
 import {
@@ -216,7 +217,7 @@ export function ClientRequestProposalPage() {
           />
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6">
-            <Button type="button" variant="secondary" onClick={() => navigate("/mockups")}>
+            <Button type="button" variant="secondary" onClick={() => navigate(getPreviousStepPath("/request-proposal") ?? "/estimate")}>
               Back
             </Button>
             <Button type="submit" isLoading={createLead.isPending}>

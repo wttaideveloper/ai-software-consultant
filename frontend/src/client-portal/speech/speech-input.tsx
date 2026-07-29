@@ -45,7 +45,33 @@ function formatElapsed(totalSeconds: number): string {
 const panelBase =
   "flex flex-wrap items-center gap-x-3 gap-y-3 rounded-xl border px-4 py-3";
 
-export function SpeechInput({
+/**
+ * Feature flag: dictation is hidden from the Client Portal for now.
+ *
+ * Hidden, not removed — the hook, the Web Speech access layer, the waveform and
+ * this control are all intact and wired. Flipping this back to `true` restores
+ * "Speak your idea" on the project idea step and "Speak your answer" on every AI
+ * question, with no other edit anywhere.
+ *
+ * Gating here rather than at the two call sites keeps it a single switch: any
+ * future field that adopts <SpeechInput> is covered by the same flag instead of
+ * quietly reintroducing the feature.
+ */
+const SPEECH_INPUT_ENABLED = false;
+
+/**
+ * Render gate. Split from the implementation below so the disabled path returns
+ * before any hook runs — an early return inside the control itself would break
+ * the rules of hooks (and would still spin up the dictation hook, which asks the
+ * browser for a microphone). While disabled, nothing mounts and no mic is touched.
+ */
+export function SpeechInput(props: SpeechInputProps) {
+  if (!SPEECH_INPUT_ENABLED) return null;
+
+  return <SpeechInputControl {...props} />;
+}
+
+function SpeechInputControl({
   value,
   onChange,
   scrollTargetRef,

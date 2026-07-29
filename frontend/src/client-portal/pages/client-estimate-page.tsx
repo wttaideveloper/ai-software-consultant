@@ -1,6 +1,7 @@
 import { Calculator } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getNextStepPath } from "@/client-portal/client-nav-config";
 import { ClientLayout } from "@/client-portal/layouts/client-layout";
 import { EstimateSavingsSummary } from "@/client-portal/estimate/components/estimate-savings-summary";
 import { FeatureBreakdownRow } from "@/client-portal/estimate/components/feature-breakdown-row";
@@ -327,9 +328,11 @@ export function ClientEstimatePage() {
         </div>
 
         {/*
-          Concept mockups are deliberately NOT on this page: they live on the
-          /mockups step that follows, so image generation can never delay, block
-          or share state with the estimate. See client-mockups-page.tsx.
+          Concept mockups are deliberately NOT on this page: they live on their
+          own step, so image generation can never delay, block or share state
+          with the estimate. See client-mockups-page.tsx. That step is currently
+          hidden (CLIENT_MOCKUPS_ENABLED), so Continue resolves to the Proposal —
+          the destination is derived, never hardcoded.
         */}
         <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6">
           <Button
@@ -343,7 +346,7 @@ export function ClientEstimatePage() {
           <div className="flex items-center gap-3">
             <Button
               type="button"
-              onClick={() => navigate("/mockups")}
+              onClick={() => navigate(getNextStepPath("/estimate") ?? "/request-proposal")}
               disabled={!estimate}
             >
               Continue
