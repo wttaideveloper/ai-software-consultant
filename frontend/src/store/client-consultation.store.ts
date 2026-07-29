@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { formatAdjustedWeeks } from "@/client-portal/estimate/estimate-pricing";
 import { createJSONStorage, persist } from "zustand/middleware";
 import {
   DEFAULT_CONSULTATION_MODE,
@@ -359,7 +360,7 @@ export const useClientConsultationStore = create<
               ? estimate.maintenancePlan
                 ? `${estimate.maintenancePlan.supportHoursPerMonth} hrs / month`
                 : null
-              : `${estimate.estimatedWeeks} week${estimate.estimatedWeeks === 1 ? "" : "s"}`,
+              : formatAdjustedWeeks(estimate.estimatedWeeks),
           complexity: estimate.complexity,
           recommendedTeam: estimate.teamSize,
           techStack,

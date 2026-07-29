@@ -1,5 +1,9 @@
 import { motion } from "framer-motion";
 import { AlertTriangle, Calculator, Calendar, Gauge, Lightbulb, ListChecks, Sparkles, Users } from "lucide-react";
+import {
+  adjustTimelineWeeks,
+  formatAdjustedWeeks,
+} from "@/client-portal/estimate/estimate-pricing";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
@@ -27,7 +31,7 @@ export function EstimationDocument({ estimation }: EstimationDocumentProps) {
     .map((line) => line.trim())
     .filter(Boolean);
 
-  const executiveSummary = `This project is estimated at ${estimation.estimatedHours} development hours (~${estimation.estimatedWeeks} weeks) with a recommended team of ${estimation.estimatedTeamSize}. Overall complexity is assessed as ${estimation.complexity.toLowerCase()}, with ${Math.round(estimation.confidenceScore * 100)}% AI confidence in this estimate.`;
+  const executiveSummary = `This project is estimated at ${estimation.estimatedHours} development hours (~${formatAdjustedWeeks(estimation.estimatedWeeks)}) with a recommended team of ${estimation.estimatedTeamSize}. Overall complexity is assessed as ${estimation.complexity.toLowerCase()}, with ${Math.round(estimation.confidenceScore * 100)}% AI confidence in this estimate.`;
 
   return (
     <motion.div
@@ -61,7 +65,7 @@ export function EstimationDocument({ estimation }: EstimationDocumentProps) {
           <StatCard
             icon={Calendar}
             label="Estimated Timeline"
-            value={estimation.estimatedWeeks}
+            value={adjustTimelineWeeks(estimation.estimatedWeeks)}
             description="Weeks, at the recommended team size"
           />
         </motion.div>

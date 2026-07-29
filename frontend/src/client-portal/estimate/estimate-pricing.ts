@@ -17,6 +17,44 @@ export const PRICE_RANGE_SPREAD = 0.1;
 export const TIMELINE_RANGE_WEEKS = 1;
 
 /**
+ * How the AI's calendar estimate is scaled before a human ever sees it.
+ *
+ * THE single knob for delivery timelines — change this one number and every
+ * surface that shows weeks moves with it. The AI models a generic team; this firm
+ * ships materially faster, so its estimate is corrected here rather than by
+ * arguing with the model (which would make the number unstable) or by editing
+ * each screen (which would guarantee they drift apart).
+ *
+ * Strictly a presentation adjustment. Effort, cost, team size, technology stack
+ * and the feature breakdown are all untouched: the Cost Engine prices
+ * `estimatedHours`, never weeks, so halving a timeline provably cannot move a
+ * price. The stored/AI value stays original — only its display is scaled.
+ */
+export const TIMELINE_ADJUSTMENT_FACTOR = 0.5;
+
+/**
+ * Applies the adjustment to one week figure.
+ *
+ * Rounds half up, so 11→6, 13→7, 8→4 and 5→3. Floored at one week because no
+ * amount of scaling makes a project take zero weeks — that floor is what keeps a
+ * smaller factor safe to configure later.
+ */
+export function adjustTimelineWeeks(weeks: number): number {
+  return Math.max(1, Math.round(weeks * TIMELINE_ADJUSTMENT_FACTOR));
+}
+
+/**
+ * An adjusted week figure as prose — "6 weeks", "1 week".
+ *
+ * Exists so the pluralisation ternary isn't re-typed at every prose site, which
+ * is how one of them ends up adjusted and another not.
+ */
+export function formatAdjustedWeeks(weeks: number): string {
+  const adjusted = adjustTimelineWeeks(weeks);
+  return `${adjusted} week${adjusted === 1 ? "" : "s"}`;
+}
+
+/**
  * The caveats shown beside a range. Defined here, next to the maths they explain,
  * so the Estimate and Proposal steps set the client's expectations in identical
  * words rather than drifting apart.
@@ -109,13 +147,22 @@ export function formatPriceRange(range: NumericRange, currency: string): string 
   return `${formatMoney(range.min, currency)} – ${formatMoney(range.max, currency)}`;
 }
 
+/**
+ * The shown delivery window, already adjusted.
+ *
+ * The factor is applied to each endpoint of the padded range rather than to the
+ * centre, so the window narrows in proportion with the timeline: a 12-week AI
+ * estimate padded to 11–13 becomes 6–7, not 5–7. Scaling only the centre would
+ * keep a full ±1 week of uncertainty on a project half as long, which reads as
+ * less confidence rather than more speed.
+ */
 export function toWeekRange(
   weeks: number,
   padding: number = TIMELINE_RANGE_WEEKS,
 ): NumericRange {
   return {
-    min: Math.max(1, weeks - padding),
-    max: weeks + padding,
+    min: adjustTimelineWeeks(Math.max(1, weeks - padding)),
+    max: adjustTimelineWeeks(weeks + padding),
   };
 }
 

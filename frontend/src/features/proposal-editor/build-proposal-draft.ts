@@ -1,3 +1,7 @@
+import {
+  adjustTimelineWeeks,
+  formatAdjustedWeeks,
+} from "@/client-portal/estimate/estimate-pricing";
 import type { LeadProposalDraft } from "@/features/proposal-editor/lead-proposal.types";
 import {
   deriveProposalEstimate,
@@ -61,7 +65,7 @@ function buildExecutiveSummary(lead: ClientLeadDetail): string {
 
   const effortWindow =
     estimate.estimatedWeeks !== null
-      ? ` across approximately ${estimate.estimatedWeeks} week${estimate.estimatedWeeks === 1 ? "" : "s"}`
+      ? ` across approximately ${formatAdjustedWeeks(estimate.estimatedWeeks)}`
       : estimate.maintenancePlan
         ? `, delivered as ${estimate.maintenancePlan.supportHoursPerMonth} hours of support per month`
         : "";
@@ -133,7 +137,7 @@ function buildTimeline(lead: ClientLeadDetail): string {
     ].join("\n");
   }
 
-  const header = `Estimated duration: ${estimatedWeeks} week${estimatedWeeks === 1 ? "" : "s"} from kick-off.`;
+  const header = `Estimated duration: ${formatAdjustedWeeks(estimatedWeeks)} from kick-off.`;
 
   if (breakdown.length === 0) {
     return header;
@@ -146,7 +150,9 @@ function buildTimeline(lead: ClientLeadDetail): string {
   // a starting point for the admin to adjust, not a committed schedule.
   const phases = breakdown.map((item) => {
     const share = item.hours / totalHours;
-    const weeks = Math.max(1, Math.round(share * estimatedWeeks));
+    // Phases are split from the ADJUSTED total, so the parts stay consistent
+    // with the header rather than summing to the AI's longer original.
+    const weeks = Math.max(1, Math.round(share * adjustTimelineWeeks(estimatedWeeks)));
     return `- ${item.category}: ~${weeks} week${weeks === 1 ? "" : "s"} (${item.hours}h)`;
   });
 
@@ -158,7 +164,7 @@ function buildTeamStructure(lead: ClientLeadDetail): string {
 
   const duration =
     estimatedWeeks !== null
-      ? ` over ${estimatedWeeks} week${estimatedWeeks === 1 ? "" : "s"}`
+      ? ` over ${formatAdjustedWeeks(estimatedWeeks)}`
       : " on an ongoing basis";
 
   return [
