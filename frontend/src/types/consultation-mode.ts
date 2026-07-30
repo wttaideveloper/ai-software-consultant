@@ -58,7 +58,24 @@ export const CONSULTATION_MODE_OPTIONS: ConsultationModeOption[] = [
     icon: Blocks,
     label: "Build a New Project",
     description: "Build a brand-new application from scratch.",
-    examples: ["Food Delivery App", "CRM", "Hospital System", "E-commerce Website"],
+    /**
+     * Ordered so a visitor scanning the card meets the familiar consumer and
+     * commerce products first, then the business systems, then the specialised
+     * ones — someone whose project is an LMS still recognises the category from
+     * the entries above it, whereas leading with ERP makes the card read as
+     * enterprise-only.
+     */
+    examples: [
+      "Food Delivery App",
+      "E-commerce Website",
+      "Multi-Vendor Marketplace",
+      "CRM",
+      "ERP System",
+      "Hospital Information System",
+      "Learning Management System",
+      "AI Assistant",
+      "Streaming & Podcast App",
+    ],
     ideaStepTitle: "What do you want to build?",
     ideaStepDescription:
       "Describe your idea in a few sentences. The more detail you give, the sharper the estimate.",
@@ -90,14 +107,23 @@ export const CONSULTATION_MODE_OPTIONS: ConsultationModeOption[] = [
     label: "Maintenance & Support",
     description:
       "You need ongoing maintenance, bug fixing, upgrades, monitoring or optimisation.",
+    /**
+     * Leads with the two "what kind of thing do you run" entries before the task
+     * list. A client arriving here knows they have a website or an app long
+     * before they can name whether they need dependency updates or performance
+     * work, so recognising themselves in the first chip is what tells them this
+     * is the right card.
+     */
     examples: [
+      "Website Maintenance",
+      "Mobile App Support",
+      "Software Updates",
       "Bug Fixes",
-      "Performance Optimisation",
-      "Dependency Updates",
-      "Security Updates",
-      "Server Maintenance",
-      "Database Optimisation",
-      "Production Support",
+      "Performance Tuning",
+      "Security Monitoring",
+      "Cloud & Server Management",
+      "Database Optimization",
+      "24/7 Support",
     ],
     ideaStepTitle: "What system needs support?",
     ideaStepDescription:
