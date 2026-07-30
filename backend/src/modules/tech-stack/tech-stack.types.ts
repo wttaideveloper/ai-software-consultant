@@ -44,7 +44,15 @@ export const TECH_STACK_CATEGORIES = {
   COMMUNICATIONS: "COMMUNICATIONS",
   INTEGRATIONS: "INTEGRATIONS",
   SECURITY: "SECURITY",
+  /**
+   * Where the product runs. Labelled "Infrastructure" rather than "Deployment":
+   * the key is kept as DEPLOYMENT because it is the value persisted inside
+   * grouped snapshots, and renaming it would strand every stored group.
+   */
   DEPLOYMENT: "DEPLOYMENT",
+  /** How it ships and is watched — pipelines, IaC, monitoring. Separate from DEPLOYMENT so a proposal can show "we automate this" apart from "it runs on AWS". */
+  DEVOPS: "DEVOPS",
+  TESTING: "TESTING",
   OTHER: "OTHER",
 } as const;
 

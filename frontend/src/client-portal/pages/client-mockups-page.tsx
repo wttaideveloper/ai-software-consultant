@@ -9,6 +9,7 @@ import { MockupInfoNotice } from "@/client-portal/mockups/components/mockup-info
 import { useConceptMockups } from "@/client-portal/mockups/hooks/use-concept-mockups";
 import { Button, EmptyState, Spinner } from "@/components/ui";
 import { useClientConsultationStore } from "@/store/client-consultation.store";
+import { flattenTechStack } from "@/types/tech-stack";
 
 /**
  * Concept mockups — an OPTIONAL step between the Estimate and the Proposal request.
@@ -52,7 +53,9 @@ export function ClientMockupsPage() {
     requirementSummary: summary,
     features: promptFeatures,
     platforms: platformLabels,
-    techStack: techStack ?? [],
+    // Flattened: the concept-screen prompt takes the stack as one line of text,
+    // and its categories carry no meaning to an image planner.
+    techStack: flattenTechStack(techStack),
     // No estimate → no fetch and no spend. Generation itself is user-initiated.
     enabled: hasPrerequisites,
   });

@@ -143,10 +143,25 @@ export function buildProposalDocument(
   const estimate = formatProposalEstimate(
     resolveProposalEstimate(draft.projectEstimate, lead),
   );
-  const techStackBlock: DocBlock =
+  /**
+   * One labelled bullet list per category, so the exported document reads the
+   * way the screen does. A single flat bullet list of thirty technologies was
+   * what made the printed stack unreadable; both renderers already express
+   * paragraph + bullets, so no renderer change is needed for this.
+   */
+  const techStackBlocks: DocBlock[] =
     estimate.techStack.length > 0
-      ? { kind: "bullets", items: estimate.techStack }
-      : { kind: "note", text: "Not recorded for this request." };
+      ? estimate.techStack.flatMap((group): DocBlock[] =>
+          // A legacy flat stack has no category, so it emits bullets only —
+          // an empty paragraph would print as a blank line in both renderers.
+          group.label.length > 0
+            ? [
+                { kind: "paragraph", text: group.label },
+                { kind: "bullets", items: group.items },
+              ]
+            : [{ kind: "bullets", items: group.items }],
+        )
+      : [{ kind: "note", text: "Not recorded for this request." }];
 
   const projectEstimateSection: DocSection = {
     heading: "Project Estimate",
@@ -166,7 +181,7 @@ export function buildProposalDocument(
         ],
       },
       { kind: "paragraph", text: "Technology Stack" },
-      techStackBlock,
+      ...techStackBlocks,
       {
         kind: "note",
         text: "Approximate estimate shown to the client at submission. The final quotation may change after detailed requirement analysis.",

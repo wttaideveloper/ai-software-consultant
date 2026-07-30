@@ -6,7 +6,20 @@ import type { CostPreviewDto } from "../cost/cost.dto.js";
 import { costSettingsService } from "../cost/cost.service.js";
 import { normalizeEstimateForMode } from "../estimation/estimation.mode.js";
 import { aiEstimationPayloadSchema } from "../estimation/estimation.validation.js";
-import { PROMPT_TYPES } from "../prompts/prompt.constants.js";
+import {
+  PROMPT_TYPES,
+  RESERVED_TEMPLATE_VARIABLES,
+} from "../prompts/prompt.constants.js";
+import {
+  analyzeProject,
+  buildBaselineFromAnalysis,
+  buildEnrichmentDirective,
+  mergeTechStack,
+} from "../tech-stack/tech-stack.engine.js";
+import type {
+  TechStack,
+  TechStackContext,
+} from "../tech-stack/tech-stack.types.js";
 import { clientEstimateRepository } from "./client-estimate.repository.js";
 import type { ClientEstimateResponseDto } from "./client-estimate.dto.js";
 import type {
@@ -47,6 +60,31 @@ function buildFeaturesPrompt(features: GenerateClientEstimateInput["features"]):
   return ["DETECTED FEATURES JSON:", JSON.stringify(features, null, 2)].join("\n");
 }
 
+/**
+ * Everything the technology engine is allowed to look at, assembled from the
+ * wizard's own state.
+ *
+ * `platformLabels` is the important one. The client's platform selection used to
+ * reach pricing and nothing else, so a request that ticked "iOS App" could come
+ * back recommending a web-only stack — the single worst defect in the old
+ * technology flow. Explicit labels outrank text detection inside the engine, so
+ * a selected platform is now guaranteed to contribute technologies.
+ *
+ * There is no industry field in the Client Portal, by design: the engine infers
+ * it from the project idea, the requirement summary and the feature list, which
+ * is why those are carried here.
+ */
+function buildTechStackContext(
+  input: GenerateClientEstimateInput,
+): TechStackContext {
+  return {
+    projectIdea: input.projectIdea ?? null,
+    requirementSummary: input.requirementSummary ?? null,
+    platformLabels: input.platforms ?? [],
+    features: input.features,
+  };
+}
+
 function resolveSafeErrorMessage(error: unknown): string {
   if (error instanceof AppError) {
     return error.message;
@@ -71,11 +109,29 @@ function resolveSafeErrorMessage(error: unknown): string {
 export class ClientEstimateService {
   async generate(input: GenerateClientEstimateInput): Promise<ClientEstimateResponseDto> {
     try {
+      const techStackContext = buildTechStackContext(input);
+
+      /**
+       * The baseline is computed BEFORE the AI call so it can be handed to the
+       * model as an already-settled decision. That inverts the old relationship:
+       * the AI no longer invents a stack, it fills the gaps in one.
+       *
+       * Size-tier technologies are missing at this point because effort is what
+       * this very call returns — the stack is rebuilt with real hours below.
+       */
+      const promptBaseline = buildBaselineFromAnalysis(
+        analyzeProject(techStackContext),
+      );
+
       const response = await aiOrchestrator.generateStandaloneReply({
         promptType: PROMPT_TYPES.ESTIMATION,
         consultationMode: input.consultationMode,
         conversationHistory: [],
         userMessage: buildFeaturesPrompt(input.features),
+        variables: {
+          [RESERVED_TEMPLATE_VARIABLES.TECH_STACK_BASELINE]:
+            buildEnrichmentDirective(promptBaseline),
+        },
       });
 
       let parsed: unknown;
@@ -101,6 +157,24 @@ export class ClientEstimateService {
       const estimate = normalizeEstimateForMode(
         validated.data,
         input.consultationMode,
+      );
+
+      /**
+       * Rebuilt now that effort is known, so the size-dependent infrastructure
+       * (caching, orchestration, monitoring) reflects the project the AI actually
+       * sized rather than a MEDIUM guess. The merge is additive-only, so every
+       * baseline technology — and therefore every selected platform — survives
+       * whatever the model returned.
+       */
+      const techStack = mergeTechStack(
+        buildBaselineFromAnalysis(
+          analyzeProject({
+            ...techStackContext,
+            estimatedHours: estimate.estimatedHours,
+            complexity: estimate.complexity,
+          }),
+        ),
+        estimate.techStack ?? [],
       );
 
       const pricing = await this.priceEstimate({
@@ -133,7 +207,7 @@ export class ClientEstimateService {
         assumptions: estimate.assumptions,
         risks: estimate.risks,
         breakdown: estimate.breakdown,
-        techStack: estimate.techStack ?? null,
+        techStack,
         pricing,
         maintenancePlan: estimate.maintenancePlan ?? null,
         migrationPlan: estimate.migrationPlan ?? null,

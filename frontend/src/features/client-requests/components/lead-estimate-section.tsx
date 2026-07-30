@@ -8,12 +8,14 @@ import {
 } from "@/client-portal/estimate/estimate-pricing";
 import { Badge } from "@/components/ui/badge";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
+import { TechStackGroups } from "@/components/shared/tech-stack-groups";
 import { WorkspaceSection } from "@/components/shared/workspace-section";
 import { cn } from "@/utils/cn";
 import type {
   ClientLeadEstimate,
   ClientLeadFeatureComplexity,
   ClientLeadPricing,
+  TechStackGroup,
 } from "@/types";
 
 type BadgeVariant = "default" | "accent" | "success" | "warning" | "danger" | "info";
@@ -109,7 +111,7 @@ export function LeadEstimateSection({
   pricing,
 }: {
   estimate: ClientLeadEstimate;
-  techStack: string[];
+  techStack: TechStackGroup[];
   pricing: ClientLeadPricing | null;
 }) {
   const totalHours = estimate.estimatedHours || 1;
@@ -161,17 +163,12 @@ export function LeadEstimateSection({
           <Cpu className="h-4 w-4 shrink-0 text-accent" strokeWidth={1.85} />
           <p className="text-sm font-semibold text-foreground">Technology Stack</p>
         </div>
-        {techStack.length === 0 ? (
-          <p className="mt-2 text-sm text-muted">Not recorded for this request.</p>
-        ) : (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {techStack.map((tech) => (
-              <Badge key={tech} variant="accent">
-                {tech}
-              </Badge>
-            ))}
-          </div>
-        )}
+        <TechStackGroups
+          value={techStack}
+          variant="compact"
+          className="mt-3"
+          emptyText="Not recorded for this request."
+        />
       </div>
 
       <div className="mt-5">

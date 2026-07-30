@@ -83,6 +83,35 @@ export type ClientLeadEstimate = {
   enhancementImpact?: ClientLeadEnhancementImpact | null;
 };
 
+/**
+ * One category of the technology stack the client was shown.
+ *
+ * Widened to plain strings for the same reason ClientLeadPricing widens its
+ * enums: this is a historical record, not a live typed value. A stored group's
+ * `category` is whatever the engine emitted at submission time, and a category
+ * later renamed in code must not make an old lead unreadable.
+ */
+export type ClientLeadTechStackGroup = {
+  category: string;
+  /**
+   * Optional because the wire schema deliberately accepts a group without one
+   * (`techStackGroupSchema`) and the engine re-derives the canonical label on
+   * read. Requiring it here would reject a payload the API layer just accepted.
+   */
+  label?: string;
+  items: string[];
+};
+
+/**
+ * Grouped from the day the technology engine was wired in; a flat `string[]` on
+ * every lead submitted before that.
+ *
+ * Both shapes are kept readable rather than backfilled — `normalizeTechStack`
+ * converts the legacy form on read, so an old lead renders grouped without its
+ * stored row ever being rewritten.
+ */
+export type ClientLeadTechStack = string[] | ClientLeadTechStackGroup[];
+
 /** The Cost Engine breakdown the client was shown — stored verbatim (see ClientLeadPricing). */
 export type ClientLeadPricingBreakdown = {
   estimatedHours: number;
@@ -171,7 +200,7 @@ export const clientLeads = pgTable(
     // Snapshot extras added alongside estimate — the exact project cost and tech
     // stack the client saw. Nullable/defaulted so pre-existing leads are valid
     // without a backfill; they simply render "not available".
-    techStack: jsonb("tech_stack").$type<string[]>().notNull().default([]),
+    techStack: jsonb("tech_stack").$type<ClientLeadTechStack>().notNull().default([]),
     pricing: jsonb("pricing").$type<ClientLeadPricing>(),
 
     status: clientLeadStatusEnum("status").notNull().default("NEW"),

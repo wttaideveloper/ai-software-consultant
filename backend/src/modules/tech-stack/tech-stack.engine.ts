@@ -544,6 +544,41 @@ export function describeTechStack(stack: TechStack): string {
 }
 
 /**
+ * The enrichment contract handed to the AI, as one sentence-block for the
+ * ESTIMATION prompt's `{{techStackBaseline}}` slot.
+ *
+ * This is the whole reason the model stopped inventing stacks from nothing. It
+ * states the baseline as already decided and asks only for what is missing, so a
+ * technology the client explicitly selected can never be argued away, and the
+ * model's remaining job — spotting the domain-specific service the catalogue
+ * does not know about — is the one it is actually good at.
+ *
+ * The prohibitions are written out individually because each one corresponds to
+ * a failure that was observed: repeating a baseline entry, returning an alias of
+ * one ("React" beside "React.js"), proposing a competing product for a slot that
+ * is already filled, and padding the list with fashionable tooling the
+ * requirements never asked for.
+ *
+ * Returns "" when there is no baseline, which leaves the surrounding prompt
+ * reading as a plain instruction to recommend technologies — the pre-existing
+ * behaviour, so a caller that supplies no context degrades instead of emitting a
+ * dangling reference to a list that is not there.
+ */
+export function buildEnrichmentDirective(baseline: TechStack): string {
+  if (baseline.length === 0) return "";
+
+  return [
+    "A deterministic technology baseline has ALREADY been selected for this project from its platforms, features, industry and size, and it is final.",
+    `BASELINE — ${describeTechStack(baseline)}.`,
+    "In `techStack` return ONLY technologies that this project genuinely needs and the baseline does not already cover.",
+    "Never repeat a baseline entry or a differently-spelled variant of one (if the baseline lists React.js, do not return React).",
+    "Never propose a competing alternative to something the baseline already provides (it already has a database, a payment provider and a hosting platform — do not offer substitutes for them).",
+    "Never add a technology that the stated requirements do not actually call for; a shorter, justified list is always better than a longer, speculative one.",
+    "Return an empty array if the baseline is already complete for this project.",
+  ].join(" ");
+}
+
+/**
  * The whole Phase 2 pipeline in one call: analyse the project, build the
  * guaranteed baseline, then let the AI's suggestions enrich it.
  */

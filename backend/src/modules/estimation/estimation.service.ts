@@ -7,7 +7,15 @@ import { aiOrchestrator } from "../ai/ai.orchestrator.js";
 import type { AIResponse } from "../ai/ai.types.js";
 import { costSettingsService } from "../cost/cost.service.js";
 import { normalizeConsultationMode } from "../../shared/constants/consultation-mode.js";
-import { PROMPT_TYPES } from "../prompts/prompt.constants.js";
+import {
+  PROMPT_TYPES,
+  RESERVED_TEMPLATE_VARIABLES,
+} from "../prompts/prompt.constants.js";
+import {
+  buildBaselineTechStack,
+  buildEnrichmentDirective,
+} from "../tech-stack/tech-stack.engine.js";
+import type { TechStackContext } from "../tech-stack/tech-stack.types.js";
 import {
   normalizeEstimateForMode,
   type ModeNormalizedEstimate,
@@ -167,6 +175,34 @@ function buildEstimationPrompt(
   ].join("\n");
 }
 
+/**
+ * Context for the technology engine, so the admin pipeline asks the AI to
+ * *enrich* a baseline exactly as the Client Portal does rather than to invent a
+ * stack from nothing.
+ *
+ * A consultation carries no platform list — `projectType` is the closest thing
+ * it has, and the engine's text detection picks the rest out of the requirement
+ * summary and feature names. That is precisely the degrade-don't-fail behaviour
+ * `TechStackContext` was designed for: fewer signals mean a smaller baseline.
+ */
+function buildEstimationTechStackContext(
+  consultation: { industry: string | null; projectType: string | null },
+  summary: RequirementSummaryRecord,
+  features: DetectedFeatureRecord[],
+): TechStackContext {
+  return {
+    requirementSummary: summary.summaryMarkdown,
+    industry: consultation.industry,
+    projectType: consultation.projectType,
+    platformLabels: consultation.projectType ? [consultation.projectType] : [],
+    features: features.map((feature) => ({
+      name: feature.featureName,
+      category: feature.featureCategory,
+      description: feature.description,
+    })),
+  };
+}
+
 export class EstimationService {
   async get(
     organizationId: string,
@@ -269,6 +305,18 @@ export class EstimationService {
         },
         conversationHistory: [],
         userMessage: buildEstimationPrompt(requirementSummary, features),
+        variables: {
+          [RESERVED_TEMPLATE_VARIABLES.TECH_STACK_BASELINE]:
+            buildEnrichmentDirective(
+              buildBaselineTechStack(
+                buildEstimationTechStackContext(
+                  consultation,
+                  requirementSummary,
+                  features,
+                ),
+              ),
+            ),
+        },
       });
     } catch (error) {
       await estimationRepository.createAiGeneration({

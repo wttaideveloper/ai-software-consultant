@@ -4,6 +4,7 @@ import {
   DEFAULT_PAGE_SIZE,
   MAX_PAGE_SIZE,
 } from "../../shared/constants/app.js";
+import { techStackInputSchema } from "../tech-stack/tech-stack.validation.js";
 import { VERSION_REASONS } from "./lead-proposal.constants.js";
 
 /**
@@ -37,7 +38,10 @@ const proposalEstimateSchema = z.object({
   estimatedHours: z.number(),
   complexity: z.enum(["LOW", "MEDIUM", "HIGH"]),
   teamSize: z.number(),
-  techStack: z.array(z.string()),
+  // Grouped since the technology engine shipped; still accepts the flat list
+  // every proposal version authored before then was saved with, so reopening an
+  // old version never fails validation.
+  techStack: techStackInputSchema,
 });
 
 /**

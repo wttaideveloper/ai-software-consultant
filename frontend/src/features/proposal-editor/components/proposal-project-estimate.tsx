@@ -3,7 +3,7 @@ import { WorkspaceSection } from "@/components/shared/workspace-section";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { ListField } from "@/features/proposal-editor/components/list-field";
+import { TechStackField } from "@/features/proposal-editor/components/tech-stack-field";
 import { formatProposalEstimate } from "@/features/proposal-editor/proposal-estimate";
 import { cn } from "@/utils/cn";
 import type { ProposalProjectEstimate } from "@/types";
@@ -157,12 +157,10 @@ export function ProposalProjectEstimate({
       </div>
 
       <div className="mt-4">
-        <ListField
-          label="Technology stack"
+        <p className="mb-3 text-sm font-medium text-foreground">Technology stack</p>
+        <TechStackField
           value={value.techStack}
           onChange={(techStack) => set({ techStack })}
-          rows={5}
-          placeholder="One technology per line"
         />
       </div>
 

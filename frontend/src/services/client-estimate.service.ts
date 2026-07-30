@@ -5,6 +5,7 @@ import type {
   CostPreview,
   FeatureComplexity,
   FeaturePriority,
+  TechStackGroup,
 } from "@/types";
 import type {
   ClientEnhancementImpact,
@@ -24,8 +25,19 @@ export type GenerateClientEstimatePayload = {
   /** Decides the estimate's shape — a support engagement returns no delivery weeks. */
   consultationMode: ConsultationMode;
   features: EstimateFeatureInput[];
-  /** Wizard-selected platform labels — priced server-side by the Cost Engine. */
+  /**
+   * Wizard-selected platform labels. Priced server-side by the Cost Engine, and —
+   * since the technology engine was wired in — the signal that guarantees a
+   * selected platform contributes technologies to the recommended stack.
+   */
   platforms?: string[];
+  /**
+   * Project context for the technology engine only; neither field touches the
+   * effort estimate. They let the engine infer the industry and the capabilities
+   * a stack has to cover, which the feature list alone does not always reveal.
+   */
+  projectIdea?: string;
+  requirementSummary?: string;
 };
 
 export type GenerateClientEstimateResponse = {
@@ -39,8 +51,11 @@ export type GenerateClientEstimateResponse = {
   assumptions: string[];
   risks: string[];
   breakdown: Array<{ category: string; hours: number }>;
-  /** Recommended technology stack from the AI, or null when it returned none. */
-  techStack: string[] | null;
+  /**
+   * Recommended technology stack, grouped by category and in presentation order —
+   * the deterministic engine's baseline with the AI's additions merged in.
+   */
+  techStack: TechStackGroup[];
   /** Final project cost from the Cost Engine (never the AI), or null on a pricing failure. */
   pricing: CostPreview | null;
   /** Exactly one is non-null, decided by consultationMode; NEW_PROJECT carries none. */

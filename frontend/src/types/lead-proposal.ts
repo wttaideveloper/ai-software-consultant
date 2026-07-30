@@ -1,4 +1,5 @@
 import type { ClientLeadFeature } from "@/types/client-lead";
+import type { TechStackGroup } from "@/types/tech-stack";
 
 /**
  * Versioned proposals for a client lead (`lead_proposals`).
@@ -38,7 +39,13 @@ export type ProposalProjectEstimate = {
   estimatedHours: number;
   complexity: "LOW" | "MEDIUM" | "HIGH";
   teamSize: number;
-  techStack: string[];
+  /**
+   * Grouped since the technology engine shipped; still typed to accept the flat
+   * list every version authored before then was saved with. Read it through
+   * `toTechStackGroups` — a proposal version is immutable, so old ones are
+   * rendered in the shape they were written rather than migrated.
+   */
+  techStack: TechStackGroup[] | string[];
 };
 
 /**

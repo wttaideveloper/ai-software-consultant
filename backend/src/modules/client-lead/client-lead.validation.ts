@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { techStackInputSchema } from "../tech-stack/tech-stack.validation.js";
 import {
   DEFAULT_PAGE_SIZE,
   MAX_PAGE_SIZE,
@@ -122,7 +123,11 @@ export const createClientLeadSchema = z.object({
   estimate: estimateInputSchema,
   // Snapshot extras: exactly what the client saw. Optional so an older client can
   // still submit; the pricing is captured, never recomputed on the server.
-  techStack: z.array(z.string()).optional().default([]),
+  //
+  // Accepts the grouped stack the portal sends today *or* the flat string[] an
+  // older cached bundle still posts — a technology list is descriptive data, and
+  // rejecting a submitted lead over its shape would lose a real sales enquiry.
+  techStack: techStackInputSchema.optional().default([]),
   pricing: pricingSnapshotSchema.nullable().optional().default(null),
 });
 

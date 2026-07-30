@@ -19,4 +19,5 @@ export * from "./lead-proposal";
 export * from "./proposal";
 export * from "./requirement-summary";
 export * from "./settings";
+export * from "./tech-stack";
 export * from "./user-management";

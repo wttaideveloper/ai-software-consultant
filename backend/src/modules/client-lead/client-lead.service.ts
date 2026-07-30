@@ -1,6 +1,7 @@
 import { HTTP_STATUS } from "../../shared/constants/http-status.js";
 import { AppError } from "../../shared/errors/app-error.js";
 import { logger } from "../../shared/logger/logger.js";
+import { normalizeTechStack } from "../tech-stack/tech-stack.engine.js";
 import type {
   ClientLeadDetailDto,
   ClientLeadListItemDto,
@@ -46,7 +47,10 @@ function toDetailDto(lead: ClientLeadRecord): ClientLeadDetailDto {
     requirementSummary: lead.requirementSummary,
     features: lead.features,
     estimate: lead.estimate,
-    techStack: lead.techStack,
+    // Leads submitted before the technology engine shipped hold a flat string[];
+    // this categorises them on the way out, so the Admin renders every lead
+    // identically without the stored rows ever being rewritten.
+    techStack: normalizeTechStack(lead.techStack),
     pricing: lead.pricing,
     updatedAt: lead.updatedAt,
   };
@@ -72,7 +76,16 @@ function toEndOfDay(date: Date): Date {
 export class ClientLeadService {
   async create(input: CreateClientLeadInput): Promise<ClientLeadResponseDto> {
     try {
-      const lead = await clientLeadRepository.create(input);
+      /**
+       * Canonicalised before it is frozen, so the snapshot is stored deduplicated,
+       * categorised and in presentation order regardless of which client bundle
+       * submitted it. Normalising only on read would leave the durable record in
+       * whatever shape the browser happened to send.
+       */
+      const lead = await clientLeadRepository.create({
+        ...input,
+        techStack: normalizeTechStack(input.techStack),
+      });
       logger.info(`Client lead created: ${lead.id}`);
 
       return {

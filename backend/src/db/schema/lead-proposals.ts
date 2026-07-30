@@ -8,7 +8,11 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
-import { clientLeads, type ClientLeadFeature } from "./client-leads.js";
+import {
+  clientLeads,
+  type ClientLeadFeature,
+  type ClientLeadTechStack,
+} from "./client-leads.js";
 import { leadProposalStatusEnum } from "./enums.js";
 import { createdAt, deletedAt, updatedAt } from "./helpers.js";
 import { users } from "./users.js";
@@ -41,7 +45,13 @@ export type LeadProposalProjectEstimate = {
   estimatedHours: number;
   complexity: "LOW" | "MEDIUM" | "HIGH";
   teamSize: number;
-  techStack: string[];
+  /**
+   * Grouped from the day the technology engine shipped, flat on every version
+   * authored before it. Stored as-is either way — a proposal version is an
+   * immutable record, so historical ones are read in the shape they were written
+   * rather than migrated.
+   */
+  techStack: ClientLeadTechStack;
 };
 
 export type LeadProposalContent = {

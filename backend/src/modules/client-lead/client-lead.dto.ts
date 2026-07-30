@@ -4,6 +4,7 @@ import type {
   ClientLeadPricing,
 } from "../../db/schema/client-leads.js";
 import type { ConsultationMode } from "../../shared/constants/consultation-mode.js";
+import type { TechStack } from "../tech-stack/tech-stack.types.js";
 import type { ClientLeadStatus } from "./client-lead.repository.js";
 
 export type ClientLeadResponseDto = {
@@ -68,8 +69,13 @@ export type ClientLeadDetailDto = ClientLeadListItemDto & {
   requirementSummary: string;
   features: ClientLeadFeature[];
   estimate: ClientLeadEstimate;
-  /** Recommended technologies the client saw; empty for pre-snapshot leads. */
-  techStack: string[];
+  /**
+   * Recommended technologies the client saw, grouped by category; empty for
+   * pre-snapshot leads. Always grouped on the wire — a lead stored as a flat
+   * list is normalised on read, so the Admin never has to know which era it came
+   * from.
+   */
+  techStack: TechStack;
   /** Frozen project cost the client saw; null for pre-snapshot leads or unpriced. */
   pricing: ClientLeadPricing | null;
 

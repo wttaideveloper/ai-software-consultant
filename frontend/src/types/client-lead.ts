@@ -1,4 +1,5 @@
 import type { ConsultationMode } from "./consultation-mode";
+import type { TechStackGroup } from "./tech-stack";
 
 /**
  * Admin-side view of a Client Portal submission (the `client_leads` table).
@@ -131,8 +132,12 @@ export type ClientLeadDetail = ClientLead & {
   requirementSummary: string;
   features: ClientLeadFeature[];
   estimate: ClientLeadEstimate;
-  /** Recommended technologies the client saw; empty for pre-snapshot leads. */
-  techStack: string[];
+  /**
+   * Recommended technologies the client saw, grouped by category; empty for
+   * pre-snapshot leads. The server normalises legacy flat snapshots on read, so
+   * this is always grouped on the wire.
+   */
+  techStack: TechStackGroup[];
   /** Frozen project cost the client saw; null for pre-snapshot leads or unpriced. */
   pricing: ClientLeadPricing | null;
   updatedAt: string;

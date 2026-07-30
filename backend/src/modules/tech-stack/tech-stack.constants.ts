@@ -43,7 +43,9 @@ export const TECH_STACK_CATEGORY_LABELS: Record<TechStackCategory, string> = {
   COMMUNICATIONS: "Email & SMS",
   INTEGRATIONS: "Integrations",
   SECURITY: "Security & Compliance",
-  DEPLOYMENT: "Deployment & Infrastructure",
+  DEPLOYMENT: "Infrastructure",
+  DEVOPS: "DevOps & CI/CD",
+  TESTING: "Testing & QA",
   OTHER: "Other",
 };
 
@@ -75,6 +77,8 @@ export const TECH_STACK_CATEGORY_ORDER: TechStackCategory[] = [
   TECH_STACK_CATEGORIES.INTEGRATIONS,
   TECH_STACK_CATEGORIES.SECURITY,
   TECH_STACK_CATEGORIES.DEPLOYMENT,
+  TECH_STACK_CATEGORIES.DEVOPS,
+  TECH_STACK_CATEGORIES.TESTING,
   TECH_STACK_CATEGORIES.OTHER,
 ];
 
@@ -125,19 +129,36 @@ export const TECH_PLATFORM_ALIASES: Record<string, CostPlatform> = {
  *
  * A server and a datastore are not a "web" concern — a mobile-only app that
  * takes payments still needs both, so they are core rather than hanging off the
- * WEB platform. The database entry here is the general-purpose default;
- * regulated domains add a relational store through INDUSTRY_TECHNOLOGIES.
+ * WEB platform.
+ *
+ * PostgreSQL is the default datastore, not MongoDB. Almost everything this
+ * pipeline estimates — users with roles, orders, payments, bookings, audit
+ * trails — is relational data with real integrity requirements, and quoting a
+ * document store for it was a recommendation the consultancy would have had to
+ * walk back. A project that genuinely wants MongoDB gets it through AI
+ * enrichment, where it is a considered addition rather than a silent default.
+ *
+ * Testing and CI are core for the same reason a database is: every engagement
+ * ships them, and a stack that omits them reads as an incomplete quote.
  */
 export const CORE_TECHNOLOGIES: CategoryTechnologies = {
   BACKEND: ["Node.js", "Express.js", "TypeScript"],
-  DATABASE: ["MongoDB"],
-  DEPLOYMENT: ["Docker", "AWS", "GitHub Actions (CI/CD)"],
+  DATABASE: ["PostgreSQL", "Drizzle ORM"],
+  DEPLOYMENT: ["Docker", "AWS"],
+  DEVOPS: ["GitHub Actions (CI/CD)"],
+  TESTING: ["Jest"],
 };
 
 /**
  * The guarantee behind "never omit a selected platform": every platform the
  * client picked contributes at least one technology, so it cannot vanish from
  * the final stack no matter what the AI returns.
+ *
+ * Push services deliberately do NOT live here. FCM and APNs used to be attached
+ * to ANDROID and IOS unconditionally, which quoted a Firebase service to every
+ * mobile client whether or not they had asked for notifications. They are now
+ * conditional on the NOTIFICATIONS capability actually being detected — see
+ * CONDITIONAL_TECHNOLOGIES.
  */
 export const PLATFORM_TECHNOLOGIES: Record<CostPlatform, CategoryTechnologies> = {
   WEB: {
@@ -146,12 +167,10 @@ export const PLATFORM_TECHNOLOGIES: Record<CostPlatform, CategoryTechnologies> =
   ANDROID: {
     MOBILE: ["React Native"],
     ANDROID: ["Kotlin (Native modules)", "Google Play Console"],
-    NOTIFICATIONS: ["Firebase Cloud Messaging (FCM)"],
   },
   IOS: {
     MOBILE: ["React Native"],
     IOS: ["Swift (Native modules)", "App Store Connect"],
-    NOTIFICATIONS: ["Apple Push Notification Service (APNs)"],
   },
   DESKTOP: {
     DESKTOP: ["Electron", "Tauri (Alternative)"],
@@ -164,9 +183,16 @@ export const PLATFORM_TECHNOLOGIES: Record<CostPlatform, CategoryTechnologies> =
   API: {
     BACKEND: ["REST API (OpenAPI / Swagger)"],
     SECURITY: ["API rate limiting"],
+    TESTING: ["Supertest (API testing)"],
   },
+  /**
+   * One model, not three. Selecting "AI features" says nothing about speech or
+   * vision, and listing Whisper and Vision for a text-only chatbot is exactly the
+   * over-recommendation the baseline exists to avoid — the AI adds those when the
+   * requirements actually describe transcription or image understanding.
+   */
   AI_INTEGRATION: {
-    AI: ["OpenAI GPT-4o", "OpenAI Whisper (Speech-to-Text)", "OpenAI Vision"],
+    AI: ["OpenAI GPT-4o"],
   },
 };
 
@@ -174,52 +200,70 @@ export const PLATFORM_TECHNOLOGIES: Record<CostPlatform, CategoryTechnologies> =
  * Capability → technologies. Detected from the feature list and requirement
  * summary, so a project that mentions payments is always quoted a payment
  * provider even when the AI forgets to name one.
+ *
+ * One choice per job, not a menu. These bundles used to list two or three
+ * interchangeable services per capability (Elasticsearch *and* Algolia, Agora
+ * *and* Daily.co *and* Mux), which read to a client as indecision and made the
+ * same project look like it needed three video vendors. The baseline now commits
+ * to one, and an alternative reaches the stack only when the AI judges the
+ * requirements actually warrant it.
  */
 export const CAPABILITY_TECHNOLOGIES: Record<TechCapability, CategoryTechnologies> = {
+  /**
+   * Self-hosted JWT, not a managed identity provider. Firebase Authentication and
+   * Auth0 were listed first here, so every project with a login screen was quoted
+   * a third-party identity vendor — a recurring cost and a data-residency
+   * commitment nobody asked for. JWT plus password hashing is what this
+   * consultancy actually builds; a managed provider is a deliberate choice the AI
+   * can add when the requirements call for enterprise SSO.
+   */
   AUTHENTICATION: {
-    AUTHENTICATION: ["Firebase Authentication", "Auth0", "JWT (Access & Refresh Tokens)"],
+    AUTHENTICATION: ["JWT (Access & Refresh Tokens)", "bcrypt (Password Hashing)"],
   },
   PAYMENTS: {
-    PAYMENTS: ["Stripe", "Razorpay", "PayPal"],
+    PAYMENTS: ["Stripe", "Razorpay"],
   },
   MAPS: {
-    MAPS: ["Google Maps Platform", "Mapbox"],
+    MAPS: ["Google Maps Platform"],
   },
-  NOTIFICATIONS: {
-    NOTIFICATIONS: ["Firebase Cloud Messaging (FCM)"],
-  },
+  /**
+   * Empty on purpose: which push service a project needs is decided entirely by
+   * its platforms (Web Push / FCM / APNs), so the conditional rules own this one.
+   * Naming a service here would put Firebase in front of a desktop-only client.
+   */
+  NOTIFICATIONS: {},
   STORAGE: {
-    STORAGE: ["Amazon S3", "Cloudinary"],
+    STORAGE: ["Amazon S3"],
   },
   UPLOADS: {
     STORAGE: ["Amazon S3", "Multer (Upload handling)"],
   },
   ANALYTICS: {
-    ANALYTICS: ["Google Analytics 4", "Mixpanel"],
+    ANALYTICS: ["Google Analytics 4"],
   },
   REPORTING: {
-    ANALYTICS: ["Chart.js", "Metabase", "PDF generation (Puppeteer)"],
+    ANALYTICS: ["PDF generation (Puppeteer)"],
   },
   CHARTS: {
-    ANALYTICS: ["Chart.js", "Recharts"],
+    ANALYTICS: ["Recharts"],
   },
   CHAT: {
-    MESSAGING: ["Socket.IO", "Stream Chat"],
+    MESSAGING: ["Socket.IO"],
   },
   VIDEO: {
-    VIDEO: ["Agora", "Daily.co", "Mux (Video streaming)"],
+    VIDEO: ["Mux (Video streaming)"],
   },
   AI: {
-    AI: ["OpenAI GPT-4o", "OpenAI Whisper (Speech-to-Text)", "OpenAI Vision"],
+    AI: ["OpenAI GPT-4o"],
   },
   SEARCH: {
-    SEARCH: ["Elasticsearch", "Algolia"],
+    SEARCH: ["Algolia"],
   },
   EMAIL: {
-    COMMUNICATIONS: ["SendGrid", "Amazon SES"],
+    COMMUNICATIONS: ["SendGrid"],
   },
   SMS: {
-    COMMUNICATIONS: ["Twilio", "MSG91"],
+    COMMUNICATIONS: ["Twilio"],
   },
   REALTIME: {
     MESSAGING: ["Socket.IO", "Redis Pub/Sub"],
@@ -232,13 +276,12 @@ export const CAPABILITY_TECHNOLOGIES: Record<TechCapability, CategoryTechnologie
 /**
  * Domain technologies — the part a generic recommendation always misses.
  *
- * Healthcare and fintech also add PostgreSQL: a regulated ledger or clinical
- * record needs a relational store with real constraints, and that is a domain
- * requirement rather than a preference.
+ * These no longer restate PostgreSQL for the regulated domains: it is now the
+ * core default for every project, so naming it again here would be dead data
+ * that the deduplicator silently drops.
  */
 export const INDUSTRY_TECHNOLOGIES: Record<TechIndustry, CategoryTechnologies> = {
   HEALTHCARE: {
-    DATABASE: ["PostgreSQL"],
     INTEGRATIONS: ["HL7 FHIR APIs"],
     SECURITY: [
       "HIPAA-compliant hosting",
@@ -248,7 +291,6 @@ export const INDUSTRY_TECHNOLOGIES: Record<TechIndustry, CategoryTechnologies> =
     ],
   },
   FINTECH: {
-    DATABASE: ["PostgreSQL"],
     INTEGRATIONS: ["Plaid"],
     SECURITY: [
       "PCI DSS compliance",
@@ -275,8 +317,9 @@ export const INDUSTRY_TECHNOLOGIES: Record<TechIndustry, CategoryTechnologies> =
     INTEGRATIONS: ["Assignments & grading workflow"],
   },
   CRM: {
-    ANALYTICS: ["Chart.js", "Metabase"],
-    NOTIFICATIONS: ["Firebase Cloud Messaging (FCM)"],
+    // No push service here: a CRM is not inherently a notification product, and
+    // attaching FCM to the industry quoted Firebase to every back-office tool.
+    ANALYTICS: ["Metabase"],
     COMMUNICATIONS: ["SendGrid"],
   },
   REAL_ESTATE: {
@@ -298,15 +341,23 @@ export const INDUSTRY_TECHNOLOGIES: Record<TechIndustry, CategoryTechnologies> =
   },
 };
 
-/** Infrastructure that is only warranted once a project reaches a certain size. */
+/**
+ * Infrastructure that is only warranted once a project reaches a certain size.
+ *
+ * Monitoring and IaC sit under DEVOPS rather than DEPLOYMENT: "what it runs on"
+ * and "how we ship and watch it" are different claims to a client, and a
+ * proposal that lists Kubernetes beside GitHub Actions in one bucket loses that.
+ */
 export const PROJECT_SIZE_TECHNOLOGIES: Record<ProjectSize, CategoryTechnologies> = {
   SMALL: {},
   MEDIUM: {
     DEPLOYMENT: ["Nginx"],
+    DEVOPS: ["Sentry (Monitoring)"],
   },
   LARGE: {
     DATABASE: ["Redis (Caching)"],
-    DEPLOYMENT: ["Nginx", "Kubernetes", "Sentry (Monitoring)"],
+    DEPLOYMENT: ["Nginx", "Kubernetes"],
+    DEVOPS: ["Sentry (Monitoring)", "Terraform"],
   },
 };
 
@@ -351,6 +402,33 @@ export const CONDITIONAL_TECHNOLOGIES: ConditionalTechnologyRule[] = [
     capabilities: ["NOTIFICATIONS"],
     technologies: { NOTIFICATIONS: ["Web Push (Service Worker)"] },
   },
+  /**
+   * Push services are quoted only when the project actually asked for
+   * notifications. Previously FCM rode along with the ANDROID platform bundle and
+   * APNs with IOS, so a mobile app with no notification requirement was still
+   * shown a Firebase dependency.
+   */
+  {
+    platforms: ["ANDROID"],
+    capabilities: ["NOTIFICATIONS"],
+    technologies: { NOTIFICATIONS: ["Firebase Cloud Messaging (FCM)"] },
+  },
+  {
+    platforms: ["IOS"],
+    capabilities: ["NOTIFICATIONS"],
+    technologies: {
+      NOTIFICATIONS: ["Apple Push Notification Service (APNs)"],
+    },
+  },
+  /** Browser E2E only makes sense where there is a browser. */
+  {
+    platforms: ["WEB", "ADMIN_PANEL"],
+    technologies: { TESTING: ["Playwright"] },
+  },
+  {
+    platforms: ["ANDROID", "IOS"],
+    technologies: { TESTING: ["Detox (Mobile E2E)"] },
+  },
   {
     platforms: ["IOS", "ANDROID"],
     capabilities: ["PAYMENTS"],
@@ -361,8 +439,14 @@ export const CONDITIONAL_TECHNOLOGIES: ConditionalTechnologyRule[] = [
     capabilities: ["MAPS"],
     technologies: { MAPS: ["Google Maps SDK for Mobile"] },
   },
+  /**
+   * Keyed on AI alone. It used to list ["AI", "SEARCH"], but a dimension is an
+   * OR — so any project with a search box was quoted a vector database, and an
+   * e-commerce store ended up with an "AI & Machine Learning" category whose only
+   * entry was pgvector. Vector search belongs with an LLM feature, not a filter.
+   */
   {
-    capabilities: ["AI", "SEARCH"],
+    capabilities: ["AI"],
     technologies: { AI: ["Vector search (pgvector)"] },
   },
   {
@@ -475,7 +559,9 @@ export const CAPABILITY_KEYWORDS: Record<TechCapability, string[]> = {
   ],
   ANALYTICS: [
     "analytics",
-    "tracking",
+    // Bare "tracking" is not an analytics signal — "order tracking" and "live
+    // tracking" are delivery features, and they were pulling Google Analytics
+    // into logistics projects. The qualified forms below still match.
     "user behaviour",
     "user behavior",
     "funnel",
@@ -696,8 +782,9 @@ export const INDUSTRY_KEYWORDS: Record<TechIndustry, string[]> = {
     "listings",
     "broker",
     "landlord",
-    "tenant",
-    "tenants",
+    // "tenant"/"tenants" are deliberately absent: every multi-tenant SaaS
+    // describes itself with those words, and they were classifying B2B platforms
+    // as property products — which then quoted them Google Maps and Cloudinary.
   ],
   FOOD_DELIVERY: [
     "food delivery",
@@ -967,13 +1054,32 @@ export const TECH_NAME_ALIASES: Record<string, string> = {
   heroku: "Heroku",
   nginx: "Nginx",
   "github actions": "GitHub Actions (CI/CD)",
-  "gitlab ci": "GitHub Actions (CI/CD)",
+  "github action": "GitHub Actions (CI/CD)",
   "ci/cd": "GitHub Actions (CI/CD)",
+  // Was aliased onto GitHub Actions, which silently renamed a client's stated
+  // pipeline to a competitor's product. They are different tools.
+  "gitlab ci": "GitLab CI/CD",
+  "gitlab ci/cd": "GitLab CI/CD",
   jenkins: "Jenkins",
   terraform: "Terraform",
+  ansible: "Ansible",
   sentry: "Sentry (Monitoring)",
   datadog: "Datadog",
+  prometheus: "Prometheus",
+  grafana: "Grafana",
   cloudflare: "Cloudflare",
+
+  jest: "Jest",
+  vitest: "Vitest",
+  playwright: "Playwright",
+  cypress: "Cypress",
+  supertest: "Supertest (API testing)",
+  detox: "Detox (Mobile E2E)",
+  "testing library": "React Testing Library",
+  "react testing library": "React Testing Library",
+  k6: "k6 (Load testing)",
+  bcrypt: "bcrypt (Password Hashing)",
+  argon2: "Argon2 (Password Hashing)",
 
   hipaa: "HIPAA-compliant hosting",
   "hipaa compliance": "HIPAA-compliant hosting",
@@ -1026,41 +1132,60 @@ export const TECH_CATEGORY_OVERRIDES: Record<string, TechStackCategory> = {
   supabase: TECH_STACK_CATEGORIES.DATABASE,
   prisma: TECH_STACK_CATEGORIES.DATABASE,
   "drizzle orm": TECH_STACK_CATEGORIES.DATABASE,
+  // No longer the core default, so it is no longer indexed from the catalogue —
+  // without this an AI that names MongoDB would file it under "Other".
+  mongodb: TECH_STACK_CATEGORIES.DATABASE,
+  "redis (caching)": TECH_STACK_CATEGORIES.DATABASE,
 
   flutter: TECH_STACK_CATEGORIES.MOBILE,
   expo: TECH_STACK_CATEGORIES.MOBILE,
 
   firebase: TECH_STACK_CATEGORIES.BACKEND,
+  "firebase authentication": TECH_STACK_CATEGORIES.AUTHENTICATION,
+  auth0: TECH_STACK_CATEGORIES.AUTHENTICATION,
   "amazon cognito": TECH_STACK_CATEGORIES.AUTHENTICATION,
   okta: TECH_STACK_CATEGORIES.AUTHENTICATION,
   clerk: TECH_STACK_CATEGORIES.AUTHENTICATION,
   "oauth 2.0": TECH_STACK_CATEGORIES.AUTHENTICATION,
 
+  paypal: TECH_STACK_CATEGORIES.PAYMENTS,
   paytm: TECH_STACK_CATEGORIES.PAYMENTS,
   square: TECH_STACK_CATEGORIES.PAYMENTS,
   braintree: TECH_STACK_CATEGORIES.PAYMENTS,
 
+  mapbox: TECH_STACK_CATEGORIES.MAPS,
   leaflet: TECH_STACK_CATEGORIES.MAPS,
   openstreetmap: TECH_STACK_CATEGORIES.MAPS,
   onesignal: TECH_STACK_CATEGORIES.NOTIFICATIONS,
+  cloudinary: TECH_STACK_CATEGORIES.STORAGE,
   "google cloud storage": TECH_STACK_CATEGORIES.STORAGE,
   pusher: TECH_STACK_CATEGORIES.MESSAGING,
+  "stream chat": TECH_STACK_CATEGORIES.MESSAGING,
   webrtc: TECH_STACK_CATEGORIES.VIDEO,
+  agora: TECH_STACK_CATEGORIES.VIDEO,
+  "daily.co": TECH_STACK_CATEGORIES.VIDEO,
   "zoom sdk": TECH_STACK_CATEGORIES.VIDEO,
   twilio: TECH_STACK_CATEGORIES.COMMUNICATIONS,
   nodemailer: TECH_STACK_CATEGORIES.COMMUNICATIONS,
   mailgun: TECH_STACK_CATEGORIES.COMMUNICATIONS,
+  "amazon ses": TECH_STACK_CATEGORIES.COMMUNICATIONS,
+  msg91: TECH_STACK_CATEGORIES.COMMUNICATIONS,
 
   langchain: TECH_STACK_CATEGORIES.AI,
   pinecone: TECH_STACK_CATEGORIES.AI,
   tensorflow: TECH_STACK_CATEGORIES.AI,
   pytorch: TECH_STACK_CATEGORIES.AI,
+  "openai whisper (speech-to-text)": TECH_STACK_CATEGORIES.AI,
+  "openai vision": TECH_STACK_CATEGORIES.AI,
 
+  elasticsearch: TECH_STACK_CATEGORIES.SEARCH,
   opensearch: TECH_STACK_CATEGORIES.SEARCH,
   meilisearch: TECH_STACK_CATEGORIES.SEARCH,
   typesense: TECH_STACK_CATEGORIES.SEARCH,
 
+  "chart.js": TECH_STACK_CATEGORIES.ANALYTICS,
   "d3.js": TECH_STACK_CATEGORIES.ANALYTICS,
+  mixpanel: TECH_STACK_CATEGORIES.ANALYTICS,
   amplitude: TECH_STACK_CATEGORIES.ANALYTICS,
   "power bi": TECH_STACK_CATEGORIES.ANALYTICS,
 
@@ -1069,13 +1194,25 @@ export const TECH_CATEGORY_OVERRIDES: Record<string, TechStackCategory> = {
   vercel: TECH_STACK_CATEGORIES.DEPLOYMENT,
   netlify: TECH_STACK_CATEGORIES.DEPLOYMENT,
   heroku: TECH_STACK_CATEGORIES.DEPLOYMENT,
-  jenkins: TECH_STACK_CATEGORIES.DEPLOYMENT,
-  terraform: TECH_STACK_CATEGORIES.DEPLOYMENT,
-  datadog: TECH_STACK_CATEGORIES.DEPLOYMENT,
   cloudflare: TECH_STACK_CATEGORIES.DEPLOYMENT,
+
+  // Pipelines, IaC and observability — how it ships, not what it runs on.
+  jenkins: TECH_STACK_CATEGORIES.DEVOPS,
+  "gitlab ci/cd": TECH_STACK_CATEGORIES.DEVOPS,
+  terraform: TECH_STACK_CATEGORIES.DEVOPS,
+  ansible: TECH_STACK_CATEGORIES.DEVOPS,
+  datadog: TECH_STACK_CATEGORIES.DEVOPS,
+  prometheus: TECH_STACK_CATEGORIES.DEVOPS,
+  grafana: TECH_STACK_CATEGORIES.DEVOPS,
+
+  vitest: TECH_STACK_CATEGORIES.TESTING,
+  cypress: TECH_STACK_CATEGORIES.TESTING,
+  "react testing library": TECH_STACK_CATEGORIES.TESTING,
+  "k6 (load testing)": TECH_STACK_CATEGORIES.TESTING,
 
   "gdpr compliance": TECH_STACK_CATEGORIES.SECURITY,
   "two-factor authentication": TECH_STACK_CATEGORIES.SECURITY,
+  "argon2 (password hashing)": TECH_STACK_CATEGORIES.AUTHENTICATION,
   plaid: TECH_STACK_CATEGORIES.INTEGRATIONS,
 };
 
@@ -1100,9 +1237,20 @@ export const CATEGORY_FALLBACK_KEYWORDS: Array<{
   { category: TECH_STACK_CATEGORIES.STORAGE, keywords: ["storage", "bucket", "cdn", "upload", "media"] },
   { category: TECH_STACK_CATEGORIES.DATABASE, keywords: ["sql", "db", "database", "cache", "orm"] },
   { category: TECH_STACK_CATEGORIES.SECURITY, keywords: ["compliance", "encryption", "security", "audit", "gdpr"] },
+  // Testing and DevOps are matched before Infrastructure: "monitoring" and
+  // "pipeline" used to fall into the deployment bucket, which is where the
+  // distinction between what a system runs on and how it ships was being lost.
+  {
+    category: TECH_STACK_CATEGORIES.TESTING,
+    keywords: ["test", "testing", "e2e", "qa", "coverage"],
+  },
+  {
+    category: TECH_STACK_CATEGORIES.DEVOPS,
+    keywords: ["ci", "pipeline", "devops", "monitor", "monitoring", "observability", "logging", "iac"],
+  },
   {
     category: TECH_STACK_CATEGORIES.DEPLOYMENT,
-    keywords: ["docker", "cloud", "deploy", "hosting", "ci/cd", "kubernetes", "server", "monitor"],
+    keywords: ["docker", "cloud", "deploy", "hosting", "kubernetes", "server"],
   },
   { category: TECH_STACK_CATEGORIES.MOBILE, keywords: ["native", "mobile", "android", "ios"] },
   { category: TECH_STACK_CATEGORIES.FRONTEND, keywords: ["css", "ui", "frontend", "front-end"] },

@@ -36,6 +36,13 @@ export const RESERVED_TEMPLATE_VARIABLES = {
   TIMELINE: "timeline",
   USER_MESSAGE: "userMessage",
   /**
+   * The deterministic technology baseline the AI must enrich rather than replace.
+   * Built by the tech-stack engine and supplied by the calling service — see
+   * `buildEnrichmentDirective`. Empty when a caller has no project context to
+   * analyse, which leaves the ESTIMATION prompt asking for a plain recommendation.
+   */
+  TECH_STACK_BASELINE: "techStackBaseline",
+  /**
    * Consultation Mode. Expanded from a single `consultationMode` input by
    * PromptBuilder from CONSULTATION_MODE_PROFILES — callers never assemble these
    * strings themselves, which is what keeps the four engagement types defined in

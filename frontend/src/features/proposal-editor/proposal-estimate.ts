@@ -4,10 +4,12 @@ import {
   toPriceRange,
   toWeekRange,
 } from "@/client-portal/estimate/estimate-pricing";
+import { toTechStackGroups } from "@/types/tech-stack";
 import type {
   ClientLeadDetail,
   ClientLeadFeatureComplexity,
   ProposalProjectEstimate,
+  TechStackGroup,
 } from "@/types";
 
 const COMPLEXITY_LABEL: Record<ClientLeadFeatureComplexity, string> = {
@@ -31,7 +33,8 @@ export type ProposalEstimateView = {
   estimatedHours: number;
   complexityLabel: string;
   teamSize: number;
-  techStack: string[];
+  /** Always grouped for display, whichever shape the version was stored in. */
+  techStack: TechStackGroup[];
 };
 
 /**
@@ -98,6 +101,8 @@ export function formatProposalEstimate(
     estimatedHours: estimate.estimatedHours,
     complexityLabel: COMPLEXITY_LABEL[estimate.complexity] ?? estimate.complexity,
     teamSize: estimate.teamSize,
-    techStack: estimate.techStack,
+    // Versions authored before the technology engine hold a flat list; grouping
+    // happens here so the editor preview and the exported document agree.
+    techStack: toTechStackGroups(estimate.techStack),
   };
 }

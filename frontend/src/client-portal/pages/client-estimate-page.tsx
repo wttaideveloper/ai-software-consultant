@@ -17,6 +17,7 @@ import {
 import { useClientEstimatePrice } from "@/client-portal/estimate/hooks/use-client-estimate-price";
 import { useGenerateClientEstimate } from "@/client-portal/estimate/hooks/use-generate-client-estimate";
 import { AiGenerationLoader } from "@/client-portal/components/ai-generation-loader";
+import { TechStackGroups } from "@/components/shared/tech-stack-groups";
 import { Button, ConfirmDialog, EmptyState } from "@/components/ui";
 import { Gauge, Layers, Sparkles, Wallet } from "lucide-react";
 import { useClientConsultationStore } from "@/store/client-consultation.store";
@@ -44,6 +45,8 @@ export function ClientEstimatePage() {
     (state) => state.recommendedTeam,
   );
   const techStack = useClientConsultationStore((state) => state.techStack);
+  const projectIdea = useClientConsultationStore((state) => state.projectIdea);
+  const summary = useClientConsultationStore((state) => state.summary);
   const pricing = useClientConsultationStore((state) => state.pricing);
   const featureBreakdown = useClientConsultationStore(
     (state) => state.featureBreakdown,
@@ -140,10 +143,15 @@ export function ClientEstimatePage() {
           complexity: featureComplexity,
         }),
       ),
-      // Wizard-selected platforms drive the Cost Engine's platform premium; the AI
-      // is only asked for effort. Same labels the live reprice uses, so generation
-      // and every subsequent toggle price against identical platforms.
+      // Wizard-selected platforms drive the Cost Engine's platform premium and the
+      // technology engine's baseline; the AI is still only asked for effort. Same
+      // labels the live reprice uses, so generation and every subsequent toggle
+      // price against identical platforms.
       platforms: platformLabels,
+      // Read by the technology engine only — it infers the industry and the
+      // capabilities a stack must cover from these. Neither influences effort.
+      projectIdea: projectIdea || undefined,
+      requirementSummary: summary ?? undefined,
     });
   };
 
@@ -253,14 +261,19 @@ export function ClientEstimatePage() {
                       : "—"
                   }
                 />
-                <MetricCard
-                  label="Technology Stack"
-                  value={
-                    techStack && techStack.length > 0
-                      ? techStack.join(", ")
-                      : "Not available"
-                  }
-                  unavailable={!techStack || techStack.length === 0}
+              </div>
+
+              {/* Its own section rather than a fourth metric tile: a categorised
+                  stack is a list of lists, and squeezing it onto one line was
+                  what made it unreadable. */}
+              <div>
+                <h2 className="text-sm font-semibold tracking-tight text-foreground-soft">
+                  Technology Stack
+                </h2>
+                <TechStackGroups
+                  value={techStack}
+                  className="mt-3"
+                  emptyText="Not available for this estimate."
                 />
               </div>
 

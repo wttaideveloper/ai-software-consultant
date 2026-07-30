@@ -7,6 +7,7 @@ import {
   type CostPreview,
   type FeatureComplexity,
   type FeaturePriority,
+  type TechStackGroup,
 } from "@/types";
 
 /**
@@ -180,8 +181,13 @@ export type ClientConsultationState = {
   timeline: string | null;
   complexity: FeatureComplexity | null;
   recommendedTeam: number | null;
-  /** AI-recommended technology stack; null until an estimate is generated, or when the AI returns none. */
-  techStack: string[] | null;
+  /**
+   * Recommended technology stack, grouped by category; null until an estimate is
+   * generated. A session persisted before the technology engine shipped holds the
+   * old flat `string[]` here — every reader passes it through
+   * `toTechStackGroups`, so a mid-wizard visitor is not broken by the upgrade.
+   */
+  techStack: TechStackGroup[] | null;
   /** Final project cost from the Cost Engine (never the AI) at the AI's full hours; null until priced, or on a pricing failure. */
   pricing: CostPreview | null;
   /** Recurring monthly cost for a MAINTENANCE engagement; null for every other mode. */
@@ -222,7 +228,7 @@ type ClientConsultationActions = {
   applyEstimateResult: (input: {
     estimate: ClientEstimate;
     featureBreakdown: ClientFeatureBreakdownItem[];
-    techStack: string[] | null;
+    techStack: TechStackGroup[] | null;
     pricing: CostPreview | null;
     /** Recurring monthly cost of a support engagement; null for every other mode. */
     monthlyPricing: CostPreview | null;

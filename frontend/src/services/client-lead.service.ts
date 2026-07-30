@@ -4,7 +4,12 @@ import type {
   ClientFeature,
   ClientPreferredContactMethod,
 } from "@/store/client-consultation.store";
-import type { ApiSuccessResponse, ConsultationMode, CostPreview } from "@/types";
+import type {
+  ApiSuccessResponse,
+  ConsultationMode,
+  CostPreview,
+  TechStackGroup,
+} from "@/types";
 
 export type CreateClientLeadPayload = {
   name: string;
@@ -30,7 +35,7 @@ export type CreateClientLeadPayload = {
    * are already-computed values carried straight from the wizard — no new pricing
    * or AI happens here; the client just hands over the figures it displayed.
    */
-  techStack: string[];
+  techStack: TechStackGroup[];
   /** The repriced project cost the client was shown (after feature toggles), or null. */
   pricing: CostPreview | null;
 };
