@@ -5,6 +5,10 @@ import { aiOrchestrator } from "../ai/ai.orchestrator.js";
 import type { CostPreviewDto } from "../cost/cost.dto.js";
 import { costSettingsService } from "../cost/cost.service.js";
 import { normalizeEstimateForMode } from "../estimation/estimation.mode.js";
+import {
+  getConsultationModeProfile,
+  TECH_STACK_POLICIES,
+} from "../prompts/consultation-mode.profiles.js";
 import { aiEstimationPayloadSchema } from "../estimation/estimation.validation.js";
 import {
   PROMPT_TYPES,
@@ -12,9 +16,11 @@ import {
 } from "../prompts/prompt.constants.js";
 import {
   analyzeProject,
+  buildAdditionsDirective,
   buildBaselineFromAnalysis,
   buildEnrichmentDirective,
   mergeTechStack,
+  normalizeTechStack,
 } from "../tech-stack/tech-stack.engine.js";
 import type {
   TechStack,
@@ -111,6 +117,9 @@ export class ClientEstimateService {
     try {
       const techStackContext = buildTechStackContext(input);
 
+      const techStackPolicy =
+        getConsultationModeProfile(input.consultationMode).techStackPolicy;
+
       /**
        * The baseline is computed BEFORE the AI call so it can be handed to the
        * model as an already-settled decision. That inverts the old relationship:
@@ -118,10 +127,20 @@ export class ClientEstimateService {
        *
        * Size-tier technologies are missing at this point because effort is what
        * this very call returns — the stack is rebuilt with real hours below.
+       *
+       * Only for BASELINE_PLUS_AI, though. The enrichment directive ends with
+       * "return an empty array if the baseline is already complete", so sending a
+       * greenfield baseline to a mode that then DISCARDS it produced exactly that
+       * empty array and an empty section. The other policies ask the model for the
+       * technologies the work itself needs, guided by the mode's own
+       * techStackDirective, with no baseline to defer to.
        */
-      const promptBaseline = buildBaselineFromAnalysis(
-        analyzeProject(techStackContext),
-      );
+      const techStackBaseline =
+        techStackPolicy === TECH_STACK_POLICIES.BASELINE_PLUS_AI
+          ? buildEnrichmentDirective(
+              buildBaselineFromAnalysis(analyzeProject(techStackContext)),
+            )
+          : buildAdditionsDirective();
 
       const response = await aiOrchestrator.generateStandaloneReply({
         promptType: PROMPT_TYPES.ESTIMATION,
@@ -129,8 +148,7 @@ export class ClientEstimateService {
         conversationHistory: [],
         userMessage: buildFeaturesPrompt(input.features),
         variables: {
-          [RESERVED_TEMPLATE_VARIABLES.TECH_STACK_BASELINE]:
-            buildEnrichmentDirective(promptBaseline),
+          [RESERVED_TEMPLATE_VARIABLES.TECH_STACK_BASELINE]: techStackBaseline,
         },
       });
 
@@ -160,22 +178,38 @@ export class ClientEstimateService {
       );
 
       /**
-       * Rebuilt now that effort is known, so the size-dependent infrastructure
-       * (caching, orchestration, monitoring) reflects the project the AI actually
-       * sized rather than a MEDIUM guess. The merge is additive-only, so every
-       * baseline technology — and therefore every selected platform — survives
-       * whatever the model returned.
+       * How the stack is composed depends on the engagement — see
+       * `techStackPolicy` in consultation-mode.profiles.ts.
+       *
+       * BASELINE_PLUS_AI rebuilds the baseline now that effort is known, so the
+       * size-dependent infrastructure (caching, orchestration, monitoring)
+       * reflects the project the AI actually sized rather than a MEDIUM guess.
+       * The merge stays additive-only, so every baseline technology — and
+       * therefore every selected platform — survives whatever the model returned.
+       *
+       * AI_ONLY skips the baseline entirely: a client who already runs a system
+       * must not be handed a greenfield stack, which reads as "replace all of
+       * this". `normalizeTechStack` still categorises and dedupes what the AI
+       * named, so the additions render grouped exactly like a full stack does.
+       *
+       * NONE returns nothing at all — a support engagement is a scope of service,
+       * and the surface renders that instead of a technology list.
        */
-      const techStack = mergeTechStack(
-        buildBaselineFromAnalysis(
-          analyzeProject({
-            ...techStackContext,
-            estimatedHours: estimate.estimatedHours,
-            complexity: estimate.complexity,
-          }),
-        ),
-        estimate.techStack ?? [],
-      );
+      const techStack: TechStack =
+        techStackPolicy === TECH_STACK_POLICIES.NONE
+          ? []
+          : techStackPolicy === TECH_STACK_POLICIES.AI_ONLY
+            ? normalizeTechStack(estimate.techStack ?? [])
+            : mergeTechStack(
+                buildBaselineFromAnalysis(
+                  analyzeProject({
+                    ...techStackContext,
+                    estimatedHours: estimate.estimatedHours,
+                    complexity: estimate.complexity,
+                  }),
+                ),
+                estimate.techStack ?? [],
+              );
 
       const pricing = await this.priceEstimate({
         estimatedHours: estimate.estimatedHours,

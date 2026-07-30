@@ -35,6 +35,15 @@ exports.maintenancePlanSchema = zod_1.z.object({
     supportScope: zod_1.z.array(zod_1.z.string().trim().min(1)).default([]),
 });
 exports.migrationPlanSchema = zod_1.z.object({
+    /**
+     * The technologies being migrated AWAY from — the left-hand side of the
+     * "current → recommended" comparison a migration client is shown.
+     *
+     * Optional and defaulted: a migration plan stored before this field existed,
+     * or returned by a model that omits it, still validates and simply renders the
+     * recommended stack alone. Descriptive only — nothing prices or schedules it.
+     */
+    currentStack: zod_1.z.array(zod_1.z.string().trim().min(1)).default([]),
     phases: zod_1.z
         .array(zod_1.z.object({
         name: zod_1.z.string().trim().min(1),

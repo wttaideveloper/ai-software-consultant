@@ -42,6 +42,15 @@ export const maintenancePlanSchema = z.object({
 });
 
 export const migrationPlanSchema = z.object({
+  /**
+   * The technologies being migrated AWAY from — the left-hand side of the
+   * "current → recommended" comparison a migration client is shown.
+   *
+   * Optional and defaulted: a migration plan stored before this field existed,
+   * or returned by a model that omits it, still validates and simply renders the
+   * recommended stack alone. Descriptive only — nothing prices or schedules it.
+   */
+  currentStack: z.array(z.string().trim().min(1)).default([]),
   phases: z
     .array(
       z.object({

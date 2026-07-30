@@ -579,6 +579,27 @@ export function buildEnrichmentDirective(baseline: TechStack): string {
 }
 
 /**
+ * Prompt guidance for the modes that get NO deterministic baseline — an
+ * enhancement or a migration where the client already has a stack.
+ *
+ * Its whole job is naming discipline. With the enrichment directive absent the
+ * model has nothing telling it what a `techStack` entry looks like, and it
+ * answers in prose: "Firebase Cloud Messaging or Pusher for Real-time
+ * Notifications" instead of "Firebase Cloud Messaging". That renders as a
+ * paragraph in a chip, and an either/or is a question rather than a
+ * recommendation — the client is being asked to make the technical decision they
+ * came here to have made for them.
+ */
+export function buildAdditionsDirective(): string {
+  return [
+    "In `techStack` return ONLY the technologies, frameworks, libraries and services this specific work introduces — not a stack for the whole system, which already exists.",
+    "Each array entry must be the bare product name and nothing else (\"Stripe\", \"Redis\", \"Socket.IO\", \"Firebase Cloud Messaging\").",
+    "Never write an explanation, a purpose, or a \"for X\" suffix in an entry, and never offer alternatives with \"or\" — commit to one technology per need.",
+    "Return an empty array if the work needs nothing the client does not already run.",
+  ].join(" ");
+}
+
+/**
  * The whole Phase 2 pipeline in one call: analyse the project, build the
  * guaranteed baseline, then let the AI's suggestions enrich it.
  */

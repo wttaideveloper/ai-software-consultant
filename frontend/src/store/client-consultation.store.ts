@@ -99,6 +99,13 @@ export type ClientMaintenancePlan = {
 
 /** Present only for a MODERNIZATION engagement. */
 export type ClientMigrationPlan = {
+  /**
+   * The technologies being migrated away from — the left side of the
+   * current-versus-recommended comparison. Optional: a plan produced before the
+   * field existed simply has none, and the comparison degrades to showing the
+   * recommended stack on its own.
+   */
+  currentStack?: string[];
   phases: Array<{ name: string; description: string; hours: number }>;
   rollbackStrategy: string;
   downtimeEstimate: string;

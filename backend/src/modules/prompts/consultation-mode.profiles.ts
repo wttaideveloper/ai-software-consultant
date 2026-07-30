@@ -37,6 +37,26 @@ export const MOCKUP_POLICIES = {
 
 export type MockupPolicy = (typeof MOCKUP_POLICIES)[keyof typeof MOCKUP_POLICIES];
 
+/**
+ * How a mode's technology recommendation is composed.
+ *
+ * The deterministic greenfield baseline (React, Node, PostgreSQL, Docker…) is
+ * only correct when there is nothing yet. Handing it to a client who already runs
+ * a system reads as "replace everything you have", which is the opposite of what
+ * an enhancement or a support engagement is. This is the switch that stops that.
+ */
+export const TECH_STACK_POLICIES = {
+  /** Full recommended stack: deterministic baseline enriched by the AI. */
+  BASELINE_PLUS_AI: "BASELINE_PLUS_AI",
+  /** Only what the AI names for the new work — no greenfield baseline. */
+  AI_ONLY: "AI_ONLY",
+  /** No stack at all; the surface shows scope of service instead. */
+  NONE: "NONE",
+} as const;
+
+export type TechStackPolicy =
+  (typeof TECH_STACK_POLICIES)[keyof typeof TECH_STACK_POLICIES];
+
 export type ConsultationModeProfile = {
   /** Human label, used in prompts and mirrored by the frontend registry. */
   label: string;
@@ -60,6 +80,8 @@ export type ConsultationModeProfile = {
   proposalTitle: string;
   /** How the proposal should be structured. */
   proposalDirective: string;
+  /** How the technology recommendation is built for this engagement type. */
+  techStackPolicy: TechStackPolicy;
   mockupPolicy: MockupPolicy;
   /**
    * Why a CONDITIONAL mode would still warrant mockups — used both as the
@@ -93,6 +115,7 @@ export const CONSULTATION_MODE_PROFILES: Record<
     proposalTitle: "Project Proposal",
     proposalDirective:
       "Write a new-build project proposal: scope of work covering everything to be created, phased deliverables, and the delivery timeline implied by the estimate.",
+    techStackPolicy: TECH_STACK_POLICIES.BASELINE_PLUS_AI,
     mockupPolicy: MOCKUP_POLICIES.ALWAYS,
     mockupCondition: "A new build always needs concept screens.",
   },
@@ -118,6 +141,7 @@ export const CONSULTATION_MODE_PROFILES: Record<
     proposalTitle: "Feature Enhancement Proposal",
     proposalDirective:
       "Write a feature enhancement proposal: what is being added to the existing application, the impact on current modules, dependencies, and the rollout approach.",
+    techStackPolicy: TECH_STACK_POLICIES.AI_ONLY,
     mockupPolicy: MOCKUP_POLICIES.ALWAYS,
     mockupCondition: "New functionality needs screens showing how it will look.",
   },
@@ -143,6 +167,7 @@ export const CONSULTATION_MODE_PROFILES: Record<
     proposalTitle: "Maintenance & Support Agreement",
     proposalDirective:
       "Write a maintenance and support agreement, not a project proposal: scope of support, engagement model, response and resolution targets, monthly capacity and what is excluded. It must contain no delivery date and no launch plan.",
+    techStackPolicy: TECH_STACK_POLICIES.NONE,
     mockupPolicy: MOCKUP_POLICIES.CONDITIONAL,
     mockupCondition:
       "Maintenance work is not visual, so concepts are generated only when the requirements explicitly ask for UI or UX improvement.",
@@ -169,6 +194,7 @@ export const CONSULTATION_MODE_PROFILES: Record<
     proposalTitle: "Migration Proposal",
     proposalDirective:
       "Write a migration proposal: current state, target state, phased migration plan, data migration approach, rollback strategy, downtime expectations and cut-over.",
+    techStackPolicy: TECH_STACK_POLICIES.BASELINE_PLUS_AI,
     mockupPolicy: MOCKUP_POLICIES.CONDITIONAL,
     mockupCondition:
       "A migration usually preserves the existing interface, so concepts are generated only when the requirements say the migration includes a UI redesign.",

@@ -76,6 +76,8 @@ export type ClientLeadEstimate = {
     supportScope: string[];
   } | null;
   migrationPlan?: {
+    /** Technologies being migrated away from; absent on plans predating the field. */
+    currentStack?: string[];
     phases: Array<{ name: string; description: string; hours: number }>;
     rollbackStrategy: string;
     downtimeEstimate: string;

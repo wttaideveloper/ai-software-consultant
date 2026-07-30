@@ -9,7 +9,6 @@ import { MetricCard } from "@/client-portal/estimate/components/metric-card";
 import { ModeEstimateDetails } from "@/client-portal/estimate/components/mode-estimate-details";
 import { ProjectCostCard } from "@/client-portal/estimate/components/project-cost-card";
 import {
-  TECH_STACK_HELPER_TEXT,
   TIMELINE_RANGE_HELPER_TEXT,
   formatWeekRange,
   resolveWizardPlatformLabels,
@@ -18,7 +17,7 @@ import {
 import { useClientEstimatePrice } from "@/client-portal/estimate/hooks/use-client-estimate-price";
 import { useGenerateClientEstimate } from "@/client-portal/estimate/hooks/use-generate-client-estimate";
 import { AiGenerationLoader } from "@/client-portal/components/ai-generation-loader";
-import { TechStackGroups } from "@/components/shared/tech-stack-groups";
+import { TechnologyRecommendation } from "@/client-portal/estimate/components/technology-recommendation";
 import { Button, ConfirmDialog, EmptyState } from "@/components/ui";
 import { Gauge, Layers, Sparkles, Wallet } from "lucide-react";
 import { useClientConsultationStore } from "@/store/client-consultation.store";
@@ -266,20 +265,14 @@ export function ClientEstimatePage() {
 
               {/* Its own section rather than a fourth metric tile: a categorised
                   stack is a list of lists, and squeezing it onto one line was
-                  what made it unreadable. */}
-              <div>
-                <h2 className="text-sm font-semibold tracking-tight text-foreground-soft">
-                  Technology Stack
-                </h2>
-                <TechStackGroups
-                  value={techStack}
-                  className="mt-3"
-                  emptyText="Not available for this estimate."
-                />
-                <p className="mt-3 text-xs leading-relaxed text-muted text-pretty">
-                  {TECH_STACK_HELPER_TEXT}
-                </p>
-              </div>
+                  what made it unreadable. Which section this renders — full
+                  stack, enhancement additions, support scope or a migration
+                  comparison — depends on the engagement type. */}
+              <TechnologyRecommendation
+                consultationMode={consultationMode}
+                techStack={techStack}
+                estimate={estimate}
+              />
 
               {/* The engagement-specific half: SLA and scope for support, phases
                   and rollback for a migration, impact for an enhancement. */}

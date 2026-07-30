@@ -63,11 +63,9 @@ export function ModeEstimateDetails({ estimate }: ModeEstimateDetailsProps) {
           <p className="text-sm text-foreground-soft">{maintenancePlan.suggestedSla}</p>
         </DetailPanel>
 
-        {maintenancePlan.supportScope.length > 0 ? (
-          <DetailPanel title="Support Scope">
-            <BulletList items={maintenancePlan.supportScope} />
-          </DetailPanel>
-        ) : null}
+        {/* Support Scope is rendered by <TechnologyRecommendation>, which takes
+            the technology slot for a support engagement — showing it here too
+            put the same list on the page twice. */}
       </section>
     );
   }
