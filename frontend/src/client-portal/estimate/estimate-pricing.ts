@@ -30,7 +30,7 @@ export const TIMELINE_RANGE_WEEKS = 1;
  * `estimatedHours`, never weeks, so halving a timeline provably cannot move a
  * price. The stored/AI value stays original — only its display is scaled.
  */
-export const TIMELINE_ADJUSTMENT_FACTOR = 0.5;
+export const TIMELINE_ADJUSTMENT_FACTOR = 0.25;
 
 /**
  * Applies the adjustment to one week figure.
