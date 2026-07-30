@@ -9,6 +9,7 @@ import { MetricCard } from "@/client-portal/estimate/components/metric-card";
 import { ModeEstimateDetails } from "@/client-portal/estimate/components/mode-estimate-details";
 import { ProjectCostCard } from "@/client-portal/estimate/components/project-cost-card";
 import {
+  TECH_STACK_HELPER_TEXT,
   TIMELINE_RANGE_HELPER_TEXT,
   formatWeekRange,
   resolveWizardPlatformLabels,
@@ -275,6 +276,9 @@ export function ClientEstimatePage() {
                   className="mt-3"
                   emptyText="Not available for this estimate."
                 />
+                <p className="mt-3 text-xs leading-relaxed text-muted text-pretty">
+                  {TECH_STACK_HELPER_TEXT}
+                </p>
               </div>
 
               {/* The engagement-specific half: SLA and scope for support, phases

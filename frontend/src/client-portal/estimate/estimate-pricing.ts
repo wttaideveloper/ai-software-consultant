@@ -66,6 +66,14 @@ export const TIMELINE_RANGE_HELPER_TEXT =
   "Timeline may vary depending on scope changes and final requirements.";
 
 /**
+ * The technology stack is a recommendation, not a commitment — it is derived
+ * from the platforms and features described so far, and a detailed technical
+ * review can reasonably change it. Saying so plainly here keeps the client from
+ * reading the list as something already agreed.
+ */
+export const TECH_STACK_HELPER_TEXT =
+  "Suggested technology stack based on your project requirements. If you have preferred technologies, they can also be considered during technical planning.";
+/**
  * Relative effort per feature by complexity. The AI returns one total for the
  * project, not hours per feature, so total hours are split across features by
  * these weights — enough for toggling a feature to move the total sensibly

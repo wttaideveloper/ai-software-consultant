@@ -1,3 +1,4 @@
+import { TECH_STACK_HELPER_TEXT } from "@/client-portal/estimate/estimate-pricing";
 import {
   formatProposalEstimate,
   resolveProposalEstimate,
@@ -162,6 +163,12 @@ export function buildProposalDocument(
             : [{ kind: "bullets", items: group.items }],
         )
       : [{ kind: "note", text: "Not recorded for this request." }];
+
+  // The same caveat the client read on the Estimate step, carried into the
+  // document so the stack is never mistaken for an agreed commitment.
+  if (estimate.techStack.length > 0) {
+    techStackBlocks.push({ kind: "note", text: TECH_STACK_HELPER_TEXT });
+  }
 
   const projectEstimateSection: DocSection = {
     heading: "Project Estimate",
